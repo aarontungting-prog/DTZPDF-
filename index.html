@@ -1,100 +1,126 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>DTZ PDF - 專業級文件處理基石</title>
-   
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>DTZ PDF - 專業級文件處理美學</title>
+    
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-  <style>
-    :root {
-      --primary: #e74c3c; --accent: #3498db; --success: #2ecc71; --bg: #f8fafc;
-      --text-main: #2d3436; --text-sub: #636e72; --border: #dfe6e9;
-      --shadow: 0 10px 30px rgba(0,0,0,0.08); --radius: 16px;
-    }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text-main); line-height: 1.6; }
+    <style>
+        :root {
+            --primary: #e74c3c; --accent: #3498db; --success: #2ecc71; 
+            --bg: #fafafa; --surface: #ffffff;
+            --text-main: #2d3436; --text-sub: #636e72; --border: #eee;
+            --shadow: 0 10px 40px rgba(0,0,0,0.06); --radius: 20px;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text-main); line-height: 1.6; }
 
-    /* --- 導航 --- */
-    nav { background: white; padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 15px rgba(0,0,0,0.04); position: sticky; top: 0; z-index: 100; }
-    .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
-    .badge { background: #f1f2f6; color: var(--text-sub); font-size: 0.75rem; padding: 4px 12px; border-radius: 50px; font-weight: 600; }
+        /* --- 導航列 --- */
+        nav { background: var(--surface); padding: 1.2rem 8%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 20px rgba(0,0,0,0.02); }
+        .logo { font-size: 1.6rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+        .badge { background: #fff5f5; color: var(--primary); font-size: 0.75rem; padding: 6px 16px; border-radius: 50px; font-weight: 600; }
 
-    .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
-    .header { text-align: center; margin-bottom: 40px; }
-    .header h1 { margin: 0 0 10px 0; font-size: 2.2rem; }
-    .header p { color: var(--text-sub); margin: 0; }
+        .container { max-width: 960px; margin: 50px auto; padding: 0 24px; }
+        
+        /* 標題區 */
+        .header { text-align: center; margin-bottom: 50px; }
+        .header h1 { font-size: 2.8rem; margin: 0 0 15px 0; letter-spacing: -1px; color: #1a1a1a; }
+        .header p { color: var(--text-sub); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
 
-    /* --- 標籤與面板 --- */
-    .tab-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
-    .tab-btn { padding: 12px 35px; border-radius: 50px; border: 2px solid transparent; background: white; color: var(--text-sub); font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-    .tab-btn.active { border-color: var(--primary); color: var(--primary); box-shadow: 0 8px 20px rgba(231, 76, 60, 0.2); transform: translateY(-2px); }
+        /* --- ✅ 更新：經典紅色按鈕樣式 --- */
+        .tab-group { display: flex; justify-content: center; gap: 15px; margin-bottom: 40px; }
+        .tab-btn { 
+            padding: 12px 40px; 
+            border-radius: 50px; 
+            border: 2px solid var(--primary); /* 紅色邊框 */
+            background: white; 
+            color: var(--primary); /* 紅色文字 */
+            font-weight: 800; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            font-size: 1rem;
+        }
+        .tab-btn:hover { background: #fff5f5; transform: translateY(-2px); }
+        .tab-btn.active { 
+            background: var(--primary); /* 紅色背景 */
+            color: white; /* 白色文字 */
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); /* 紅色光暈 */
+            transform: translateY(-2px);
+        }
 
-    .panel { display: none; background: white; padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); min-height: 500px; animation: fadeUp 0.4s ease; }
-    .panel.active { display: block; }
+        /* --- 工作面板 --- */
+        .panel { display: none; background: var(--surface); padding: 50px; border-radius: var(--radius); box-shadow: var(--shadow); min-height: 500px; animation: fadeUp 0.5s ease; border: 1px solid var(--border); }
+        .panel.active { display: block; }
 
-    .drop-zone { border: 3px dashed var(--border); border-radius: var(--radius); padding: 60px 20px; text-align: center; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; }
-    .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: #fff5f5; }
-    .drop-zone input { position: absolute; width: 0; height: 0; opacity: 0; }
+        .drop-zone { border: 3px dashed var(--border); border-radius: 16px; padding: 70px 20px; text-align: center; cursor: pointer; transition: 0.3s; background: #fcfcfc; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: #fffbfb; transform: scale(1.005); }
+        
+        /* 卡片網格 */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; margin-top: 40px; }
+        .card { background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: 16px; position: relative; transition: 0.3s; cursor: grab; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
+        .card.selected { border: 2px solid var(--success); background: #f6fffa; box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.1); }
+        
+        .cv-wrap { height: 220px; display: flex; align-items: center; justify-content: center; background: #f4f6f8; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+        canvas { max-width: 100%; max-height: 100%; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        /* 卡片工具列 */
+        .tools { display: flex; gap: 8px; justify-content: center; }
+        .tool-btn { flex: 1; padding: 8px; border: none; background: #f1f2f6; color: var(--text-sub); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .tool-btn:hover { background: #e9ecef; color: var(--text-main); }
+        .tool-btn.danger:hover { background: #ffebee; color: var(--primary); }
 
-    /* --- 卡片網格 --- */
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; margin-top: 30px; }
-    .card { background: white; border: 1px solid var(--border); padding: 10px; border-radius: 12px; position: relative; transition: 0.2s; cursor: grab; }
-    .card:active { cursor: grabbing; }
-    .card.selected { border: 2px solid var(--success); background: #f0fff4; }
-     
-    .preview-box { height: 200px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
-    canvas { max-width: 100%; max-height: 100%; transition: transform 0.3s; }
-     
-    .tools { display: flex; gap: 5px; justify-content: center; }
-    .tool-btn { flex: 1; padding: 6px; border: none; background: #f1f2f6; color: var(--text-sub); border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: 0.2s; }
-    .tool-btn:hover { background: #dfe6e9; color: var(--text-main); }
-    .tool-btn.danger:hover { background: #ffebee; color: var(--primary); }
+        .actions { margin-top: 50px; padding-top: 30px; border-top: 1px solid var(--border); display: none; text-align: center; }
+        .btn-main { padding: 18px 60px; border-radius: 50px; border: none; background: var(--primary); color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px rgba(231, 76, 60, 0.25); }
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(231, 76, 60, 0.35); }
+        .btn-main:disabled { background: #b2bec3; cursor: wait; transform: none; box-shadow: none; }
+        .btn-text { background: none; border: none; color: var(--text-sub); text-decoration: underline; cursor: pointer; margin-top: 20px; display: block; width: 100%; }
 
-    .actions { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); display: none; text-align: center; }
-    .btn-main { padding: 16px 60px; border-radius: 50px; border: none; background: var(--primary); color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3); }
-    .btn-main:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4); }
-    .btn-main:disabled { background: #b2bec3; cursor: wait; transform: none; box-shadow: none; }
-    .btn-text { background: none; border: none; color: var(--text-sub); text-decoration: underline; cursor: pointer; margin-top: 15px; display: block; width: 100%; }
+        /* 三方格動畫卡片 */
+        .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 80px; }
+        .anim-card {
+            background: var(--surface); padding: 35px; border-radius: 24px; box-shadow: var(--shadow);
+            border-top: 6px solid transparent; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: left; height: 100%; cursor: default;
+        }
+        .anim-card:hover { transform: translateY(-10px); box-shadow: 0 25px 50px rgba(0,0,0,0.12); }
+        .anim-card.red { border-top-color: var(--primary); }
+        .anim-card.green { border-top-color: var(--success); }
+        .anim-card.blue { border-top-color: var(--accent); }
+        
+        .anim-card h3 { margin-top: 0; color: var(--text-main); font-size: 1.3rem; margin-bottom: 15px; }
+        .anim-card p { color: var(--text-sub); font-size: 0.95rem; margin: 0; line-height: 1.7; }
 
-    /* --- ✅ 新增：互動式資訊卡片 (適用於三方框與 Q&A) --- */
-    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-top: 60px; }
-     
-    .anim-card {
-      background: white; padding: 30px; border-radius: 20px; 
-      box-shadow: var(--shadow); text-align: left; 
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      border-top: 6px solid transparent; cursor: default;
-    }
-    /* 懸停動畫 */
-    .anim-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
-     
-    /* 顏色主題 */
-    .anim-card.feature { border-top-color: var(--primary); }
-    .anim-card.qa { border-top-color: var(--accent); }
+        /* 長條式 Q&A */
+        .qa-section { max-width: 800px; margin: 80px auto 0; text-align: left; }
+        .qa-title { text-align: center; font-size: 2rem; margin-bottom: 40px; color: var(--text-main); font-weight: 800; }
+        
+        .qa-item { 
+            background: var(--surface); margin-bottom: 20px; padding: 30px; border-radius: 16px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid var(--border);
+            transition: 0.3s;
+        }
+        .qa-item:hover { box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-color: var(--accent); }
+        .qa-item h4 { margin: 0 0 10px 0; color: var(--accent); font-size: 1.15rem; }
+        .qa-item p { margin: 0; color: var(--text-sub); line-height: 1.7; }
 
-    .anim-card h3 { margin-top: 0; color: var(--text-main); font-size: 1.2rem; }
-    .anim-card h4 { margin-top: 0; color: var(--accent); font-size: 1.1rem; }
-    .anim-card p { color: var(--text-sub); font-size: 0.95rem; margin-bottom: 0; }
-
-    /* Q&A 區塊標題 */
-    .section-title { text-align: center; margin-top: 80px; font-size: 1.8rem; color: var(--text-main); font-weight: 800; }
-
-    /* --- 其他元件 --- */
-    #progress-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 999; display: none; }
-    #progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.2s; }
-    #toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
-    .toast { background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 50px; font-size: 0.9rem; animation: fadeUp 0.3s; }
-    .rot-90 { transform: rotate(90deg); } .rot-180 { transform: rotate(180deg); } .rot-270 { transform: rotate(270deg); }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 768px) { .panel { padding: 20px; } .btn-main { width: 100%; } }
-    footer { margin: 80px 0 40px; color: #b2bec3; font-size: 0.9rem; text-align: center; }
-  </style>
+        /* 元件 */
+        #progress-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 999; display: none; }
+        #progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.2s; }
+        #toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: rgba(30,30,30,0.9); color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; animation: fadeUp 0.3s; backdrop-filter: blur(5px); }
+        .rot-90 { transform: rotate(90deg); } .rot-180 { transform: rotate(180deg); } .rot-270 { transform: rotate(270deg); }
+        
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 900px) { .feature-grid { grid-template-columns: 1fr; } }
+        footer { margin: 100px 0 40px; color: #b2bec3; font-size: 0.9rem; text-align: center; }
+    </style>
 </head>
 <body>
 
@@ -102,282 +128,280 @@
 <div id="toast-container"></div>
 
 <nav>
-  <div class="logo">DTZ PDF</div>
-  <div class="badge">v28.1</div>
+    <div class="logo">DTZ PDF</div>
+    <div class="badge">v29.5 Final Perfect</div>
 </nav>
 
 <div class="container">
-  <div class="header">
-    <h1>專業 PDF 處理中樞</h1>
-    <p>本地運算 • 極致隱私 • 幾何校正</p>
-  </div>
+    <div class="header">
+        <h1>專業 PDF 處理中樞</h1>
+        <p>端點運算 • 極致隱私 • 幾何校正</p>
+    </div>
 
-  <div class="tab-group">
-    <button class="tab-btn active" onclick="App.ui.switchTab('merge')">合併排序</button>
-    <button class="tab-btn" onclick="App.ui.switchTab('split')">分割提取</button>
-  </div>
+    <div class="tab-group">
+        <button class="tab-btn active" onclick="App.ui.switchTab('merge')">合併與排序</button>
+        <button class="tab-btn" onclick="App.ui.switchTab('split')">分割與提取</button>
+    </div>
 
-  <div id="panel-merge" class="panel active">
-    <div class="drop-zone" id="drop-merge">
-      <div style="font-size:3rem; margin-bottom:15px;">📂</div>
-      <h3>拖放檔案 或 點擊上傳</h3>
-      <p style="color:var(--text-sub); font-size:0.9rem;">支援 PDF / JPG / PNG (自動排序與旋轉)</p>
-      <input type="file" id="input-merge" multiple accept=".pdf,.jpg,.jpeg,.png">
+    <div id="panel-merge" class="panel active">
+        <div class="drop-zone" id="drop-merge">
+            <div style="font-size:3.5rem; margin-bottom:20px; opacity:0.8;">📂</div>
+            <h3 style="margin:0; font-size:1.4rem;">拖放檔案 或 點擊上傳</h3>
+            <p style="color:var(--text-sub); margin-top:10px;">支援 PDF / JPG / PNG (可自由拖曳排序)</p>
+            <input type="file" id="input-merge" multiple accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+        <div id="grid-merge" class="grid"></div>
+        <div id="action-merge" class="actions">
+            <button class="btn-main" onclick="App.core.process('merge')">合併並下載 PDF</button>
+            <button class="btn-text" onclick="App.state.reset()">清空所有檔案</button>
+        </div>
     </div>
-    <div id="grid-merge" class="grid"></div>
-    <div id="action-merge" class="actions">
-      <button class="btn-main" onclick="App.core.process('merge')">合併並下載 PDF</button>
-      <button class="btn-text" onclick="App.state.reset()">清空所有檔案</button>
-    </div>
-  </div>
 
-  <div id="panel-split" class="panel">
-    <div class="drop-zone" id="drop-split">
-      <div style="font-size:3rem; margin-bottom:15px;">✂️</div>
-      <h3>拖放單份 PDF 檔案</h3>
-      <p style="color:var(--text-sub); font-size:0.9rem;">解析後點選頁面進行提取</p>
-      <input type="file" id="input-split" accept=".pdf">
+    <div id="panel-split" class="panel">
+        <div class="drop-zone" id="drop-split">
+            <div style="font-size:3.5rem; margin-bottom:20px; opacity:0.8;">✂️</div>
+            <h3 style="margin:0; font-size:1.4rem;">拖放單份 PDF 檔案</h3>
+            <p style="color:var(--text-sub); margin-top:10px;">解析後可<b>拖曳排序</b>，點選頁面進行提取</p>
+            <input type="file" id="input-split" accept=".pdf">
+        </div>
+        <div id="grid-split" class="grid"></div>
+        <div id="action-split" class="actions">
+            <button class="btn-main" style="background:var(--accent);" onclick="App.core.process('split')">提取選中頁面 (ZIP)</button>
+            <button class="btn-text" onclick="App.state.reset()">清空所有檔案</button>
+        </div>
     </div>
-    <div id="grid-split" class="grid"></div>
-    <div id="action-split" class="actions">
-      <button class="btn-main" style="background:var(--accent);" onclick="App.core.process('split')">提取選中頁面 (ZIP)</button>
-    </div>
-  </div>
 
-  <div class="info-grid">
-    <div class="anim-card feature">
-      <h3>🛡️ 端點加密運算</h3>
-      <p>放棄雲端上傳，擁抱絕對隱私。所有檔案處理皆在您的瀏覽器記憶體中完成，適合處理合約與個資文件。</p>
+    <div class="feature-grid">
+        <div class="anim-card red">
+            <h3>🛡️ 端點加密運算</h3>
+            <p>放棄雲端上傳，擁抱絕對隱私。所有檔案處理皆在您的瀏覽器記憶體中完成，適合處理機密文件。</p>
+        </div>
+        <div class="anim-card green">
+            <h3>🚀 幾何物理引擎</h3>
+            <p>內建坐標轉換系統。當您旋轉圖片時，PDF 頁面會自動適應寬高，確保內容完美置中不裁切。</p>
+        </div>
+        <div class="anim-card blue">
+            <h3>⚡ 分段呼吸渲染</h3>
+            <p>針對大檔案優化的非同步處理技術，即使載入數百頁的合約，也能保持介面流暢不卡頓。</p>
+        </div>
     </div>
-    <div class="anim-card feature">
-      <h3>🚀 幾何物理引擎</h3>
-      <p>內建坐標轉換系統。當您旋轉圖片時，PDF 頁面會自動適應寬高，確保內容完美置中不裁切。</p>
-    </div>
-    <div class="anim-card feature">
-      <h3>⚡ 分段呼吸渲染</h3>
-      <p>針對大檔案優化的非同步處理技術，即使載入數百頁的合約，也能保持介面流暢不卡頓。</p>
-    </div>
-  </div>
 
-  <h2 class="section-title">常見問題指南</h2>
-  <div class="info-grid">
-    <div class="anim-card qa">
-      <h4>📱 iOS 無法下載？</h4>
-      <p>iPhone Safari 安全性較高。合併完成後若跳出新分頁，請點擊底部的「分享」圖示，並選擇「儲存到檔案」即可。</p>
+    <div class="qa-section">
+        <h2 class="qa-title">常見問題指南</h2>
+        
+        <div class="qa-item">
+            <h4>📱 iOS 無法下載檔案？</h4>
+            <p>iPhone Safari 安全性較高。合併完成後若跳出新分頁，請點擊底部的「分享」圖示，並選擇「儲存到檔案」即可。</p>
+        </div>
+        
+        <div class="qa-item">
+            <h4>✂️ 分割模式能做什麼？</h4>
+            <p>v29.5 版本已全面解鎖權限。您可以對單一頁面進行<b>旋轉</b>、<b>刪除</b>，甚至<b>拖曳排序</b>。提取後的 ZIP 會依照新順序編號。</p>
+        </div>
+        
+        <div class="qa-item">
+            <h4>🖼️ 圖片會被壓縮嗎？</h4>
+            <p>我們會自動優化圖片尺寸以防止記憶體溢出，但仍會保持 300DPI 的列印級清晰度，請放心使用。</p>
+        </div>
     </div>
-    <div class="anim-card qa">
-      <h4>✂️ 分割模式怎麼用？</h4>
-      <p>上傳 PDF 後，直接點擊您想要保留的頁面卡片。當卡片出現綠色邊框時代表已選中，最後點擊提取即可打包下載。</p>
-    </div>
-    <div class="anim-card qa">
-      <h4>🖼️ 圖片會被壓縮嗎？</h4>
-      <p>我們會自動優化圖片尺寸以防止記憶體溢出，但仍會保持 300DPI 的列印級清晰度，請放心使用。</p>
-    </div>
-  </div>
 </div>
 
-<footer>&copy; 2026 DTZ PDF ENGINE | v28.1 完整互動版</footer>
+<footer>&copy; 2026 DTZ PDF ENGINE | Designed for Performance</footer>
 
 <script>
 /**
- * DTZ PDF Engine v28.1 - 穩定基石架構
+ * DTZ PDF Engine v29.5 - Final Polish
  */
 const App = {
-  state: {
-    mode: 'merge',
-    pages: [],
-    buffers: {},
-    sortable: null,
-    reset() {
-      this.pages = [];
-      this.buffers = {};
-      document.getElementById('grid-merge').innerHTML = '';
-      document.getElementById('grid-split').innerHTML = '';
-      document.getElementById('action-merge').style.display = 'none';
-      document.getElementById('action-split').style.display = 'none';
-      App.ui.toast("已清空所有資料");
-    }
-  },
-  ui: {
-    switchTab(mode) {
-      App.state.mode = mode;
-      App.state.reset();
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      const targetBtn = event ? event.target : document.querySelector(`button[onclick*="'${mode}'"]`);
-      if(targetBtn) targetBtn.classList.add('active');
-      document.getElementById(`panel-${mode}`).classList.add('active');
+    state: {
+        mode: 'merge', pages: [], buffers: {}, sortable: null,
+        reset() {
+            this.pages = []; this.buffers = {};
+            document.getElementById('grid-merge').innerHTML = '';
+            document.getElementById('grid-split').innerHTML = '';
+            document.getElementById('action-merge').style.display = 'none';
+            document.getElementById('action-split').style.display = 'none';
+            // ✅ 已移除：App.ui.toast("已清空所有資料"); (靜默清空)
+        }
     },
-    showProgress(percent) {
-      const bar = document.getElementById('progress-bar');
-      const wrap = document.getElementById('progress-wrap');
-      wrap.style.display = 'block';
-      bar.style.width = percent + '%';
-      if (percent >= 100) setTimeout(() => { wrap.style.display = 'none'; bar.style.width = '0%'; }, 800);
-    },
-    toast(msg) {
-      const con = document.getElementById('toast-container');
-      const el = document.createElement('div');
-      el.className = 'toast'; el.innerText = msg; con.appendChild(el);
-      setTimeout(() => el.remove(), 3000);
-    },
-    createCard(pageObj, canvas, label) {
-      const div = document.createElement('div');
-      div.className = 'card'; div.id = pageObj.id;
-      const tools = `
-        <div class="tools" style="margin-top:10px;">
-          <button class="tool-btn" onclick="event.stopPropagation(); App.core.rotate('${pageObj.id}')">↺ 旋轉</button>
-          ${App.state.mode === 'merge' ? `<button class="tool-btn danger" onclick="event.stopPropagation(); App.core.remove('${pageObj.id}')">✕ 刪除</button>` : ''}
-        </div>`;
-      div.innerHTML = `<div class="preview-box"></div><div style="font-size:0.8rem; text-align:center; color:#636e72; margin-top:5px;">${label}</div>${tools}`;
-      div.querySelector('.preview-box').appendChild(canvas);
-      if (App.state.mode === 'split') {
-        div.onclick = () => {
-          const p = App.state.pages.find(x => x.id === pageObj.id);
-          if (p) { p.selected = !p.selected; div.classList.toggle('selected'); }
-        };
-      }
-      document.getElementById(`grid-${App.state.mode}`).appendChild(div);
-    }
-  },
-  core: {
-    async init() {
-      const { pdfjsLib } = window;
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-      ['merge', 'split'].forEach(m => {
-        const drop = document.getElementById(`drop-${m}`);
-        const input = document.getElementById(`input-${m}`);
-        drop.onclick = () => input.click();
-        input.onchange = (e) => this.handleFiles(e.target.files);
-        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
-        drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
-        drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragover'); this.handleFiles(e.dataTransfer.files); });
-      });
-    },
-    async handleFiles(files) {
-      if (files.length === 0) return;
-      App.ui.showProgress(10);
-      try {
-        for (const file of Array.from(files)) {
-          if (App.state.mode === 'split' && !file.type.includes('pdf')) { App.ui.toast("⚠️ 分割模式僅支援 PDF 檔案"); continue; }
-          const fileId = crypto.randomUUID();
-          const buffer = await file.arrayBuffer();
-          App.state.buffers[fileId] = buffer;
-          if (file.type === 'application/pdf') {
-            const pdfDoc = await pdfjsLib.getDocument({ data: buffer.slice(0) }).promise;
-            for (let i = 1; i <= pdfDoc.numPages; i++) {
-              const pId = crypto.randomUUID();
-              App.state.pages.push({ id: pId, fileId, pIdx: i-1, rot: 0, selected: false, type: 'pdf', name: file.name });
-              await this.renderPage(pdfDoc, i, pId);
-              if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+    ui: {
+        switchTab(mode) {
+            App.state.mode = mode; App.state.reset();
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            const targetBtn = event ? event.target : document.querySelector(`button[onclick*="'${mode}'"]`);
+            if(targetBtn) targetBtn.classList.add('active');
+            document.getElementById(`panel-${mode}`).classList.add('active');
+        },
+        showProgress(percent) {
+            const bar = document.getElementById('progress-bar');
+            const wrap = document.getElementById('progress-wrap');
+            wrap.style.display = 'block'; bar.style.width = percent + '%';
+            if (percent >= 100) setTimeout(() => { wrap.style.display = 'none'; bar.style.width = '0%'; }, 800);
+        },
+        toast(msg) {
+            const con = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            el.className = 'toast'; el.innerText = msg; con.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        },
+        createCard(pageObj, canvas, label) {
+            const div = document.createElement('div');
+            div.className = 'card'; div.id = pageObj.id;
+            const tools = `
+                <div class="tools">
+                    <button class="tool-btn" onclick="event.stopPropagation(); App.core.rotate('${pageObj.id}')">↺ 旋轉</button>
+                    <button class="tool-btn danger" onclick="event.stopPropagation(); App.core.remove('${pageObj.id}')">✕ 刪除</button>
+                </div>`;
+            div.innerHTML = `<div class="cv-wrap"></div><div style="font-size:0.8rem; text-align:center; color:#636e72;">${label}</div>${tools}`;
+            div.querySelector('.cv-wrap').appendChild(canvas);
+            if (App.state.mode === 'split') {
+                div.onclick = () => {
+                    const p = App.state.pages.find(x => x.id === pageObj.id);
+                    if (p) { p.selected = !p.selected; div.classList.toggle('selected'); }
+                };
             }
-          } else if (file.type.startsWith('image/') && App.state.mode === 'merge') {
-            const pId = crypto.randomUUID();
-            App.state.pages.push({ id: pId, fileId, pIdx: 0, rot: 0, selected: false, type: 'img', name: file.name });
-            await this.renderImage(file, pId);
-          }
+            document.getElementById(`grid-${App.state.mode}`).appendChild(div);
         }
-        document.getElementById(`action-${App.state.mode}`).style.display = 'block';
-        if (App.state.mode === 'merge') this.initSortable();
-      } catch (e) { console.error(e); App.ui.toast("❌ 檔案解析失敗"); }
-      App.ui.showProgress(100);
     },
-    async renderPage(pdfDoc, num, id) {
-      const page = await pdfDoc.getPage(num);
-      const vp = page.getViewport({ scale: 0.3 });
-      const cv = document.createElement('canvas');
-      cv.width = vp.width; cv.height = vp.height;
-      await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-      App.ui.createCard(App.state.pages.find(p => p.id === id), cv, `P${num}`);
-    },
-    async renderImage(file, id) {
-      const img = new Image(); img.src = URL.createObjectURL(file);
-      await new Promise(r => img.onload = r);
-      const maxW = 300; const sc = maxW / img.width;
-      const cv = document.createElement('canvas');
-      cv.width = maxW; cv.height = img.height * sc;
-      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      App.ui.createCard(App.state.pages.find(p => p.id === id), cv, 'IMG');
-      URL.revokeObjectURL(img.src);
-    },
-    rotate(id) {
-      const p = App.state.pages.find(x => x.id === id);
-      if (p) { p.rot = (p.rot + 90) % 360; const cv = document.querySelector(`#${id} canvas`); if(cv) cv.className = `rot-${p.rot}`; }
-    },
-    remove(id) {
-      App.state.pages = App.state.pages.filter(x => x.id !== id);
-      document.getElementById(id).remove();
-      if (App.state.pages.length === 0) App.state.reset();
-    },
-    initSortable() {
-      const el = document.getElementById('grid-merge');
-      if (App.state.sortable) App.state.sortable.destroy();
-      App.state.sortable = new Sortable(el, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        onEnd: () => {
-          const ids = Array.from(el.children).map(c => c.id);
-          App.state.pages = ids.map(id => App.state.pages.find(p => p.id === id)).filter(Boolean);
+    core: {
+        async init() {
+            const { pdfjsLib } = window;
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            ['merge', 'split'].forEach(m => {
+                const drop = document.getElementById(`drop-${m}`);
+                const input = document.getElementById(`input-${m}`);
+                drop.onclick = () => input.click();
+                input.onchange = (e) => this.handleFiles(e.target.files);
+                drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+                drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+                drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragover'); this.handleFiles(e.dataTransfer.files); });
+            });
+        },
+        async handleFiles(files) {
+            if (files.length === 0) return;
+            App.ui.showProgress(10);
+            try {
+                for (const file of Array.from(files)) {
+                    if (App.state.mode === 'split' && !file.type.includes('pdf')) { App.ui.toast("⚠️ 分割模式僅支援 PDF 檔案"); continue; }
+                    const fileId = crypto.randomUUID();
+                    const buffer = await file.arrayBuffer();
+                    App.state.buffers[fileId] = buffer;
+                    if (file.type === 'application/pdf') {
+                        const pdfDoc = await pdfjsLib.getDocument({ data: buffer.slice(0) }).promise;
+                        for (let i = 1; i <= pdfDoc.numPages; i++) {
+                            const pId = crypto.randomUUID();
+                            App.state.pages.push({ id: pId, fileId, pIdx: i-1, rot: 0, selected: false, type: 'pdf', name: file.name });
+                            await this.renderPage(pdfDoc, i, pId);
+                            if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+                        }
+                    } else if (file.type.startsWith('image/') && App.state.mode === 'merge') {
+                        const pId = crypto.randomUUID();
+                        App.state.pages.push({ id: pId, fileId, pIdx: 0, rot: 0, selected: false, type: 'img', name: file.name });
+                        await this.renderImage(file, pId);
+                    }
+                }
+                document.getElementById(`action-${App.state.mode}`).style.display = 'block';
+                this.initSortable();
+            } catch (e) { console.error(e); App.ui.toast("❌ 檔案解析失敗"); }
+            App.ui.showProgress(100);
+        },
+        async renderPage(pdfDoc, num, id) {
+            const page = await pdfDoc.getPage(num);
+            const vp = page.getViewport({ scale: 0.3 });
+            const cv = document.createElement('canvas');
+            cv.width = vp.width; cv.height = vp.height;
+            await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+            App.ui.createCard(App.state.pages.find(p => p.id === id), cv, `P${num}`);
+        },
+        async renderImage(file, id) {
+            const img = new Image(); img.src = URL.createObjectURL(file);
+            await new Promise(r => img.onload = r);
+            const maxW = 300; const sc = maxW / img.width;
+            const cv = document.createElement('canvas');
+            cv.width = maxW; cv.height = img.height * sc;
+            cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+            App.ui.createCard(App.state.pages.find(p => p.id === id), cv, 'IMG');
+            URL.revokeObjectURL(img.src);
+        },
+        rotate(id) {
+            const p = App.state.pages.find(x => x.id === id);
+            if (p) { p.rot = (p.rot + 90) % 360; const cv = document.querySelector(`#${id} canvas`); if(cv) cv.className = `rot-${p.rot}`; }
+        },
+        remove(id) {
+            App.state.pages = App.state.pages.filter(x => x.id !== id);
+            document.getElementById(id).remove();
+            if (App.state.pages.length === 0) App.state.reset();
+        },
+        initSortable() {
+            const el = document.getElementById(`grid-${App.state.mode}`);
+            if (App.state.sortable) App.state.sortable.destroy();
+            App.state.sortable = new Sortable(el, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: () => {
+                    const ids = Array.from(el.children).map(c => c.id);
+                    App.state.pages = ids.map(id => App.state.pages.find(p => p.id === id)).filter(Boolean);
+                }
+            });
+        },
+        async process(mode) {
+            const targets = mode === 'split' ? App.state.pages.filter(p => p.selected) : App.state.pages;
+            if (targets.length === 0) return App.ui.toast(mode === 'split' ? "請先點選頁面 (綠框)" : "無檔案可處理");
+            App.ui.showProgress(20);
+            const { PDFDocument, degrees } = PDFLib;
+            try {
+                if (mode === 'merge') {
+                    const doc = await PDFDocument.create();
+                    for (const p of targets) { await this.addToDoc(doc, p); }
+                    this.download(await doc.save(), `Merged_${Date.now()}.pdf`, 'application/pdf');
+                } else {
+                    const zip = new JSZip();
+                    let count = 0;
+                    for (const p of targets) {
+                        const doc = await PDFDocument.create();
+                        await this.addToDoc(doc, p);
+                        const safeName = (p.name || "doc").replace(/\.pdf$/i, "");
+                        zip.file(`${String(++count).padStart(2,'0')}_${safeName}.pdf`, await doc.save());
+                    }
+                    this.download(await zip.generateAsync({type:'blob'}), `Split_${Date.now()}.zip`, 'application/zip');
+                }
+                App.ui.toast("✅ 處理完成！");
+            } catch (e) { console.error(e); App.ui.toast("❌ 處理失敗，請檢查檔案"); }
+            App.ui.showProgress(100);
+        },
+        async addToDoc(targetDoc, p) {
+            const { PDFDocument, degrees } = PDFLib;
+            const buffer = App.state.buffers[p.fileId];
+            if (p.type === 'pdf') {
+                const src = await PDFDocument.load(buffer);
+                const [page] = await targetDoc.copyPages(src, [p.pIdx]);
+                page.setRotation(degrees(p.rot + (page.getRotation().angle || 0)));
+                targetDoc.addPage(page);
+            } else {
+                const img = p.name.toLowerCase().endsWith('png') ? await targetDoc.embedPng(buffer) : await targetDoc.embedJpg(buffer);
+                const isRotated = p.rot === 90 || p.rot === 270;
+                const dims = isRotated ? { w: img.height, h: img.width } : { w: img.width, h: img.height };
+                const page = targetDoc.addPage([dims.w, dims.h]);
+                let x = 0, y = 0;
+                if (p.rot === 90) x = img.height;
+                else if (p.rot === 180) { x = img.width; y = img.height; }
+                else if (p.rot === 270) y = img.width;
+                page.drawImage(img, { x, y, width: img.width, height: img.height, rotate: degrees(p.rot) });
+            }
+        },
+        download(data, name, type) {
+            const blob = new Blob([data], { type });
+            const url = URL.createObjectURL(blob);
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                window.open(url, '_blank');
+            } else {
+                const a = document.createElement('a'); a.href = url; a.download = name;
+                document.body.appendChild(a); a.click(); a.remove();
+            }
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
         }
-      });
-    },
-    async process(mode) {
-      const targets = mode === 'split' ? App.state.pages.filter(p => p.selected) : App.state.pages;
-      if (targets.length === 0) return App.ui.toast(mode === 'split' ? "請先點選頁面 (綠框)" : "無檔案可處理");
-      App.ui.showProgress(20);
-      const { PDFDocument, degrees } = PDFLib;
-      try {
-        if (mode === 'merge') {
-          const doc = await PDFDocument.create();
-          for (const p of targets) { await this.addToDoc(doc, p); }
-          this.download(await doc.save(), `Merged_${Date.now()}.pdf`, 'application/pdf');
-        } else {
-          const zip = new JSZip();
-          let count = 0;
-          for (const p of targets) {
-            const doc = await PDFDocument.create();
-            await this.addToDoc(doc, p);
-            const safeName = (p.name || "doc").replace(/\.pdf$/i, "");
-            zip.file(`${safeName}_Page${++count}.pdf`, await doc.save());
-          }
-          this.download(await zip.generateAsync({type:'blob'}), `Split_${Date.now()}.zip`, 'application/zip');
-        }
-        App.ui.toast("✅ 處理完成！");
-      } catch (e) { console.error(e); App.ui.toast("❌ 處理失敗，請檢查檔案"); }
-      App.ui.showProgress(100);
-    },
-    async addToDoc(targetDoc, p) {
-      const { PDFDocument, degrees } = PDFLib;
-      const buffer = App.state.buffers[p.fileId];
-      if (p.type === 'pdf') {
-        const src = await PDFDocument.load(buffer);
-        const [page] = await targetDoc.copyPages(src, [p.pIdx]);
-        page.setRotation(degrees(p.rot + (page.getRotation().angle || 0)));
-        targetDoc.addPage(page);
-      } else {
-        const img = p.name.toLowerCase().endsWith('png') ? await targetDoc.embedPng(buffer) : await targetDoc.embedJpg(buffer);
-        const isRotated = p.rot === 90 || p.rot === 270;
-        const dims = isRotated ? { w: img.height, h: img.width } : { w: img.width, h: img.height };
-        const page = targetDoc.addPage([dims.w, dims.h]);
-        let x = 0, y = 0;
-        if (p.rot === 90) x = img.height;
-        else if (p.rot === 180) { x = img.width; y = img.height; }
-        else if (p.rot === 270) y = img.width;
-        page.drawImage(img, { x, y, width: img.width, height: img.height, rotate: degrees(p.rot) });
-      }
-    },
-    download(data, name, type) {
-      const blob = new Blob([data], { type });
-      const url = URL.createObjectURL(blob);
-      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        window.open(url, '_blank');
-      } else {
-        const a = document.createElement('a'); a.href = url; a.download = name;
-        document.body.appendChild(a); a.click(); a.remove();
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
     }
-  }
 };
 App.core.init();
 </script>
