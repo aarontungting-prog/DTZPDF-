@@ -4,275 +4,416 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>DTZ PDF - 專業級 PDF 處理工具</title>
+    <title>DTZ PDF v20.0 - 旗艦 2.0 完結傳說版</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
-            --primary-red: #e74c3c; --primary-green: #2ecc71; --primary-blue: #3498db;
-            --bg-color: #f8fafc; --text-dark: #1e293b; --card-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            --primary-red: #e74c3c; --primary-green: #2ecc71; --primary-blue: #3498db; --primary-yellow: #f1c40f;
+            --bg-color: #f4f7fa; --card-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            margin: 0; background-color: var(--bg-color); color: var(--text-dark); line-height: 1.6;
-        }
-
-        /* 導航與標籤切換 */
-        nav {
-            background: white; padding: 1rem 8%; display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03); position: sticky; top: 0; z-index: 1000;
-        }
-        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary-red); text-decoration: none; letter-spacing: -1px; }
-        .engine-badge { font-size: 0.8rem; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 5px 12px; border-radius: 50px; }
-
-        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; text-align: center; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; margin: 0; background: var(--bg-color); color: #2d3436; }
         
-        .tab-wrapper {
-            display: inline-flex; background: #e2e8f0; padding: 5px; border-radius: 50px; margin-bottom: 30px;
-        }
-        .tab-btn {
-            padding: 10px 30px; border-radius: 50px; border: none; cursor: pointer; font-weight: 700; transition: 0.3s; background: transparent; color: #64748b;
-        }
-        .tab-btn.active { background: white; color: var(--primary-red); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        /* 精密進度條與導航 */
+        #loader-bar { position: fixed; top: 0; left: 0; width: 0%; height: 5px; background: linear-gradient(90deg, var(--primary-red), var(--primary-blue)); z-index: 2001; transition: width 0.3s ease; }
+        nav { background: white; padding: 1rem 8%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 1.6rem; font-weight: 900; color: var(--primary-red); text-decoration: none; }
+        .version-badge { font-size: 0.7rem; background: var(--primary-red); color: white; padding: 3px 10px; border-radius: 50px; margin-left: 8px; }
 
-        /* 工作面板 */
-        .panel { display: none; background: white; padding: 40px; border-radius: 24px; box-shadow: var(--card-shadow); border: 1px solid #f1f5f9; min-height: 450px; }
-        .panel.active { display: block; animation: fadeIn 0.4s; }
+        /* 側邊抽屜導航 */
+        #side-toggle { position: fixed; left: 0; top: 50%; transform: translateY(-50%); background: var(--primary-red); color: white; padding: 20px 8px; border-radius: 0 12px 12px 0; cursor: pointer; z-index: 2000; writing-mode: vertical-lr; font-size: 12px; font-weight: bold; box-shadow: 3px 0 15px rgba(0,0,0,0.1); }
+        .sidebar { position: fixed; left: -280px; top: 90px; width: 240px; height: calc(100vh - 130px); background: white; padding: 20px; box-shadow: 5px 0 25px rgba(0,0,0,0.1); transition: 0.5s cubic-bezier(0.77, 0, 0.175, 1); z-index: 1500; overflow-y: auto; border-radius: 0 25px 25px 0; }
+        .sidebar.open { left: 0; }
+        .side-thumb-wrap { margin-bottom: 18px; border-radius: 12px; border: 3px solid #eee; overflow: hidden; transition: 0.3s; position: relative; background: #fff; cursor: pointer; }
+        .side-thumb-wrap.active { border-color: var(--primary-green); transform: scale(1.02); }
 
-        /* 上傳與卡片 */
-        .upload-area {
-            border: 3px dashed #cbd5e0; border-radius: 20px; padding: 50px 20px; cursor: pointer; transition: 0.3s;
-        }
-        .upload-area:hover { border-color: var(--primary-red); background-color: #fffaf9; }
-        
-        .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 30px; }
-        .page-card { 
-            background: #fff; border: 2px solid #f1f5f9; padding: 10px; border-radius: 12px; position: relative; cursor: pointer; transition: 0.2s; 
-        }
-        .page-card.selected { border-color: var(--primary-green); background: #f0fff4; transform: scale(1.02); }
-        .page-card:hover { border-color: var(--primary-blue); }
-        .page-label { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
-        
-        canvas { max-width: 100%; border-radius: 4px; }
+        /* 主容器與面板 */
+        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; text-align: center; }
+        .work-panel { background: white; padding: 40px; border-radius: 30px; box-shadow: var(--card-shadow); min-height: 550px; display: none; }
+        .work-panel.active { display: block; animation: fadeIn 0.4s; }
+        .tab-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .tab-btn { padding: 12px 25px; border-radius: 50px; border: 2px solid var(--primary-red); background: white; color: var(--primary-red); font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary-red); color: white; box-shadow: 0 8px 15px rgba(231, 76, 60, 0.2); }
+
+        /* 上傳與卡片設計 */
+        .upload-area { border: 3px dashed #cbd5e0; border-radius: 20px; padding: 50px; cursor: pointer; background: #fff; transition: 0.3s; }
+        .upload-area:hover { border-color: var(--primary-red); background: #fffaf9; }
+        .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; margin-top: 30px; }
+        .page-card { background: #fff; border: 2px solid #eee; padding: 12px; border-radius: 18px; position: relative; cursor: grab; transition: 0.3s; }
+        .page-card.selected { border-color: var(--primary-green); background: #f0fff4; }
+        .cv-wrap { display: flex; align-items: center; justify-content: center; min-height: 220px; overflow: hidden; }
+        canvas { max-width: 100%; max-height: 100%; border-radius: 8px; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center center; }
+
+        /* ✅ 旋轉樣式 */
+        .rot-0 { transform: rotate(0deg); } .rot-90 { transform: rotate(90deg); } .rot-180 { transform: rotate(180deg); } .rot-270 { transform: rotate(270deg); }
+        .hidden-search { display: none; }
+
+        /* ✅ 經典三方框美術風格 */
+        .feature-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-top: 80px; text-align: left; }
+        .feature-card { background: white; padding: 30px; border-radius: 20px; box-shadow: var(--card-shadow); border-top: 6px solid transparent; transition: 0.3s; }
+        .f-red { border-top-color: var(--primary-red); } .f-green { border-top-color: var(--primary-green); } .f-yellow { border-top-color: var(--primary-yellow); }
 
         /* 按鈕系統 */
-        .btn-action { 
-            padding: 15px 45px; border-radius: 50px; border: none; font-size: 1.1rem; font-weight: 700; cursor: pointer; color: white; transition: 0.3s; margin: 15px 5px; width: 100%; max-width: 400px;
-        }
-        .btn-green { background: var(--primary-green); box-shadow: 0 6px 15px rgba(46, 204, 113, 0.2); }
-        .btn-blue { background: var(--primary-blue); box-shadow: 0 6px 15px rgba(52, 152, 219, 0.2); }
-        .btn-action:disabled { background: #cbd5e0; cursor: wait; box-shadow: none; }
+        .btn-action { padding: 15px 40px; border-radius: 50px; border: none; font-size: 1.1rem; font-weight: 700; cursor: pointer; color: white; transition: 0.3s; margin: 10px; }
+        .btn-green { background: var(--primary-green); } .btn-blue { background: var(--primary-blue); }
+        .btn-action:disabled { background: #cbd5e0 !important; cursor: wait; }
 
-        /* 美術三方框與 QA */
-        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 60px; text-align: left; }
-        .feature-card { background: white; padding: 25px; border-radius: 18px; box-shadow: var(--card-shadow); border-top: 5px solid transparent; }
-        .f-red { border-top-color: var(--primary-red); } .f-green { border-top-color: var(--primary-green); } .f-blue { border-top-color: var(--primary-blue); }
-        .qa-section { text-align: left; background: white; padding: 40px; border-radius: 24px; margin-top: 60px; box-shadow: var(--card-shadow); }
-        
+        /* Q&A 區塊 */
+        .qa-container { text-align: left; background: white; padding: 45px; border-radius: 30px; margin-top: 80px; box-shadow: var(--card-shadow); }
+        .qa-container h2 { font-size: 2rem; color: var(--primary-red); margin-bottom: 30px; border-left: 8px solid var(--primary-red); padding-left: 20px; }
+        .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .qa-item h4 { color: #2d3436; margin-bottom: 8px; }
+        .qa-item p { color: #636e72; font-size: 0.95rem; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 768px) { .features { grid-template-columns: 1fr; } .tab-btn { padding: 10px 15px; font-size: 0.9rem; } }
-        footer { margin: 60px 0; color: #94a3b8; font-size: 0.85rem; text-align: center; }
+        @media (max-width: 900px) { .feature-matrix, .qa-grid { grid-template-columns: 1fr; } .sidebar { width: 100%; height: 320px; bottom: -450px; top: auto; left: 0; border-radius: 20px 20px 0 0; } .sidebar.open { bottom: 0; } }
+        footer { margin: 80px 0 40px; color: #b2bec3; font-size: 0.9rem; text-align: center; }
     </style>
 </head>
 <body>
 
-    <nav>
-        <a href="#" class="logo">DTZ PDF</a>
-        <div class="engine-badge">端點運算引擎 (Edge Computing Engine) | v25.0</div>
-    </nav>
+<div id="loader-bar"></div>
+<div id="side-toggle">📄 頁面導航</div>
 
-    <div class="container">
-        <div class="tab-wrapper">
-            <button class="tab-btn active" onclick="switchTab('merge')">合併文件</button>
-            <button class="tab-btn" onclick="switchTab('split')">切割頁面</button>
+<aside class="sidebar">
+    <h3 style="color:var(--primary-red); margin-bottom:15px;">🔍 快速跳轉</h3>
+    <input type="text" id="search-input" placeholder="搜尋 PDF 內容..." onkeyup="searchPDF()" style="width:90%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-bottom:20px; font-size:1rem; outline:none;">
+    <div id="side-grid"></div>
+</aside>
+
+<nav>
+    <a href="#" class="logo">DTZ PDF <span class="version-badge">v20.0</span></a>
+    <div style="font-size: 0.85rem; color: #2ecc71; font-weight: bold;">● 最終聖戰：純本地穩定版</div>
+</nav>
+
+<div class="container">
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab(event, 'main')">整理、分割與旋轉</button>
+        <button class="tab-btn" onclick="switchTab(event, 'adv')">高級裝飾與簽名</button>
+        <button class="tab-btn" onclick="switchTab(event, 'safe')">安全與屬性</button>
+    </div>
+
+    <div id="main-panel" class="work-panel active">
+        <div class="upload-area" id="drop-zone">
+            <div style="font-size:55px; margin-bottom: 10px;">📂</div>
+            <h3>點擊或「拖放」多個檔案開始</h3>
+            <p style="color:#94a3b8; font-size:0.9rem;">支援混合 PDF、JPG、PNG 組織與分割</p>
+            <input type="file" id="input-org" multiple hidden accept=".pdf,.jpg,.jpeg,.png">
         </div>
-
-        <div id="panel-merge" class="panel active">
-            <div class="upload-area" onclick="document.getElementById('input-merge').click()">
-                <div style="font-size:50px;">📑</div>
-                <h3>合併 PDF 與圖片</h3>
-                <p style="color:#94a3b8;">將檔案拖放到此處，支援自由排序</p>
-                <input type="file" id="input-merge" multiple hidden accept=".pdf,.jpg,.jpeg,.png">
+        <div id="org-grid" class="page-grid"></div>
+        <div id="org-ctrl" style="display:none; margin-top:40px;">
+            <div style="background:#f8fafc; padding:20px; border-radius:25px; margin-bottom:25px; border:1px solid #e2e8f0;">
+                <strong style="color:#475569;">效率工具：</strong>
+                <button class="tab-btn" style="border-color:#475569; color:#475569;" onclick="rotateAll90()">全部右轉 90°</button>
+                <button class="tab-btn" style="border-color:#8e44ad; color:#8e44ad;" onclick="insertBlank()">加入空白頁</button>
+                <button class="tab-btn" style="background:#94a3b8; color:#fff; border:none;" onclick="location.reload()">全部清空</button>
             </div>
-            <div id="merge-list" class="page-grid"></div>
-            <div id="merge-ctrl" style="display:none; margin-top:30px;">
-                <button class="btn-action btn-green" id="btn-run-merge" onclick="doMerge()">開始合併並下載</button>
+            <button class="btn-action btn-green" id="btn-merge" onclick="processPdf('merge')">合併為單一 PDF</button>
+            <button class="btn-action btn-blue" id="btn-split" onclick="processPdf('split')">所選提取 (ZIP)</button>
+        </div>
+    </div>
+
+    <div id="adv-panel" class="work-panel">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; text-align:left;">
+            <div style="background:#f1f5f9; padding:25px; border-radius:20px;">
+                <h4 style="color:var(--primary-red); margin-top:0;">🛡️ 全局浮水印</h4>
+                <input type="text" id="wm-text" placeholder="內部檔案, 禁止翻印..." style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-bottom:10px;">
+                <div style="font-size:0.8rem;">透明度: <input type="range" id="wm-op" min="0.1" max="1.0" step="0.1" value="0.3" style="width:100%;"></div>
+            </div>
+            <div style="background:#f1f5f9; padding:25px; border-radius:20px;">
+                <h4>🖼️ 高清原圖導出</h4>
+                <p style="font-size:0.85rem; color:#64748b;">選取左方導覽的一頁後，將其轉換為高品質 300DPI 圖片。</p>
+                <button class="btn-action btn-blue" style="width:100%; margin:10px 0;" onclick="exportAsImage()">立即下載選中頁</button>
             </div>
         </div>
-
-        <div id="panel-split" class="panel">
-            <div class="upload-area" onclick="document.getElementById('input-split').click()">
-                <div style="font-size:50px;">✂️</div>
-                <h3>切割 PDF 頁面</h3>
-                <p style="color:#94a3b8;">上傳單份 PDF，點選欲提取的頁面</p>
-                <input type="file" id="input-split" hidden accept=".pdf">
-            </div>
-            <div id="split-grid" class="page-grid"></div>
-            <div id="split-ctrl" style="display:none; margin-top:30px;">
-                <button class="btn-action btn-blue" id="btn-run-split" onclick="doSplit()">提取選中頁面 (ZIP)</button>
-                <p style="font-size:0.8rem; color:#94a3b8;">提示：點擊分頁使其呈現綠框即可提取</p>
-            </div>
+        <hr style="margin:30px 0; border:0; border-top:1px solid #e2e8f0;">
+        <h3>✒️ 高精細電子簽名板</h3>
+        <p style="font-size:0.85rem; color:#e67e22;">● 請在下方簽名，所有「選中 (綠框)」的頁面在匯出時都會自動蓋上此簽名。</p>
+        <div style="background:#2d3436; padding:15px; border-radius:25px; display:inline-block;">
+            <canvas id="sig-canvas" width="1200" height="600" style="background:#fff; touch-action:none; width:400px; height:200px; border-radius:12px; cursor:crosshair;"></canvas>
         </div>
-
-        <div class="features">
-            <div class="feature-card f-red"><h4>🔒 零伺服器</h4><p>所有文件皆在您的瀏覽器內處理，資料絕不離開您的設備。</p></div>
-            <div class="feature-card f-green"><h4>⚡ 分段渲染</h4><p>採用 Chunked Rendering 技術，處理大量頁面依然保持系統流暢。</p></div>
-            <div class="feature-card f-blue"><h4>📱 iOS 優化</h4><p>針對 Safari 環境實作 Blob 橋接，確保 iPhone 使用者能順利存檔。</p></div>
+        <div style="margin-top:20px;">
+            <button class="tab-btn" onclick="clearSig()">清除重簽</button>
+            <button class="btn-action btn-blue" onclick="saveSig()">儲存簽名</button>
         </div>
+    </div>
 
-        <div class="qa-section">
-            <h2 style="color:var(--primary-red); margin-bottom:20px;">操作指南</h2>
-            <div class="qa-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
-                <div><h4>如何重新排序？</h4><p>在「合併文件」模式下，上傳後可直接按住檔案卡片進行拖曳排序。</p></div>
-                <div><h4>如何選取切割頁面？</h4><p>在「切割頁面」模式中，PDF 載入後點擊預覽圖，綠框標示的頁面將被提取。</p></div>
+    <div id="safe-panel" class="work-panel">
+        <div style="max-width:600px; margin:0 auto; text-align:left;">
+            <h3>📝 檔案 Metadata</h3>
+            <input type="text" id="m-title" class="tab-btn" style="width:100%; border-radius:10px;" placeholder="文件標題">
+            <input type="text" id="m-author" class="tab-btn" style="width:100%; border-radius:10px;" placeholder="作者姓名">
+            <hr>
+            <h3>🔒 安全加密與權限</h3>
+            <label>開啟密碼:</label><input type="password" id="p-u" class="tab-btn" style="width:100%; border-radius:10px;" placeholder="不設則留白">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; font-size:0.9rem;">
+                <label><input type="checkbox" id="can-print" checked> 允許列印</label>
+                <label><input type="checkbox" id="can-copy" checked> 允許複製文字</label>
             </div>
         </div>
     </div>
 
-    <footer>&copy; 2026 DTZ PDF ENGINE | 企業級本地文件處理解決方案</footer>
+    <div class="feature-matrix">
+        <div class="feature-card f-red"><h3>🛡️ 安全可靠</h3><p>運算完全在瀏覽器內存進行，檔案不經伺服器。支援軍規級 AES 加密與權限控管。</p></div>
+        <div class="feature-card f-green"><h3>📁 多格式支援</h3><p>處理 PDF 與照片混合排列。具備自動字體縮放與幾何校正技術，確保完美下載。</p></div>
+        <div class="feature-card f-yellow"><h3>🎨 自由排序</h3><p>側邊導覽抽屜支援即時搜尋與定位。物理旋轉累加技術，確保匯出結果角度精確。</p></div>
+    </div>
 
-    <script>
-        const { PDFDocument } = PDFLib;
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        let mergeFiles = [];
-        let splitPages = [];
-        let currentFileBuffer = null;
+    <div class="qa-container">
+        <h2>使用者指南與 Q&A</h2>
+        <div class="qa-grid">
+            <div class="qa-item">
+                <h4>1. iOS (iPhone/iPad) 無法下載？</h4>
+                <p>這是 iOS 安全限制。**請務必在 Safari 瀏覽器中操作**。若在 LINE 或 FB 內建視窗中下載沒反應，請選擇「在瀏覽器開啟」。</p>
+            </div>
+            <div>
+                <h4>2. 「字體自適應」是什麼？</h4>
+                <p>我們引進了自動幾何計算。浮水印文字若過長，系統會自動縮小字級以適配頁面，徹底解決溢出導致的生成失敗問題。</p>
+            </div>
+            <div>
+                <h4>3. 大檔案會閃退嗎？</h4>
+                <p>本版具備「分段呼吸技術」。處理上百頁檔案時會自動釋放主線程壓力，並顯示處理進度。建議分批處理極大檔案。</p>
+            </div>
+            <div>
+                <h4>4. 簽名大小為何看起來很合適？</h4>
+                <p>系統會根據頁面寬度自動進行「幾何重採樣」。簽名固定在頁面寬度的 1/4.5，完美適配 A4 與大型圖紙。</p>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // --- Tab 切換 ---
-        function switchTab(mode) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById(`panel-${mode}`).classList.add('active');
-        }
+<footer>&copy; 2026 DTZ PDF ULTIMATE | 旗艦營運最終版 v20.0</footer>
 
-        // --- 合併邏輯 ---
-        document.getElementById('input-merge').onchange = e => handleMergeFiles(e.target.files);
-        async function handleMergeFiles(files) {
-            for (const file of Array.from(files)) {
-                const id = crypto.randomUUID();
-                const buf = await file.arrayBuffer();
-                const item = { id, file, buf };
-                mergeFiles.push(item);
-                
-                const card = document.createElement('div');
-                card.className = 'page-card';
-                card.id = id;
-                card.innerHTML = `<div><b>${file.name}</b></div><button onclick="removeMerge('${id}')" style="margin-top:10px; cursor:pointer;">移除</button>`;
-                document.getElementById('merge-list').appendChild(card);
-            }
-            document.getElementById('merge-ctrl').style.display = mergeFiles.length > 0 ? 'block' : 'none';
-        }
+<script>
+    const { PDFDocument, degrees, rgb, StandardFonts } = PDFLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        function removeMerge(id) {
-            mergeFiles = mergeFiles.filter(f => f.id !== id);
-            document.getElementById(id).remove();
-            if(mergeFiles.length === 0) document.getElementById('merge-ctrl').style.display = 'none';
-        }
+    let pagesData = []; let fileBuffers = {}; let pdfCache = {}; let sigImage = null; let sigTargetId = null;
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
 
-        async function doMerge() {
-            const btn = document.getElementById('btn-run-merge');
-            btn.disabled = true; btn.innerText = "正在合併...";
-            try {
-                const mergedPdf = await PDFDocument.create();
-                for (const item of mergeFiles) {
-                    if (item.file.type === 'application/pdf') {
-                        const pdf = await PDFDocument.load(item.buf);
-                        const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                        pages.forEach(p => mergedPdf.addPage(p));
-                    } else {
-                        const img = item.file.type.includes('png') ? await mergedPdf.embedPng(item.buf) : await mergedPdf.embedJpg(item.buf);
-                        const page = mergedPdf.addPage([img.width, img.height]);
-                        page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
-                    }
+    function download(data, filename, type) {
+        const blob = data instanceof Blob ? data : new Blob([data], {type});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+    }
+
+    // 檔案上傳
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.onclick = () => document.getElementById('input-org').click();
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+    dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+    dropZone.ondrop = (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); };
+    document.getElementById('input-org').onchange = (e) => handleFiles(e.target.files);
+
+    async function handleFiles(files) {
+        updateProgress(10);
+        const titleInput = document.getElementById('m-title');
+        if (!titleInput.value && files.length > 0) titleInput.value = files[0].name.split('.')[0];
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fId = crypto.randomUUID();
+            const buf = await file.arrayBuffer();
+            fileBuffers[fId] = buf;
+            if (file.name.toLowerCase().endsWith('.pdf')) {
+                const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+                for (let j = 1; j <= pdf.numPages; j++) {
+                    const pId = crypto.randomUUID();
+                    const page = await pdf.getPage(j);
+                    const txt = (await page.getTextContent()).items.map(s => s.str).join(' ');
+                    pagesData.push({ fId, pIdx: j-1, rot: 0, pId, type: 'pdf', selected: false, text: txt, fileName: file.name });
+                    await renderThumb(page, pId, j);
+                    if (j % 5 === 0) await new Promise(r => setTimeout(r, 0));
                 }
-                const bytes = await mergedPdf.save();
-                triggerDownload(bytes, "Merged_Document.pdf", "application/pdf");
-            } catch (e) { alert("合併失敗"); }
-            btn.disabled = false; btn.innerText = "開始合併並下載";
-        }
-
-        // --- 切割邏輯 ---
-        document.getElementById('input-split').onchange = e => handleSplitFile(e.target.files[0]);
-        async function handleSplitFile(file) {
-            if(!file) return;
-            const grid = document.getElementById('split-grid');
-            grid.innerHTML = "正在解析頁面...";
-            splitPages = [];
-            currentFileBuffer = await file.arrayBuffer();
-            
-            const pdf = await pdfjsLib.getDocument({ data: currentFileBuffer }).promise;
-            grid.innerHTML = "";
-            
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const vp = page.getViewport({ scale: 0.3 });
-                const cv = document.createElement('canvas');
-                cv.width = vp.width; cv.height = vp.height;
-                await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-                
-                const card = document.createElement('div');
-                card.className = 'page-card';
-                card.innerHTML = `<div class="page-label">P${i}</div>`;
-                card.appendChild(cv);
-                card.onclick = () => {
-                    card.classList.toggle('selected');
-                    const idx = i - 1;
-                    if(splitPages.includes(idx)) splitPages = splitPages.filter(v => v !== idx);
-                    else splitPages.push(idx);
-                };
-                grid.appendChild(card);
-                if(i % 10 === 0) await new Promise(r => setTimeout(r, 0)); // 呼吸點
-            }
-            document.getElementById('split-ctrl').style.display = 'block';
-        }
-
-        async function doSplit() {
-            if(splitPages.length === 0) return alert("請先點選欲提取的頁面");
-            const btn = document.getElementById('btn-run-split');
-            btn.disabled = true;
-            
-            const zip = new JSZip();
-            const srcDoc = await PDFDocument.load(currentFileBuffer);
-            
-            for (let i = 0; i < splitPages.length; i++) {
-                const newPdf = await PDFDocument.create();
-                const [page] = await newPdf.copyPages(srcDoc, [splitPages[i]]);
-                newPdf.addPage(page);
-                const bytes = await newPdf.save();
-                zip.file(`Extract_Page_${splitPages[i]+1}.pdf`, bytes);
-            }
-            
-            const content = await zip.generateAsync({type:"blob"});
-            triggerDownload(content, "Extracted_Pages.zip", "application/zip");
-            btn.disabled = false;
-        }
-
-        // --- 共用下載器 ---
-        function triggerDownload(data, name, type) {
-            const blob = data instanceof Blob ? data : new Blob([data], {type});
-            const url = URL.createObjectURL(blob);
-            if (isIOS && type === "application/pdf") {
-                window.open(url, '_blank');
             } else {
-                const a = document.createElement('a'); a.href = url; a.download = name;
-                document.body.appendChild(a); a.click(); a.remove();
+                const pId = crypto.randomUUID();
+                pagesData.push({ fId, pIdx: 0, rot: 0, pId, type: 'img', file, selected: false, text:'', fileName: file.name });
+                renderImgThumb(file, pId);
             }
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
         }
+        document.getElementById('org-ctrl').style.display = 'block';
+        if(pagesData.length > 5) document.getElementById('side-toggle').style.display = 'block';
+        updateProgress(0);
+    }
 
-        // 初始化拖曳排序 (僅限合併列表)
-        new Sortable(document.getElementById('merge-list'), {
-            animation: 150,
-            onEnd: () => {
-                const ids = Array.from(document.getElementById('merge-list').children).map(el => el.id);
-                mergeFiles.sort((a,b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    async function renderThumb(page, pId, pNum) {
+        const vp = page.getViewport({ scale: 0.3 });
+        const cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height;
+        await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+        createCard(cv, pId, `P${pNum}`);
+    }
+
+    function renderImgThumb(file, pId) {
+        const url = URL.createObjectURL(file);
+        const img = new Image(); img.src = url;
+        img.onload = () => {
+            const cv = document.createElement('canvas'); 
+            const maxW = 150; const sc = maxW / img.width;
+            cv.width = maxW; cv.height = img.height * sc;
+            cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+            createCard(cv, pId, '圖'); URL.revokeObjectURL(url);
+        };
+    }
+
+    function createCard(cv, pId, label) {
+        const card = document.createElement('div'); card.className = 'page-card'; card.id = pId;
+        card.innerHTML = `<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:2px 6px;border-radius:4px;z-index:10;">${label}</div><div class="cv-wrap"></div><div style="margin-top:8px;display:flex;justify-content:center;gap:5px;"><button class="tab-btn" style="font-size:10px;padding:5px 10px;" onclick="event.stopPropagation(); rotateP('${pId}')">旋轉</button><button class="tab-btn" style="font-size:10px;padding:5px 10px;" onclick="event.stopPropagation(); delP('${pId}')">刪除</button></div>`;
+        card.querySelector('.cv-wrap').appendChild(cv);
+        card.onclick = () => toggleSelect(pId);
+        document.getElementById('org-grid').appendChild(card);
+        const sideWrap = document.createElement('div'); sideWrap.className = 'side-thumb-wrap'; sideWrap.id = 'side-wrap-'+pId;
+        const scv = document.createElement('canvas'); scv.id = 'side-'+pId; scv.width = cv.width; scv.height = cv.height; scv.style.width = '100%'; scv.getContext('2d').drawImage(cv, 0, 0);
+        scv.onclick = () => document.getElementById(pId).scrollIntoView({behavior:'smooth'});
+        sideWrap.appendChild(scv); document.getElementById('side-grid').appendChild(sideWrap);
+    }
+
+    function toggleSelect(pId) {
+        const p = pagesData.find(x => x.pId === pId); p.selected = !p.selected;
+        document.getElementById(pId).classList.toggle('selected');
+        document.getElementById('side-wrap-'+pId).classList.toggle('active');
+        sigTargetId = pId;
+    }
+
+    // --- 💎 究極穩定的處理引擎 ---
+    async function processPdf(mode) {
+        updateProgress(10);
+        const zip = mode === 'split' ? new JSZip() : null;
+        try {
+            const mainDoc = mode === 'merge' ? await PDFDocument.create() : null;
+            let mainFont = null;
+            if (mainDoc) {
+                mainFont = await mainDoc.embedFont(StandardFonts.HelveticaBold);
+                mainDoc.setTitle(document.getElementById('m-title').value || "DTZ Merged");
             }
+
+            const list = mode === 'split' ? pagesData.filter(p => p.selected) : pagesData;
+            if(!list.length) return alert('清單為空');
+
+            for (let i = 0; i < list.length; i++) {
+                const p = list[i];
+                let curDoc = mode === 'merge' ? mainDoc : await PDFDocument.create();
+                const curFont = mode === 'merge' ? mainFont : await curDoc.embedFont(StandardFonts.HelveticaBold);
+                if (mode === 'split') curDoc.setTitle(`Split_P${i+1}`);
+
+                let newPage;
+                if (p.type === 'pdf') {
+                    if (!pdfCache[p.fId]) pdfCache[p.fId] = await PDFDocument.load(fileBuffers[p.fId]);
+                    const [copy] = await curDoc.copyPages(pdfCache[p.fId], [p.pIdx]);
+                    copy.setRotation(degrees((p.rot + (copy.getRotation().angle || 0)) % 360));
+                    newPage = curDoc.addPage(copy);
+                } else if (p.type === 'img') {
+                    const img = await curDoc.embedPng(await p.file.arrayBuffer());
+                    newPage = curDoc.addPage([img.width, img.height]);
+                    newPage.drawImage(img, { x:0, y:0, width:img.width, height:img.height, rotate:degrees(p.rot) });
+                } else {
+                    newPage = curDoc.addPage([595, 842]);
+                }
+
+                // ✅ 幾何校正浮水印
+                const wm = document.getElementById('wm-text').value;
+                if(wm) {
+                    const { width, height } = newPage.getSize();
+                    const maxWidth = width * 0.7;
+                    let fontSize = width / 12;
+                    while (curFont.widthOfTextAtSize(wm, fontSize) > maxWidth && fontSize > 10) fontSize -= 2;
+                    const textWidth = curFont.widthOfTextAtSize(wm, fontSize);
+                    newPage.drawText(wm, { x: width/2 - textWidth/2, y: height/2, size: fontSize, font: curFont, color: rgb(0.85, 0.85, 0.85), opacity: parseFloat(document.getElementById('wm-op').value), rotate: degrees(35) });
+                }
+
+                // ✅ 批量簽名插入
+                if (p.selected && sigImage) {
+                    const sig = await curDoc.embedPng(sigImage);
+                    const { width: pageW } = newPage.getSize();
+                    const sW = pageW / 4.5; const sH = sW * (sig.height / sig.width);
+                    newPage.drawImage(sig, { x: pageW - sW - 40, y: 40, width: sW, height: sH });
+                }
+
+                if (mode === 'split') zip.file(`Page_${i+1}.pdf`, await curDoc.save());
+                updateProgress(10 + (85 * (i/list.length)));
+                if (i % 8 === 0) await new Promise(r => setTimeout(r, 0));
+            }
+
+            const saveOpts = { userPassword: document.getElementById('p-u').value || undefined, permissions: { printing: !!document.getElementById('can-print').checked, copying: !!document.getElementById('can-copy').checked } };
+            if (mode === 'merge') {
+                const bytes = await mainDoc.save(saveOpts);
+                if (isMobile) { window.open(URL.createObjectURL(new Blob([bytes], {type:'application/pdf'}))); }
+                else { download(bytes, `${document.getElementById('m-title').value}.pdf`, 'application/pdf'); }
+            } else {
+                download(await zip.generateAsync({type:'blob', compression: "DEFLATE"}), `DTZ_Splits.zip`, 'application/zip');
+            }
+        } catch (e) { alert("處理失敗"); }
+        updateProgress(0);
+    }
+
+    async function exportAsImage() {
+        const p = pagesData.find(x => x.pId === sigTargetId);
+        if(!p) return alert("請先選取一頁頁面");
+        updateProgress(50);
+        const cv = document.createElement('canvas'); const ctx = cv.getContext('2d');
+        if (p.type === 'pdf') {
+            const pdf = await pdfjsLib.getDocument({ data: fileBuffers[p.fId] }).promise;
+            const page = await pdf.getPage(p.pIdx + 1);
+            const vp = page.getViewport({ scale: 4.5, rotation: p.rot });
+            cv.width = vp.width; cv.height = vp.height;
+            await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        } else {
+            const img = new Image(); img.src = URL.createObjectURL(p.file);
+            await new Promise(r => img.onload = r);
+            if (p.rot % 180 !== 0) { cv.width = img.naturalHeight; cv.height = img.naturalWidth; } 
+            else { cv.width = img.naturalWidth; cv.height = img.naturalHeight; }
+            ctx.translate(cv.width/2, cv.height/2); ctx.rotate(p.rot * Math.PI / 180);
+            ctx.drawImage(img, -img.naturalWidth/2, -img.naturalHeight/2);
+        }
+        cv.toBlob(b => { download(b, `DTZ_HD_Export.jpg`, 'image/jpeg'); updateProgress(0); }, 'image/jpeg', 0.98);
+    }
+
+    function rotateAll90() { pagesData.forEach(p => rotateP(p.pId)); }
+    function rotateP(pId) {
+        const p = pagesData.find(x => x.pId === pId); p.rot = (p.rot + 90) % 360;
+        ['canvas', 'side-'+pId].forEach(elId => {
+            const el = document.getElementById(elId); if(!el) return;
+            const cv = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
+            cv.classList.remove('rot-0','rot-90','rot-180','rot-270'); cv.classList.add(`rot-${p.rot}`);
         });
-    </script>
+    }
+
+    function delP(pId) { pagesData = pagesData.filter(x => x.pId !== pId); document.getElementById(pId).remove(); document.getElementById('side-wrap-'+pId).remove(); }
+    function insertBlank() { 
+        const pId = crypto.randomUUID(); 
+        pagesData.push({ pId, type:'blank', rot:0, selected:false, text:'', fileName:'blank.pdf' }); 
+        const cv = document.createElement('canvas'); cv.width=150; cv.height=210; 
+        const ctx = cv.getContext('2d'); ctx.fillStyle="white"; ctx.fillRect(0,0,150,210); 
+        createCard(cv, pId, '空白頁'); 
+    }
+
+    function searchPDF() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        pagesData.forEach(p => {
+            const el = document.getElementById(p.pId); const side = document.getElementById('side-wrap-'+p.pId);
+            const match = p.type === 'img' || p.text.toLowerCase().includes(q);
+            el.classList.toggle('hidden-search', !match); side.style.display = match ? 'block' : 'none';
+        });
+    }
+    const sigCanvas = document.getElementById('sig-canvas'); const sCtx = sigCanvas.getContext('2d'); let drawing = false;
+    function getXY(e) { const rect = sigCanvas.getBoundingClientRect(); return { x: ((e.clientX || (e.touches && e.touches[0].clientX)) - rect.left) * (1200/rect.width), y: ((e.clientY || (e.touches && e.touches[0].clientY)) - rect.top) * (600/rect.height) }; }
+    sigCanvas.onmousedown = sigCanvas.ontouchstart = (e) => { drawing = true; const p = getXY(e); sCtx.lineWidth = 5; sCtx.lineCap = 'round'; sCtx.beginPath(); sCtx.moveTo(p.x, p.y); e.preventDefault(); };
+    sigCanvas.onmousemove = sigCanvas.ontouchmove = (e) => { if(!drawing) return; const p = getXY(e); sCtx.lineTo(p.x, p.y); sCtx.stroke(); };
+    window.onmouseup = window.ontouchend = () => drawing = false;
+    function clearSig() { sCtx.clearRect(0,0,1200,600); }
+    function saveSig() { sigImage = sigCanvas.toDataURL(); alert('簽名已儲存。'); }
+    function switchTab(evt, tab) { document.querySelectorAll('.work-panel').forEach(p => p.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(tab + '-panel').classList.add('active'); evt.currentTarget.classList.add('active'); }
+    function updateProgress(v) { document.getElementById('loader-bar').style.width = v + '%'; }
+    document.getElementById('side-toggle').onclick = (e) => { e.stopPropagation(); document.querySelector('.sidebar').classList.toggle('open'); };
+    document.addEventListener('click', () => document.querySelector('.sidebar').classList.remove('open'));
+    new Sortable(document.getElementById('org-grid'), { animation: 150, onEnd: () => {
+        const order = Array.from(document.getElementById('org-grid').children).map(c => c.id);
+        pagesData.sort((a,b) => order.indexOf(a.pId) - order.indexOf(b.pId));
+        order.forEach(id => document.getElementById('side-grid').appendChild(document.getElementById('side-wrap-'+id)));
+    }});
+</script>
 </body>
 </html>
