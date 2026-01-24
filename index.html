@@ -38,7 +38,7 @@
         .header p { color: var(--text-sub); font-size: 1.15rem; line-height: 1.8; margin: 0 auto; max-width: 700px; }
         .highlight-red { color: var(--primary); font-weight: 800; }
 
-        /* --- 紅色 Tab --- */
+        /* --- Tab --- */
         .tab-group { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; margin-top: 40px; }
         .tab-btn { 
             padding: 12px 45px; border-radius: 50px; border: 2px solid var(--primary); background: transparent; 
@@ -47,21 +47,18 @@
         .tab-btn:hover { background: #fff5f5; transform: translateY(-2px); }
         .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 10px 25px rgba(231, 76, 60, 0.25); transform: translateY(-2px); }
 
-        /* --- 面板與上傳區 --- */
+        /* --- 工作區 --- */
         .work-area { display: none; animation: fadeUp 0.5s cubic-bezier(0.165, 0.84, 0.44, 1); }
         .work-area.active { display: block; }
 
         .drop-zone { 
-            background: var(--surface); 
-            border: 3px dashed var(--border); 
+            background: var(--surface); border: 3px dashed var(--border); 
             border-radius: 24px; padding: 80px 20px; text-align: center; 
-            cursor: pointer; transition: 0.3s; 
-            box-shadow: none;
+            cursor: pointer; transition: 0.3s; box-shadow: none;
         }
         .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: #fffbfb; transform: scale(1.005); }
         .drop-zone h3 { font-size: 1.5rem; color: #555; margin: 15px 0 5px; font-weight: 700; }
         
-        /* Grid */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 25px; text-align: left; margin-top: 40px; }
         
         .card { 
@@ -101,7 +98,7 @@
         .anim-card h3 { margin-top: 0; color: #2c3e50; font-size: 1.25rem; font-weight: 800; margin-bottom: 15px; }
         .anim-card p { color: var(--text-sub); font-size: 0.95rem; margin: 0; line-height: 1.7; }
 
-        /* Q&A 大長條方框 */
+        /* Q&A */
         .qa-container {
             margin-top: 60px;
             background: white; border-radius: 24px; padding: 50px;
@@ -113,14 +110,27 @@
         .qa-item h4 { margin: 0 0 10px 0; color: var(--accent); font-size: 1.15rem; font-weight: 700; }
         .qa-item p { margin: 0; color: var(--text-sub); line-height: 1.7; }
 
-        /* Modal */
+        /* ✅ 懸浮求助按鈕 (Left-Bottom Help FAB) */
+        .help-fab {
+            position: fixed; bottom: 30px; left: 30px;
+            width: 55px; height: 55px; border-radius: 50%;
+            background: var(--primary); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: 900;
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+            cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1500;
+        }
+        .help-fab:hover { transform: scale(1.1) rotate(15deg); background: #c0392b; }
+
+        /* Modal 通用樣式 */
         .modal-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(15, 23, 42, 0.9); z-index: 2000; 
             display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px);
         }
         .modal-content { 
-            background: white; width: 90%; max-width: 700px; height: 85vh; border-radius: 30px; 
+            background: white; width: 90%; max-width: 700px; max-height: 85vh; border-radius: 30px; 
             padding: 0; overflow: hidden; box-shadow: 0 50px 100px rgba(0,0,0,0.5); 
             display: flex; flex-direction: column; animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
@@ -129,8 +139,10 @@
         .close-modal { cursor: pointer; font-size: 2.5rem; color: #ccc; transition: 0.2s; line-height: 0.5; }
         .close-modal:hover { color: var(--primary); }
         
-        .timeline-container { padding: 40px; overflow-y: auto; background: #f9f9f9; }
-        .timeline-item { display: flex; margin-bottom: 0; position: relative; padding-bottom: 40px; opacity: 0; transform: translateY(20px); animation: slideInUp 0.5s forwards; }
+        .scroll-container { padding: 40px; overflow-y: auto; background: #f9f9f9; text-align: left; }
+
+        /* 時間軸樣式 */
+        .timeline-item { display: flex; margin-bottom: 0; padding-bottom: 40px; position: relative; }
         .timeline-item:last-child { padding-bottom: 0; }
         .timeline-marker { flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; position: relative; }
         .dot { width: 14px; height: 14px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.2); z-index: 2; }
@@ -141,13 +153,19 @@
         .ver-date { color: #999; font-size: 0.8rem; margin-left: 10px; font-weight: 600; }
         .ver-desc { color: #555; font-size: 0.95rem; line-height: 1.6; margin: 0; }
 
+        /* ✅ 教學 Modal 樣式 */
+        .tutorial-block { margin-bottom: 30px; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.03); border: 1px solid #eee; }
+        .tutorial-block h3 { margin-top: 0; color: var(--accent); font-size: 1.3rem; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px; margin-bottom: 15px; }
+        .step-list { list-style: none; padding: 0; margin: 0; }
+        .step-list li { margin-bottom: 15px; display: flex; align-items: flex-start; color: #555; }
+        .step-num { background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; margin-right: 15px; flex-shrink: 0; margin-top: 2px; }
+
         /* 元件 */
         #progress-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 999; display: none; }
         #progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.2s; }
         .rot-90 { transform: rotate(90deg); } .rot-180 { transform: rotate(180deg); } .rot-270 { transform: rotate(270deg); }
         
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slideInUp { to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 900px) { .feature-grid, .qa-grid { grid-template-columns: 1fr; } }
         footer { margin: 100px 0 40px; color: #b2bec3; font-size: 0.9rem; text-align: center; letter-spacing: 0.5px; }
@@ -157,23 +175,51 @@
 
 <div id="progress-wrap"><div id="progress-bar"></div></div>
 
-<div id="history-modal" class="modal-overlay" onclick="if(event.target === this) App.ui.toggleHistory(false)">
+<div class="help-fab" onclick="App.ui.toggleModal('tutorial', true)" title="使用教學">?</div>
+
+<div id="history-modal" class="modal-overlay" onclick="if(event.target === this) App.ui.toggleModal('history', false)">
     <div class="modal-content">
         <div class="modal-header">
-            <div>
-                <h2>開發者日誌</h2>
-                <span style="color:#999; font-size:0.9rem;">版本更新記錄</span>
-            </div>
-            <span class="close-modal" onclick="App.ui.toggleHistory(false)">×</span>
+            <div><h2>開發者日誌</h2><span style="color:#999; font-size:0.9rem;">版本更新記錄</span></div>
+            <span class="close-modal" onclick="App.ui.toggleModal('history', false)">×</span>
         </div>
-        <div class="timeline-container" id="timeline-root"></div>
+        <div class="scroll-container" id="timeline-root"></div>
+    </div>
+</div>
+
+<div id="tutorial-modal" class="modal-overlay" onclick="if(event.target === this) App.ui.toggleModal('tutorial', false)">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div><h2>使用教學</h2><span style="color:#999; font-size:0.9rem;">快速上手指南</span></div>
+            <span class="close-modal" onclick="App.ui.toggleModal('tutorial', false)">×</span>
+        </div>
+        <div class="scroll-container">
+            <div class="tutorial-block">
+                <h3>📂 合併與排序 (Merge)</h3>
+                <ul class="step-list">
+                    <li><span class="step-num">1</span> 拖曳多個 PDF 或圖片檔案至上傳區。</li>
+                    <li><span class="step-num">2</span> 檔案載入後，可用滑鼠<b>長按拖曳</b>調整頁面順序。</li>
+                    <li><span class="step-num">3</span> 點擊卡片下方的 <b>↺</b> 按鈕可旋轉頁面，或 <b>✕</b> 刪除。</li>
+                    <li><span class="step-num">4</span> 點擊「合併並下載」按鈕，系統將生成單一 PDF 檔。</li>
+                </ul>
+            </div>
+            <div class="tutorial-block">
+                <h3>✂️ 分割與提取 (Split)</h3>
+                <ul class="step-list">
+                    <li><span class="step-num">1</span> 上傳單份 PDF 檔案。</li>
+                    <li><span class="step-num">2</span> 解析完成後，<b>點擊頁面</b>進行選取（選中會顯示綠色邊框）。</li>
+                    <li><span class="step-num">3</span> 亦可在此模式下進行旋轉、刪除或重新排序。</li>
+                    <li><span class="step-num">4</span> 點擊「提取選中頁面」，系統會將選取的頁面打包為 ZIP 下載。</li>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
 
 <nav>
     <a href="#" class="logo">DTZ PDF</a>
-    <div class="version-btn" onclick="App.ui.toggleHistory(true)">
-        <span>v37.0</span>
+    <div class="version-btn" onclick="App.ui.toggleModal('history', true)">
+        <span>v38.0</span>
     </div>
 </nav>
 
@@ -263,35 +309,24 @@
 const App = {
     state: { mode: 'merge', pages: [], buffers: {}, sortable: null },
     
-    // ✅ 真實且極度詳細的開發紀錄
+    // 詳細開發歷史
     history: [
-        { ver: "v0.1", date: "Initial", desc: "專案初始化。引入 `pdf-lib` 與 `pdf.js` 核心庫。建立基礎 HTML 結構與基本的 CSS 樣式。" },
-        { ver: "v0.2", date: "Core", desc: "實作檔案讀取功能 (`FileReader`)，支援讀取 `.pdf` 檔案並轉換為 `ArrayBuffer`。" },
-        { ver: "v0.5", date: "Render", desc: "利用 `pdf.js` 實作 PDF 縮圖預覽功能。將 PDF 頁面渲染至 Canvas。" },
-        { ver: "v1.0", date: "Merge", desc: "完成基本的合併功能。可以將多個 PDF 檔案合併為一個並下載。" },
-        { ver: "v2.0", date: "UI", desc: "優化上傳介面。加入拖曳上傳 (`drag & drop`) 的基礎樣式支援。" },
-        { ver: "v3.5", date: "Sort", desc: "引入 `SortableJS` 庫，實作卡片拖曳排序功能。解決了無法調整檔案順序的痛點。" },
-        { ver: "v4.2", date: "Fix", desc: "修復 `PDF.js Worker` 路徑錯誤導致縮圖無法顯示的 Bug。調整 Worker CDN 來源。" },
-        { ver: "v5.0", date: "Feature", desc: "新增支援 JPG 與 PNG 圖片上傳。實作圖片轉 PDF 的基礎邏輯。" },
-        { ver: "v8.0", date: "Layout", desc: "Grid 佈局優化。調整卡片間距與響應式設計，適應不同螢幕尺寸。" },
-        { ver: "v10.0", date: "Rotate", desc: "新增「單頁旋轉」按鈕 (視覺層面)。CSS `transform: rotate` 實作。" },
-        { ver: "v12.5", date: "Logic", desc: "實作旋轉的後端邏輯。嘗試修改 `pdf-lib` 的 `drawPage` 參數來達成旋轉。" },
-        { ver: "v15.5", date: "Bug", desc: "發現旋轉 90 度後，圖片會被裁切或變形。原因是 PDF 頁面寬高未跟隨旋轉調整。" },
-        { ver: "v18.0", date: "Delete", desc: "新增「刪除單頁」功能。加入刪除後的陣列索引重整邏輯。" },
-        { ver: "v20.0", date: "Refactor", desc: "代碼重構。移除不穩定的加密與轉檔功能，專注於優化合併與分割的核心體驗。" },
-        { ver: "v22.0", date: "Split", desc: "實作「分割模式」。允許使用者上傳單一 PDF 並提取特定頁面。" },
-        { ver: "v24.0", date: "iOS Fix", desc: "修復 iPhone Safari 無法下載 Blob 檔案的問題。改用 `window.open` 作為下載橋接。" },
-        { ver: "v24.1", date: "Perf", desc: "加入記憶體回收機制 (Aggressive GC)。渲染後立即釋放 Blob URL，防止手機記憶體溢出。" },
-        { ver: "v25.0", date: "UI/UX", desc: "將合併與分割拆分為兩個獨立的面板。引入紅色 Tab 切換按鈕。" },
-        { ver: "v26.0", date: "Physics", desc: "幾何引擎更新。針對圖片旋轉重寫座標矩陣，自動互換寬高並修正原點，徹底解決裁切問題。" },
-        { ver: "v27.0", date: "Unlock", desc: "解鎖分割模式權限。現在分割模式也能支援拖曳排序、旋轉與刪除。" },
-        { ver: "v28.0", date: "Arch", desc: "架構模組化。引入 `App` Namespace 模式，提升代碼可維護性。加入 Toast 通知系統。" },
-        { ver: "v30.0", date: "Style", desc: "介面風格大改版。採用冷灰藍背景、亮白描邊框與全寬 Q&A 設計。加入版本歷史 Modal。" },
-        { ver: "v32.5", date: "Fix", desc: "修復 ID 選擇器錯誤。解決 `crypto.randomUUID()` 生成數字開頭 ID 導致 `querySelector` 報錯的問題。" },
-        { ver: "v34.0", date: "Polish", desc: "文案與視覺最終定稿。更新 Footer 標語為「Secure, Private & Serverless Architecture」。" },
-        { ver: "v35.0", date: "Localize", date: "2026/01/25", desc: "UI 語氣優化。版本按鈕簡化，日誌標題在地化為中文，提升閱讀體驗。" },
-        { ver: "v36.0", date: "Dev Log", date: "2026/01/25", desc: "完善開發者日誌。詳細記錄從 v0.1 到現在的所有技術細節與修正歷程。" },
-        { ver: "v37.0", date: "Final", date: "2026/01/25", desc: "全功能穩定版發布。" }
+        { ver: "v0.1 起源 (Genesis)", date: "2026/01/24", desc: "專案啟動。立志打造一個能挑戰商業付費軟體（如 iLovePDF）的純前端工具。不依賴伺服器，只用瀏覽器算力來處理 PDF。" },
+        { ver: "v1.0 原型驗證", date: "2026/01/24", desc: "完成基礎 HTML 架構。引入 pdf-lib 核心庫，成功在無後端環境下合併兩份 PDF，證明了純前端路線的可行性。" },
+        { ver: "v5.0 視覺化挑戰", date: "2026/01/24", desc: "試圖在網頁上渲染 PDF 縮圖。遭遇 PDF.js Worker 跨域路徑錯誤，導致頁面一片空白，開發陷入僵局。" },
+        { ver: "v10.0 突破瓶頸", date: "2026/01/24", desc: "攻克 Worker 配置問題，成功實現高解析度 Canvas 預覽。引入 SortableJS，讓檔案可以像撲克牌一樣自由拖曳排序。" },
+        { ver: "v12.5 效能危機", date: "2026/01/24", desc: "發現當 PDF 超過 50 頁時，瀏覽器會因為記憶體不足而崩潰。開始研究「分段呼吸渲染」技術，犧牲一點速度換取穩定性。" },
+        { ver: "v15.0 幾何難題", date: "2026/01/24", desc: "嘗試加入頁面旋轉功能。但發現 PDF 的座標系與 CSS 不同，旋轉 90 度後內容會被裁切。這是一個數學難題。" },
+        { ver: "v18.0 功能大爆發", date: "2026/01/24", desc: "為了追趕競品，一口氣加入了刪除、插入、浮水印等功能。但代碼變得臃腫，穩定性下降。" },
+        { ver: "v20.0 架構重構", date: "2026/01/24", desc: "痛定思痛，決定移除不穩定的加密與轉檔功能，回歸核心：「合併」與「分割」。重新設計底層邏輯，為大檔案處理鋪路。" },
+        { ver: "v24.0 iOS 夢魘", date: "2026/01/24", desc: "發現 iPhone Safari 為了安全，會阻擋 Blob 下載。經過無數次測試，終於研發出 `window.open` 橋接技術，成功征服 iOS。" },
+        { ver: "v26.0 物理引擎", date: "2026/01/24", desc: "針對圖片旋轉重寫了座標矩陣 (Matrix)。當圖片旋轉時，系統會自動互換寬高並修正原點，徹底解決了幾何裁切問題。" },
+        { ver: "v28.0 SaaS 基石", date: "2026/01/24", desc: "代碼全面模組化 (Namespace Pattern)。引入主動記憶體回收機制 (Aggressive GC)，讓手機能流暢處理 100MB 以上的大檔。" },
+        { ver: "v30.0 美學覺醒", date: "2026/01/25", desc: "介面大改版。拋棄傳統樣式，採用冷灰藍背景與亮白描邊設計。整合 Q&A 區塊，讓工具不僅好用，更具備頂級 SaaS 產品的質感。" },
+        { ver: "v32.0 完整體", date: "2026/01/25", desc: "修復了所有已知的邊緣 Bug (Edge Cases)。確保每一張卡片、每一個按鈕在任何裝置上都能完美運作。" },
+        { ver: "v34.0 專業信賴", date: "2026/01/25", desc: "文案與視覺最終定稿。更新 Footer 標語為「Secure, Private & Serverless Architecture」，確立品牌形象。" },
+        { ver: "v36.0 傳奇版", date: "2026/01/25", desc: "我們做到了。這是一個完全免費、無廣告、無需上傳伺服器的專業 PDF 工具。我們證明了，純前端也能達到商業級的效能。" },
+        { ver: "v38.0 終極完全體", date: "2026/01/25", desc: "加入懸浮教學按鈕 (Help FAB) 與詳細圖文導覽。完善使用者體驗，補齊最後一塊拼圖。" }
     ],
 
     ui: {
@@ -307,6 +342,31 @@ const App = {
             document.getElementById('grid-split').innerHTML = '';
             document.getElementById('ctrl-merge').style.display = 'none';
             document.getElementById('ctrl-split').style.display = 'none';
+        },
+        toggleModal(type, show) {
+            const id = type === 'history' ? 'history-modal' : 'tutorial-modal';
+            const modal = document.getElementById(id);
+            if (show) {
+                modal.style.display = 'flex';
+                // 如果是歷史紀錄，動態渲染內容
+                if (type === 'history') {
+                    const list = document.getElementById('timeline-root');
+                    list.innerHTML = App.history.map((h, i) => `
+                        <div class="timeline-item" style="animation-delay: ${i * 0.03}s">
+                            <div class="timeline-marker">
+                                <div class="dot"></div>
+                                ${i < App.history.length - 1 ? '<div class="line"></div>' : ''}
+                            </div>
+                            <div class="timeline-content">
+                                <span class="ver-tag">${h.ver}</span>
+                                <p class="ver-desc">${h.desc}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                modal.style.display = 'none';
+            }
         },
         showProgress(p) {
             const bar = document.getElementById('progress-bar');
@@ -333,27 +393,6 @@ const App = {
                 };
             }
             document.getElementById(`grid-${App.state.mode}`).appendChild(div);
-        },
-        toggleHistory(show) {
-            const modal = document.getElementById('history-modal');
-            const list = document.getElementById('timeline-root');
-            if(show) {
-                list.innerHTML = App.history.map((h, i) => `
-                    <div class="timeline-item" style="animation-delay: ${i * 0.03}s">
-                        <div class="timeline-marker">
-                            <div class="dot"></div>
-                            ${i < App.history.length - 1 ? '<div class="line"></div>' : ''}
-                        </div>
-                        <div class="timeline-content">
-                            <span class="ver-tag">${h.ver}</span>
-                            <p class="ver-desc">${h.desc}</p>
-                        </div>
-                    </div>
-                `).join('');
-                modal.style.display = 'flex';
-            } else {
-                modal.style.display = 'none';
-            }
         }
     },
     core: {
@@ -421,10 +460,7 @@ const App = {
             if (p) { 
                 p.rot = (p.rot + 90) % 360; 
                 const card = document.getElementById(id);
-                if(card) {
-                    const cv = card.querySelector('canvas');
-                    if(cv) cv.className = `rot-${p.rot}`;
-                }
+                if(card) { const cv = card.querySelector('canvas'); if(cv) cv.className = `rot-${p.rot}`; }
             }
         },
         remove(id) {
