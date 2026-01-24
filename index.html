@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>DTZ PDF 7.0 - 專業級本地 PDF 工具箱</title>
+    <title>DTZ PDF v7.5 - 專業級本地全能工具</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -14,57 +14,80 @@
             --primary-red: #e74c3c;
             --primary-green: #2ecc71;
             --primary-blue: #3498db;
-            --primary-yellow: #f1c40f;
             --bg-color: #f7f9fc;
             --card-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
         body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg-color); color: #2d3436; overflow-x: hidden; }
-        nav { background: white; padding: 1rem 10%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        
+        /* 導覽列與版本號 */
+        nav { 
+            background: white; padding: 1rem 10%; display: flex; justify-content: space-between; align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; 
+        }
         .logo { font-size: 1.6rem; font-weight: bold; color: var(--primary-red); text-decoration: none; }
+        .version-badge { font-size: 0.7rem; color: white; background: var(--primary-red); padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
         .nav-status { font-size: 0.8rem; color: #95a5a6; border: 1px solid #eee; padding: 4px 12px; border-radius: 20px; }
-        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; text-align: center; }
-        h1 { font-size: 2.5rem; margin-bottom: 10px; font-weight: 800; color: #2d3436; }
-        .subtitle { color: #636e72; margin-bottom: 40px; font-size: 1.1rem; line-height: 1.6; }
+
+        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; text-align: center; }
+        h1 { font-size: 2.2rem; margin-bottom: 10px; font-weight: 800; }
+        .subtitle { color: #636e72; margin-bottom: 30px; font-size: 1rem; line-height: 1.6; }
+
+        /* 進度條優化 */
         #progress-container { display: none; width: 80%; margin: 20px auto; background: #eee; border-radius: 10px; height: 8px; overflow: hidden; }
         #progress-bar { width: 0%; height: 100%; background: linear-gradient(to right, var(--primary-red), #ff7675); transition: width 0.3s; }
-        .tab-nav { display: flex; justify-content: center; gap: 15px; margin-bottom: 35px; flex-wrap: wrap; }
-        .tab-btn { padding: 12px 24px; border-radius: 50px; border: 2px solid var(--primary-red); background: white; color: var(--primary-red); font-weight: bold; cursor: pointer; transition: 0.3s; }
+
+        /* Tab 導覽 */
+        .tab-nav { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 22px; border-radius: 50px; border: 2px solid var(--primary-red); background: white; color: var(--primary-red); font-weight: bold; cursor: pointer; transition: 0.3s; }
         .tab-btn.active { background: var(--primary-red); color: white; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); }
-        .work-panel { display: none; background: white; padding: 40px; border-radius: 24px; box-shadow: var(--card-shadow); min-height: 400px; }
+
+        .work-panel { display: none; background: white; padding: 30px; border-radius: 20px; box-shadow: var(--card-shadow); min-height: 400px; }
         .work-panel.active { display: block; animation: slideUp 0.4s ease-out; }
-        .upload-area { border: 3px dashed #cbd5e0; border-radius: 20px; padding: 60px 20px; cursor: pointer; transition: 0.3s; margin-bottom: 25px; position: relative; }
-        .upload-area:hover, .upload-area.dragover { border-color: var(--primary-red); background: #fffaf9; transform: translateY(-2px); }
-        .upload-icon { font-size: 50px; margin-bottom: 15px; display: block; }
-        .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 30px; }
-        .page-card { background: white; border: 2px solid #f1f1f1; padding: 10px; border-radius: 15px; position: relative; cursor: grab; transition: 0.3s; }
+
+        .upload-area { border: 3px dashed #cbd5e0; border-radius: 20px; padding: 50px 20px; cursor: pointer; transition: 0.3s; margin-bottom: 25px; }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--primary-red); background: #fffaf9; }
+        .upload-icon { font-size: 50px; margin-bottom: 10px; display: block; }
+
+        /* 預覽網格 */
+        .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 25px; }
+        .page-card { background: white; border: 2px solid #f1f1f1; padding: 10px; border-radius: 15px; position: relative; cursor: grab; transition: 0.2s; }
         .page-card.selected { border-color: var(--primary-green); background: #f0fff4; }
-        .page-card canvas { width: 100%; border-radius: 8px; transition: transform 0.3s; background: #eee; }
+        .page-card canvas { width: 100%; border-radius: 8px; transition: transform 0.3s; }
+        
         .badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 5px; font-size: 10px; z-index: 10; }
-        .select-check { position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; background: var(--primary-green); color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); font-weight: bold; z-index: 20; }
+        .select-check { position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; background: var(--primary-green); color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 20; }
         .selected .select-check { display: flex; }
+
         .controls { display: flex; justify-content: center; gap: 15px; margin-top: 35px; flex-wrap: wrap; }
         .btn-main { padding: 16px 40px; border-radius: 50px; border: none; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
         .btn-main:disabled { background: #cbd5e0 !important; cursor: not-allowed; }
-        .btn-green { background: var(--primary-green); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
-        .btn-blue { background: var(--primary-blue); box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); }
-        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 80px; text-align: left; }
-        .feature-card { background: white; padding: 30px; border-radius: 18px; box-shadow: var(--card-shadow); transition: 0.3s; border-top: 5px solid var(--primary-red); }
+        .btn-green { background: var(--primary-green); }
+        .btn-blue { background: var(--primary-blue); }
+
+        /* 經典三方框風格還原 */
+        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 60px; text-align: left; }
+        .feature-card { background: white; padding: 25px; border-radius: 18px; box-shadow: var(--card-shadow); border-top: 5px solid var(--primary-red); }
         .card-green { border-top-color: var(--primary-green); }
         .card-yellow { border-top-color: var(--primary-yellow); }
+
         .rot-90 { transform: rotate(90deg); } .rot-180 { transform: rotate(180deg); } .rot-270 { transform: rotate(270deg); }
-        .qa-section { margin-top: 80px; text-align: left; background: white; padding: 40px; border-radius: 20px; box-shadow: var(--card-shadow); }
-        .qa-section h2 { font-size: 1.8rem; margin-bottom: 25px; color: var(--primary-red); }
-        .qa-item { margin-bottom: 25px; border-bottom: 1px solid #f1f1f1; padding-bottom: 15px; }
+
+        .qa-section { margin-top: 60px; text-align: left; background: white; padding: 35px; border-radius: 20px; box-shadow: var(--card-shadow); }
+        .qa-section h2 { font-size: 1.6rem; margin-bottom: 20px; color: var(--primary-red); }
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 850px) { .features { grid-template-columns: 1fr; } .page-grid { grid-template-columns: repeat(2, 1fr); } }
-        footer { margin: 80px 0 40px; color: #b2bec3; font-size: 0.9rem; text-align: center; }
+        footer { margin: 60px 0 30px; color: #b2bec3; font-size: 0.9rem; text-align: center; }
     </style>
 </head>
 <body>
 
 <nav>
-    <a href="#" class="logo">DTZ PDF 7.0</a>
-    <div class="nav-status">瀏覽器本地運算 | 100% 隱私保護</div>
+    <div style="display:flex; align-items:center;">
+        <a href="#" class="logo">DTZ PDF</a>
+        <span class="version-badge">v7.5</span>
+    </div>
+    <div class="nav-status">瀏覽器本地處理 | 隱私保護模式</div>
 </nav>
 
 <div class="container">
@@ -73,7 +96,7 @@
     <p class="subtitle">您的所有處理皆在本地完成，檔案絕不上傳，確保機密安全。</p>
 
     <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab(event, 'organize')">整理與點選分割</button>
+        <button class="tab-btn active" onclick="switchTab(event, 'organize')">整理與合併</button>
         <button class="tab-btn" onclick="switchTab(event, 'convert')">PDF 轉圖片 (ZIP)</button>
         <button class="tab-btn" onclick="switchTab(event, 'meta')">文件資訊修改</button>
     </div>
@@ -87,55 +110,45 @@
         </div>
         <div id="org-grid" class="page-grid"></div>
         <div id="org-ctrl" class="controls" style="display:none;">
-            <button class="btn-main btn-green" id="btn-all" onclick="processPdf(false)">立即合併並下載</button>
-            <button class="btn-main btn-blue" id="btn-sel" onclick="processPdf(true)">提取選中頁面</button>
+            <button class="btn-main btn-green" id="btn-merge" onclick="processPdf(false)">合併匯出全部</button>
+            <button class="btn-main btn-blue" id="btn-extract" onclick="processPdf(true)">提取選中頁面</button>
         </div>
     </div>
 
     <div id="convert-panel" class="work-panel">
         <div class="upload-area" id="drop-zone-conv" onclick="document.getElementById('input-conv').click()">
             <span class="upload-icon">🖼️</span>
-            <h3>PDF 轉換為高清圖片</h3>
+            <h3>PDF 轉換為圖片</h3>
             <input type="file" id="input-conv" hidden accept=".pdf">
         </div>
-        <div style="margin: 20px 0;">
+        <div style="margin: 20px 0; background: #f8f9fa; padding: 15px; border-radius: 12px;">
             格式：<select id="img-format" style="padding:5px;"><option value="image/jpeg">JPEG</option><option value="image/png">PNG</option></select>
             &nbsp; 品質：<input type="range" id="img-quality" min="0.1" max="1.0" step="0.1" value="0.8">
         </div>
         <div id="conv-grid" class="page-grid"></div>
         <div id="conv-ctrl" class="controls" style="display:none;">
-            <button class="btn-main btn-blue" onclick="downloadZip()">下載 ZIP 打包圖檔</button>
+            <button class="btn-main btn-blue" id="btn-zip" onclick="downloadZip()">下載 ZIP 打包圖檔</button>
         </div>
     </div>
 
     <div id="meta-panel" class="work-panel">
         <div style="max-width: 500px; margin: 0 auto; text-align: left;">
-            <h3>自定義文件 Metadata</h3>
+            <h3 style="color:var(--primary-red);">自定義文件資訊</h3>
             <label>文件標題：</label>
             <input type="text" id="meta-title" placeholder="DTZ PDF Merged" style="width:100%; padding:12px; margin:10px 0; border-radius:10px; border:1px solid #ddd;">
             <label>作者名稱：</label>
             <input type="text" id="meta-author" placeholder="您的名字" style="width:100%; padding:12px; margin:10px 0; border-radius:10px; border:1px solid #ddd;">
-            <label>關鍵字：</label>
-            <input type="text" id="meta-keys" placeholder="以逗號分隔" style="width:100%; padding:12px; margin:10px 0; border-radius:10px; border:1px solid #ddd;">
         </div>
     </div>
 
     <div class="features">
-        <div class="feature-card"><h3>🔒 隱私安全</h3><p>所有處理均在瀏覽器本地完成，數據絕不上傳伺服器。</p></div>
-        <div class="feature-card card-green"><h3>🎨 點選分割</h3><p>直接在預覽圖上點選即可提取頁面，操作直覺快速。</p></div>
-        <div class="feature-card card-yellow"><h3>⚡ 效能優化</h3><p>專為手機端設計的記憶體回收機制，支援物理旋轉校正。</p></div>
-    </div>
-
-    <div class="qa-section">
-        <h2>常見問題 (Q&A)</h2>
-        <div class="qa-item">
-            <h4>為什麼匯出會失敗？</h4>
-            <p>通常是因為單次處理頁數過多（超過 30 頁）或圖片解析度過大導致手機記憶體耗盡。建議分批處理或改用電腦瀏覽器。</p>
-        </div>
+        <div class="feature-card"><h3>🔒 隱私安全</h3><p>所有處理均在本地完成，檔案不離開您的裝置。</p></div>
+        <div class="feature-card card-green"><h3>🎨 點選組織</h3><p>透過預覽圖點選即可重新排序或提取特定頁面。</p></div>
+        <div class="feature-card card-yellow"><h3>⚡ 效能優化</h3><p>呼吸補丁技術，支援大檔案處理與物理旋轉同步。</p></div>
     </div>
 </div>
 
-<footer>&copy; 2026 DTZ PDF ENGINE</footer>
+<footer>&copy; 2026 DTZ PDF | v7.5</footer>
 
 <script>
     const { PDFDocument, degrees } = PDFLib;
@@ -171,7 +184,8 @@
                             const pId = crypto.randomUUID();
                             pagesData.push({ fId, pIdx: i-1, rot: 0, pId, type: 'pdf', selected: false });
                             await renderThumb(buf, i, pId, 'org-grid');
-                            if (i % 8 === 0) await new Promise(r => setTimeout(r, 0));
+                            // 呼吸補丁：防止大檔案渲染卡死
+                            if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
                         }
                     } else if (file.type.startsWith('image/')) {
                         const pId = crypto.randomUUID();
@@ -190,7 +204,7 @@
     async function renderThumb(buf, pNum, pId, gridId) {
         const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
         const page = await pdf.getPage(pNum);
-        const vp = page.getViewport({ scale: isMobile ? 0.35 : 0.5 });
+        const vp = page.getViewport({ scale: isMobile ? 0.3 : 0.45 });
         const cv = document.createElement('canvas');
         cv.width = vp.width; cv.height = vp.height;
         await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
@@ -202,8 +216,8 @@
         img.src = URL.createObjectURL(file);
         await new Promise(r => img.onload = r);
         const cv = document.createElement('canvas');
-        const sc = 180 / img.width;
-        cv.width = 180; cv.height = img.height * sc;
+        const sc = 160 / img.width;
+        cv.width = 160; cv.height = img.height * sc;
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
         createCard(cv, pId, gridId, '圖');
     }
@@ -237,7 +251,7 @@
         pagesData = ids.map(id => pagesData.find(p => p.pId === id));
     }});
 
-    // --- 核心匯出邏輯 (加強穩定性) ---
+    // --- 核心匯出邏輯 ---
     async function processPdf(onlySelected) {
         const list = onlySelected ? pagesData.filter(p => p.selected) : pagesData;
         if (list.length === 0) return alert('尚未選取頁面');
@@ -246,14 +260,14 @@
         
         try {
             const pdfDoc = await PDFDocument.create();
-            const now = new Date();
             pdfDoc.setTitle(document.getElementById('meta-title').value || "DTZ PDF Merged");
             pdfDoc.setAuthor(document.getElementById('meta-author').value || "DTZ PDF Engine");
-            pdfDoc.setKeywords((document.getElementById('meta-keys').value || "").split(','));
 
             for (let i = 0; i < list.length; i++) {
                 const p = list[i];
-                await new Promise(r => setTimeout(r, 10)); // 呼吸
+                // 呼吸補丁：防止 iOS 殺掉長進程
+                await new Promise(r => setTimeout(r, 10));
+                
                 if (p.type === 'pdf') {
                     const src = await PDFDocument.load(fileBuffers[p.fId]);
                     const [copy] = await pdfDoc.copyPages(src, [p.pIdx]);
@@ -262,18 +276,16 @@
                 } else {
                     const buf = await p.file.arrayBuffer();
                     const img = p.file.type.includes('png') ? await pdfDoc.embedPng(buf) : await pdfDoc.embedJpg(buf);
-                    const limit = 1200; // 降低解析度以防記憶體溢出
+                    const limit = 1200; // 壓縮圖片寬度以保護手機 RAM
                     const sc = img.width > limit ? limit / img.width : 1;
                     const page = pdfDoc.addPage([img.width * sc, img.height * sc]);
                     page.drawImage(img, { x:0, y:0, width:img.width * sc, height:img.height * sc, rotate:degrees(p.rot) });
                 }
                 updateProgress(10 + (90 * (i/list.length)));
             }
-            download(await pdfDoc.save(), `DTZ_PDF_${now.getTime()}.pdf`, 'application/pdf');
-        } catch (err) { 
-            console.error(err);
-            alert('匯出失敗：記憶體不足。請嘗試減少頁數或在電腦上使用。'); 
-        }
+            const bytes = await pdfDoc.save();
+            download(bytes, `DTZ_Merged_${Date.now()}.pdf`, 'application/pdf');
+        } catch (err) { alert('匯出失敗，請嘗試減少處理數量。'); }
         toggleUI(false); updateProgress(0);
     }
 
@@ -295,28 +307,48 @@
             const blob = await new Promise(res => cv.toBlob(res, fmt, q));
             zipBlobs.push({ blob, name: `Page_${i}.${fmt.split('/')[1]}` });
             updateProgress((i/pdf.numPages) * 100);
+            if (i % 3 === 0) await new Promise(r => setTimeout(r, 0));
         }
         document.getElementById('conv-ctrl').style.display = 'flex';
         updateProgress(0);
     }
 
     async function downloadZip() {
-        const zip = new JSZip();
-        zipBlobs.forEach(x => zip.file(x.name, x.blob));
-        download(await zip.generateAsync({type:'blob'}), 'DTZ_Images.zip', 'application/zip');
+        toggleUI(true);
+        updateProgress(50);
+        try {
+            const zip = new JSZip();
+            zipBlobs.forEach(x => zip.file(x.name, x.blob));
+            const content = await zip.generateAsync({type:'blob'});
+            download(content, 'DTZ_Images.zip', 'application/zip');
+        } catch (e) { alert('ZIP 打包失敗'); }
+        toggleUI(false);
+        updateProgress(0);
     }
 
-    function toggleUI(d) { document.querySelectorAll('button').forEach(b => b.disabled = d); }
+    function toggleUI(d) { 
+        document.querySelectorAll('button').forEach(b => b.disabled = d);
+    }
+
     function updateProgress(v) {
         document.getElementById('progress-container').style.display = v > 0 ? 'block' : 'none';
         document.getElementById('progress-bar').style.width = v + '%';
     }
 
+    // --- 🏆 終極版下載函式 (修正 DOM 插入與記憶體回收) ---
     function download(data, name, type) {
         const blob = new Blob([data], { type });
         const url = URL.createObjectURL(blob);
-        if (isMobile && type === 'application/pdf') { window.location.href = url; } 
-        else { const a = document.createElement('a'); a.href = url; a.download = name; a.click(); }
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a); 
+        a.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 1500); // 延長至 1.5 秒以確保大檔案觸發成功
     }
 </script>
 </body>
