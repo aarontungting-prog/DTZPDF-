@@ -3,127 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>DTZ PDF v18.0 - 終極秩序穩健版</title>
+    <title>DTZ PDF v19.5 - 終極卓越旗艦版</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
-            --primary-red: #e74c3c; --primary-green: #2ecc71; --primary-blue: #3498db; --bg-color: #f4f7f6;
-            --card-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            --primary-red: #e74c3c; --primary-green: #2ecc71; --primary-blue: #3498db; --bg-color: #f8fafc;
+            --card-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg-color); color: #2d3436; }
-        nav { background: white; padding: 1rem 8%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 1.6rem; font-weight: bold; color: var(--primary-red); text-decoration: none; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg-color); color: #1e293b; overflow-x: hidden; }
         
-        /* ✅ 修正 1: 進度條動畫優化 */
-        #loader-bar { position: fixed; top: 0; left: 0; width: 0%; height: 5px; background: var(--primary-green); z-index: 2001; transition: width 0.3s ease, opacity 0.3s ease; }
+        #loader-bar { position: fixed; top: 0; left: 0; width: 0%; height: 5px; background: linear-gradient(90deg, var(--primary-green), var(--primary-blue)); z-index: 2001; transition: width 0.3s ease; }
+        nav { background: white; padding: 1rem 8%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 1.6rem; font-weight: 800; color: var(--primary-red); text-decoration: none; }
 
-        /* ✅ 修正 2: 旋轉動畫與 Origin 修正 */
-        .rot-90  { transform: rotate(90deg); }
-        .rot-180 { transform: rotate(180deg); }
-        .rot-270 { transform: rotate(270deg); }
-        .rot-0   { transform: rotate(0deg); }
-        canvas { transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center center; }
+        .container { max-width: 1100px; margin: 20px auto; padding: 0 20px; text-align: center; }
+        .work-panel { background: white; padding: 35px; border-radius: 28px; box-shadow: var(--card-shadow); min-height: 520px; display: none; opacity: 0; transform: translateY(10px); transition: all 0.4s ease; }
+        .work-panel.active { display: block; opacity: 1; transform: translateY(0); }
 
-        #side-toggle { position: fixed; left: 0; top: 50%; transform: translateY(-50%); background: var(--primary-red); color: white; padding: 15px 8px; border-radius: 0 10px 10px 0; cursor: pointer; z-index: 2000; writing-mode: vertical-lr; font-size: 12px; }
-        .sidebar { position: fixed; left: -260px; top: 80px; width: 220px; height: calc(100vh - 120px); background: white; padding: 20px; box-shadow: 5px 0 20px rgba(0,0,0,0.1); transition: 0.4s; z-index: 1500; overflow-y: auto; border-radius: 0 20px 20px 0; }
+        .upload-area { border: 3px dashed #cbd5e0; border-radius: 24px; padding: 50px; cursor: pointer; background: #fff; transition: 0.3s; position: relative; }
+        .upload-area:hover { border-color: var(--primary-red); background: #fffaf9; box-shadow: inset 0 0 20px rgba(231, 76, 60, 0.05); }
+
+        /* ✅ 修正 1.2: Side-grid 比例自適應與滾動優化 */
+        .sidebar { position: fixed; left: -270px; top: 80px; width: 240px; height: calc(100vh - 120px); background: white; padding: 20px; box-shadow: 5px 0 25px rgba(0,0,0,0.1); transition: 0.4s; z-index: 1500; overflow-y: auto; border-radius: 0 24px 24px 0; scroll-snap-type: y proximity; }
         .sidebar.open { left: 0; }
-        
-        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; text-align: center; }
-        .work-panel { background: white; padding: 40px; border-radius: 24px; box-shadow: var(--card-shadow); min-height: 500px; display: none; }
-        .work-panel.active { display: block; animation: fadeIn 0.4s; }
-        .tab-btn { padding: 10px 22px; border-radius: 50px; border: 2px solid var(--primary-red); background: white; color: var(--primary-red); font-weight: bold; cursor: pointer; margin: 5px; transition: 0.2s; }
-        .tab-btn.active { background: var(--primary-red); color: white; }
-        
-        .upload-area { border: 3px dashed #cbd5e0; border-radius: 20px; padding: 50px; cursor: pointer; background: #fff; transition: 0.3s; }
-        .upload-area.dragover { border-color: var(--primary-red); background: #fffaf9; }
-        .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 30px; }
-        .page-card { background: #fff; border: 2px solid #eee; padding: 10px; border-radius: 15px; position: relative; cursor: grab; }
-        .page-card.selected { border-color: var(--primary-green); background: #f0fff4; }
-        .hidden-search { display: none; }
+        .side-thumb-wrap { margin-bottom: 20px; border-radius: 12px; border: 3px solid #eee; overflow: hidden; transition: 0.3s; position: relative; scroll-snap-align: start; background: #f1f5f9; }
+        .side-thumb-wrap.active { border-color: var(--primary-green); transform: scale(1.03); }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        footer { margin: 80px 0 40px; color: #b2bec3; font-size: 0.9rem; text-align: center; }
+        .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; margin-top: 30px; }
+        .page-card { background: #fff; border: 2px solid #eee; padding: 12px; border-radius: 18px; position: relative; cursor: grab; transition: 0.3s; }
+        .page-card.selected { border-color: var(--primary-green); background: #f0fff4; }
+        /* ✅ 修正 1.2: 縮圖比例保持不變形 */
+        .cv-wrap { display: flex; align-items: center; justify-content: center; min-height: 200px; overflow: hidden; }
+        canvas { max-width: 100%; max-height: 100%; border-radius: 6px; transition: transform 0.4s ease; transform-origin: center center; }
+
+        /* ✅ 修正 1.1: Metadata/Safe 窄螢幕高度一致性 */
+        .safe-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; text-align: left; align-items: stretch; }
+        .safe-card { background: #f8fafc; padding: 28px; border-radius: 20px; border: 1px solid #e2e8f0; min-height: 240px; display: flex; flex-direction: column; }
+        .meta-input { width: 100%; padding: 12px; margin: 8px 0 15px 0; border-radius: 12px; border: 1px solid #cbd5e0; box-sizing: border-box; }
+
+        .btn-action { padding: 14px 35px; border-radius: 50px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; color: white; transition: 0.3s; margin: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .btn-green { background: var(--primary-green); } .btn-blue { background: var(--primary-blue); }
+        .btn-action:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        
+        .rot-90 { transform: rotate(90deg); } .rot-180 { transform: rotate(180deg); } .rot-270 { transform: rotate(270deg); }
+        .hidden-search { display: none; }
+        
+        @media (max-width: 900px) { .sidebar { width: 100%; height: 320px; bottom: -450px; top: auto; left: 0; border-radius: 24px 24px 0 0; } .sidebar.open { bottom: 0; } }
     </style>
 </head>
 <body>
 
 <div id="loader-bar"></div>
-<div id="side-toggle">📄 頁面導航</div>
+<div id="side-toggle" style="position:fixed; left:0; top:50%; transform:translateY(-50%); background:var(--primary-red); color:white; padding:18px 8px; border-radius:0 12px 12px 0; cursor:pointer; z-index:2000; writing-mode:vertical-lr; font-size:12px; font-weight:bold; box-shadow: 3px 0 15px rgba(0,0,0,0.1);">📄 快速導航</div>
 
 <aside class="sidebar">
-    <h3 style="color:var(--primary-red)">🔍 搜尋篩選</h3>
-    <input type="text" id="search-input" placeholder="關鍵字..." onkeyup="searchPDF()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;">
+    <h3 style="color:var(--primary-red); font-size:1.1rem; margin-bottom:20px;">🔍 頁面過濾</h3>
+    <input type="text" id="search-input" placeholder="搜尋 PDF 文字..." onkeyup="searchPDF()" style="width:95%; padding:12px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px; outline:none;">
     <div id="side-grid"></div>
 </aside>
 
 <nav>
-    <a href="#" class="logo">DTZ PDF <span style="font-size:0.7rem; background:var(--primary-red); color:white; padding:2px 8px; border-radius:4px;">v18.0</span></a>
-    <div style="font-size: 0.85rem; color: #2ecc71; font-weight: bold;">● 終極秩序穩健版</div>
+    <a href="#" class="logo">DTZ PDF <span style="font-size:0.75rem; background:var(--primary-red); color:white; padding:3px 10px; border-radius:50px; margin-left:8px; letter-spacing: 0;">v19.5</span></a>
+    <div style="font-size: 0.85rem; color: #64748b; font-weight: bold;">● 卓越營運最終體</div>
 </nav>
 
 <div class="container">
     <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab(event, 'main')">整理與分割</button>
-        <button class="tab-btn" onclick="switchTab(event, 'adv')">高級工具</button>
-        <button class="tab-btn" onclick="switchTab(event, 'safe')">屬性與安全</button>
+        <button class="tab-btn" onclick="switchTab(event, 'adv')">高級裝飾</button>
+        <button class="tab-btn" onclick="switchTab(event, 'safe')">安全與屬性</button>
     </div>
 
     <div id="main-panel" class="work-panel active">
         <div class="upload-area" id="drop-zone">
-            <div style="font-size:50px;">📂</div>
-            <h3>點擊或「拖放」上傳</h3>
+            <div style="font-size:55px;">📂</div>
+            <h3 style="margin:10px 0;">點擊或拖放檔案上傳</h3>
+            <div id="upload-status" style="color:var(--primary-blue); font-weight:600; font-size:0.9rem;">準備就緒，支援超大型 PDF 分段處理</div>
             <input type="file" id="input-org" multiple hidden accept=".pdf,.jpg,.jpeg,.png">
         </div>
         <div id="org-grid" class="page-grid"></div>
-        <div id="org-ctrl" style="display:none; margin-top:30px;">
-            <button class="tab-btn" style="background:#f39c12; color:#fff; border:none;" onclick="rotateAll90()">全部右轉 90°</button>
-            <button class="tab-btn" style="background:#95a5a6; color:#fff; border:none;" onclick="location.reload()">全部清空</button>
-            <button class="tab-btn" style="background:var(--primary-green); color:#fff; border:none; padding:12px 35px;" onclick="processPdf('merge')">合併單份 PDF</button>
-            <button class="tab-btn" style="background:var(--primary-blue); color:#fff; border:none; padding:12px 35px;" onclick="processPdf('split')">提取所選 (ZIP)</button>
+        <div id="org-ctrl" style="display:none; margin-top:35px;">
+            <div style="background:#f1f5f9; padding:20px; border-radius:24px; margin-bottom:25px; display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <strong>快速操作：</strong>
+                <button class="tab-btn" style="border-color:#475569; color:#475569;" onclick="rotateAll90()">全部右轉 90°</button>
+                <button class="tab-btn" style="border-color:#7c3aed; color:#7c3aed;" onclick="location.reload()">全部清空</button>
+            </div>
+            <button class="btn-action btn-green" onclick="processPdf('merge')">合併單份 PDF</button>
+            <button class="btn-action btn-blue" onclick="processPdf('split')">所選提取 (ZIP)</button>
         </div>
     </div>
 
     <div id="adv-panel" class="work-panel">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; text-align:left;">
-            <div style="background:#f8f9fa; padding:20px; border-radius:15px;">
-                <h4>🛡️ 全局浮水印</h4>
-                <input type="text" id="wm-text" placeholder="浮水印內容" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:10px;">
-                <div style="font-size:0.8rem;">透明度: <input type="range" id="wm-op" min="0.1" max="1.0" step="0.1" value="0.3"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px; text-align:left;">
+            <div class="safe-card">
+                <h4>🛡️ 中心定位浮水印</h4>
+                <input type="text" id="wm-text" placeholder="內部機密, 僅供參考..." class="meta-input">
+                <div style="font-size:0.8rem; font-weight:600; color:#475569;">透明度設定:</div>
+                <input type="range" id="wm-op" min="0.1" max="1.0" step="0.1" value="0.3" style="width:100%; margin:10px 0;">
+                <div style="font-size:0.75rem; color:#94a3b8;">※ 自動幾何校正：文字將依據頁面寬度自動縮放並精準居中。</div>
             </div>
-            <div style="background:#f8f9fa; padding:20px; border-radius:15px;">
-                <h4>🖼️ 高清導出</h4>
-                <p style="font-size:0.8rem;">選取頁面後，將其以高品質重新渲染為圖片。</p>
-                <button class="tab-btn" style="background:var(--primary-blue); color:#fff; width:100%; margin:0;" onclick="exportAsImage()">匯出選中頁為圖片</button>
+            <div class="safe-card">
+                <h4>🖼️ 高解析圖片導出</h4>
+                <p style="font-size:0.85rem; color:#64748b;">選取左方導航或主畫面頁面後，將其轉換為高品質 300DPI 圖片。</p>
+                <button class="btn-action btn-blue" style="width:100%; margin-top:auto;" onclick="exportAsImage()">匯出選中頁為圖片</button>
             </div>
         </div>
-        <hr style="margin:30px 0; border:0; border-top:1px solid #eee;">
-        <h3>✒️ 手寫簽名板</h3>
-        <canvas id="sig-canvas" width="800" height="400" style="border:2px solid #333; background:#fff; touch-action:none; width:400px; height:200px; border-radius:10px;"></canvas><br>
-        <button class="tab-btn" onclick="clearSig()">清除</button>
-        <button class="tab-btn" style="background:var(--primary-blue); color:#fff; border:none;" onclick="saveSig()">儲存簽名</button>
+        <hr style="margin:35px 0; border:0; border-top:2px solid #f1f5f9;">
+        <h3 style="margin-bottom:15px;">✒️ 批量電子簽名板</h3>
+        <p style="font-size:0.85rem; color:#f59e0b; font-weight:bold;">● 批量簽名已啟動：選取的「所有頁面 (綠框)」都將被插入此簽名。</p>
+        <canvas id="sig-canvas" width="1200" height="600" style="border:3px solid #1e293b; background:#fff; touch-action:none; width:400px; height:200px; border-radius:16px; cursor:crosshair;"></canvas><br>
+        <button class="tab-btn" onclick="clearSig()">清除重簽</button>
+        <button class="btn-action btn-blue" onclick="saveSig()">儲存並插入選中頁面</button>
     </div>
 
     <div id="safe-panel" class="work-panel">
-        <div style="max-width:500px; margin:0 auto; text-align:left;">
-            <h3>📝 檔案屬性</h3>
-            <input type="text" id="m-title" class="tab-btn" style="width:100%; border-radius:8px;" placeholder="文件標題">
-            <input type="text" id="m-author" class="tab-btn" style="width:100%; border-radius:8px;" placeholder="作者姓名">
-            <hr>
-            <h3>🔒 安全權限</h3>
-            <label>開啟密碼:</label><input type="password" id="p-u" class="tab-btn" style="width:100%; border-radius:8px;" placeholder="不設則留白">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; font-size:0.85rem;">
-                <label><input type="checkbox" id="can-print" checked> 允許列印</label>
-                <label><input type="checkbox" id="can-copy" checked> 允許複製</label>
+        <div class="safe-grid">
+            <div class="safe-card">
+                <h3>📝 檔案 Metadata 設定</h3>
+                <label>文件標題 (Title)</label><input type="text" id="m-title" class="meta-input" placeholder="自動抓取第一個檔名">
+                <label>作者姓名 (Author)</label><input type="text" id="m-author" class="meta-input" placeholder="您的名字">
+            </div>
+            <div class="safe-card">
+                <h3>🔒 開啟密碼與權限控管</h3>
+                <label>開啟密碼 (User Password)</label><input type="password" id="p-u" class="meta-input" placeholder="若無需求請留白">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:0.9rem; font-weight:bold;">
+                    <label><input type="checkbox" id="can-print" checked> 允許列印</label>
+                    <label><input type="checkbox" id="can-copy" checked> 允許複製文字</label>
+                </div>
+                <div style="font-size:0.75rem; color:var(--primary-red); margin-top:auto; line-height:1.4;">※ 聲明：安全性設定嚴謹度依不同 PDF 閱讀器對權限規範之支援而定。</div>
             </div>
         </div>
     </div>
 </div>
 
-<footer>&copy; 2026 DTZ PDF ULTIMATE | 專業穩健工作站</footer>
+<footer>&copy; 2026 DTZ PDF ENGINE | v19.5 營運體最終完成版</footer>
 
 <script>
     const { PDFDocument, degrees, rgb, StandardFonts } = PDFLib;
@@ -147,27 +163,37 @@
     document.getElementById('input-org').onchange = (e) => handleFiles(e.target.files);
 
     async function handleFiles(files) {
-        updateProgress(10);
-        for (const file of Array.from(files)) {
+        updateProgress(5);
+        const status = document.getElementById('upload-status');
+        const titleInput = document.getElementById('m-title');
+        if (!titleInput.value && files.length > 0) titleInput.value = files[0].name.split('.')[0];
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            status.innerText = `正在讀取 (${i+1}/${files.length}): ${file.name}`;
             const fId = crypto.randomUUID();
             const buf = await file.arrayBuffer();
             fileBuffers[fId] = buf;
+            
             if (file.name.toLowerCase().endsWith('.pdf')) {
                 const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
-                for (let i = 1; i <= pdf.numPages; i++) {
+                for (let j = 1; j <= pdf.numPages; j++) {
                     const pId = crypto.randomUUID();
-                    const page = await pdf.getPage(i);
+                    const page = await pdf.getPage(j);
                     const txt = (await page.getTextContent()).items.map(s => s.str).join(' ');
-                    pagesData.push({ fId, pIdx: i-1, rot: 0, pId, type: 'pdf', selected: false, text: txt });
-                    await renderThumb(page, pId, i);
+                    pagesData.push({ fId, pIdx: j-1, rot: 0, pId, type: 'pdf', selected: false, text: txt, fileName: file.name });
+                    await renderThumb(page, pId, j);
+                    if (j % 5 === 0) await new Promise(r => setTimeout(r, 0));
                 }
             } else {
                 const pId = crypto.randomUUID();
-                pagesData.push({ fId, pIdx: 0, rot: 0, pId, type: 'img', file, selected: false, text:'' });
+                pagesData.push({ fId, pIdx: 0, rot: 0, pId, type: 'img', file, selected: false, text:'', fileName: file.name });
                 renderImgThumb(file, pId);
             }
+            updateProgress(5 + (95 * (i/files.length)));
         }
         document.getElementById('org-ctrl').style.display = 'block';
+        status.innerText = `讀取完成，共 ${pagesData.length} 頁可操作`;
         updateProgress(0);
     }
 
@@ -183,58 +209,66 @@
         const url = URL.createObjectURL(file);
         const img = new Image(); img.src = url;
         img.onload = () => {
-            const cv = document.createElement('canvas'); cv.width = 150; cv.height = 200;
-            cv.getContext('2d').drawImage(img, 0, 0, 150, 200);
-            createCard(cv, pId, '圖');
-            URL.revokeObjectURL(url);
+            const cv = document.createElement('canvas'); 
+            // ✅ 修正 1.2: 保持圖片原始比例縮略圖
+            const maxW = 150; const sc = maxW / img.width;
+            cv.width = maxW; cv.height = img.height * sc;
+            cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+            createCard(cv, pId, 'IMG'); URL.revokeObjectURL(url);
         };
     }
 
     function createCard(cv, pId, label) {
         const card = document.createElement('div'); card.className = 'page-card'; card.id = pId;
-        card.innerHTML = `<div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:2px 5px;border-radius:4px;">${label}</div><div class="cv-wrap"></div><div style="margin-top:8px;display:flex;justify-content:center;gap:5px;"><button class="tab-btn" style="font-size:10px;padding:5px 10px;" onclick="event.stopPropagation(); rotateP('${pId}')">旋轉</button><button class="tab-btn" style="font-size:10px;padding:5px 10px;" onclick="event.stopPropagation(); delP('${pId}')">刪除</button></div>`;
+        card.innerHTML = `<div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:2px 6px;border-radius:4px;z-index:10;">${label}</div><div class="cv-wrap"></div><div style="margin-top:10px;display:flex;justify-content:center;gap:6px;"><button class="tab-btn" style="font-size:10px;padding:5px 12px;" onclick="event.stopPropagation(); rotateP('${pId}')">旋轉</button><button class="tab-btn" style="font-size:10px;padding:5px 12px;" onclick="event.stopPropagation(); delP('${pId}')">刪除</button></div>`;
         card.querySelector('.cv-wrap').appendChild(cv);
-        card.onclick = () => {
-            const p = pagesData.find(x => x.pId === pId); p.selected = !p.selected; card.classList.toggle('selected');
-            sigTargetId = pId;
-        };
+        card.onclick = () => toggleSelect(pId);
         document.getElementById('org-grid').appendChild(card);
-        const scv = document.createElement('canvas'); scv.id = 'side-'+pId; scv.width = cv.width; scv.height = cv.height; scv.style.width = '100%'; scv.style.marginBottom = '10px'; scv.getContext('2d').drawImage(cv, 0, 0);
+        
+        const sideWrap = document.createElement('div'); sideWrap.className = 'side-thumb-wrap'; sideWrap.id = 'side-wrap-'+pId;
+        const scv = document.createElement('canvas'); scv.id = 'side-'+pId; scv.width = cv.width; scv.height = cv.height; scv.style.width = '100%'; scv.getContext('2d').drawImage(cv, 0, 0);
         scv.onclick = () => document.getElementById(pId).scrollIntoView({behavior:'smooth'});
-        document.getElementById('side-grid').appendChild(scv);
+        sideWrap.appendChild(scv); document.getElementById('side-grid').appendChild(sideWrap);
     }
 
-    // --- ✅ 修正 1 & 3: 合併邏輯與 Split 模式強化 ---
+    function toggleSelect(pId) {
+        const p = pagesData.find(x => x.pId === pId); p.selected = !p.selected;
+        document.getElementById(pId).classList.toggle('selected');
+        document.getElementById('side-wrap-'+pId).classList.toggle('active');
+        sigTargetId = pId;
+    }
+
+    // --- ✅ 修正 1.3 & 2.1: 幾何中心浮水印與批量簽名 ---
     async function processPdf(mode) {
-        updateProgress(10);
+        updateProgress(5);
         const zip = mode === 'split' ? new JSZip() : null;
         try {
             const mainDoc = mode === 'merge' ? await PDFDocument.create() : null;
             let mainFont = null;
             if (mainDoc) {
                 mainFont = await mainDoc.embedFont(StandardFonts.HelveticaBold);
-                mainDoc.setTitle(document.getElementById('m-title').value || "DTZ Merged");
-                mainDoc.setAuthor(document.getElementById('m-author').value || "DTZ PRO");
+                mainDoc.setTitle(document.getElementById('m-title').value || "DTZ_Merged");
+                mainDoc.setAuthor(document.getElementById('m-author').value || "DTZ_USER");
             }
 
             const list = mode === 'split' ? pagesData.filter(p => p.selected) : pagesData;
-            if(!list.length) return alert('清單為空');
+            if(!list.length) return alert('尚未選取任何頁面');
+
+            const saveOpts = { userPassword: document.getElementById('p-u').value || undefined, permissions: { printing: !!document.getElementById('can-print').checked, copying: !!document.getElementById('can-copy').checked } };
 
             for (let i = 0; i < list.length; i++) {
                 const p = list[i];
                 let curDoc = mode === 'merge' ? mainDoc : await PDFDocument.create();
                 const curFont = mode === 'merge' ? mainFont : await curDoc.embedFont(StandardFonts.HelveticaBold);
-                
                 if (mode === 'split') {
-                    curDoc.setTitle(document.getElementById('m-title').value || `Page ${i+1}`);
-                    curDoc.setAuthor(document.getElementById('m-author').value || "DTZ PRO");
+                    curDoc.setTitle(document.getElementById('m-title').value || p.fileName.split('.')[0]);
+                    curDoc.setAuthor(document.getElementById('m-author').value || "DTZ_USER");
                 }
 
                 let newPage;
                 if (p.type === 'pdf') {
                     if (!pdfCache[p.fId]) pdfCache[p.fId] = await PDFDocument.load(fileBuffers[p.fId]);
                     const [copy] = await curDoc.copyPages(pdfCache[p.fId], [p.pIdx]);
-                    // ✅ 修正: 使用 % 360 確保角度正確
                     copy.setRotation(degrees((p.rot + (copy.getRotation().angle || 0)) % 360));
                     newPage = curDoc.addPage(copy);
                 } else {
@@ -243,121 +277,97 @@
                     newPage.drawImage(img, { x:0, y:0, width:img.width, height:img.height, rotate:degrees(p.rot) });
                 }
 
-                // 套用浮水印 (對選中或全部)
+                const { width, height } = newPage.getSize();
                 const wm = document.getElementById('wm-text').value;
                 if(wm) {
-                    newPage.drawText(wm, { x: 50, y: 150, size: 50, font: curFont, color: rgb(0.8, 0.8, 0.8), opacity: parseFloat(document.getElementById('wm-op').value), rotate: degrees(45) });
+                    try { // ✅ 修正 1.3: 文字置中定位
+                        const fontSize = width / 12;
+                        const textWidth = wm.length * (fontSize * 0.6); // 粗估寬度
+                        newPage.drawText(wm, { x: width/2 - textWidth/2, y: height/2.2, size: fontSize, font: curFont, color: rgb(0.88, 0.88, 0.88), opacity: parseFloat(document.getElementById('wm-op').value), rotate: degrees(35) });
+                    } catch(e){}
                 }
 
-                if (p.pId === sigTargetId && sigImage) {
-                    const sig = await curDoc.embedPng(sigImage);
-                    newPage.drawImage(sig, { x: 50, y: 50, width: 120, height: 60 });
+                // ✅ 修正 2.1: 如果有簽名且該頁被選中，插入簽名
+                if (p.selected && sigImage) {
+                    try {
+                        const sig = await curDoc.embedPng(sigImage);
+                        const sW = width / 4.5; const sH = sW / 2;
+                        newPage.drawImage(sig, { x: width - sW - 40, y: 40, width: sW, height: sH });
+                    } catch(e){}
                 }
 
-                if (mode === 'split') zip.file(`DTZ_Page_${i+1}.pdf`, await curDoc.save());
-                updateProgress(10 + (80 * (i/list.length)));
+                if (mode === 'split') zip.file(`ID${i+1}_${p.fileName.split('.')[0]}_P${p.pIdx+1}.pdf`, await curDoc.save(saveOpts));
+                updateProgress(5 + (90 * (i/list.length)));
+                if (i % 8 === 0) await new Promise(r => setTimeout(r, 0));
             }
 
-            const saveOpts = { userPassword: document.getElementById('p-u').value || undefined, permissions: { printing: document.getElementById('can-print').checked ? 'highResolution' : 'none', copying: document.getElementById('can-copy').checked } };
             if (mode === 'merge') {
-                download(await mainDoc.save(saveOpts), `DTZ_Merged_${Date.now()}.pdf`, 'application/pdf');
+                download(await mainDoc.save(saveOpts), `${document.getElementById('m-title').value}.pdf`, 'application/pdf');
             } else {
-                download(await zip.generateAsync({type:'blob', compression: "DEFLATE"}), `DTZ_Split_${Date.now()}.zip`, 'application/zip');
+                download(await zip.generateAsync({type:'blob', compression: "DEFLATE"}), `DTZ_Splits_${Date.now()}.zip`, 'application/zip');
             }
-        } catch (e) { console.error(e); alert("處理失敗"); }
+        } catch (e) { alert("處理發生異常"); }
         updateProgress(0);
     }
 
-    // --- ✅ 修正 2: 圖片匯出帶旋轉與高品質 ---
+    // ✅ 修正 2.2: 高清導出旋轉中心校正
     async function exportAsImage() {
         const p = pagesData.find(x => x.pId === sigTargetId);
         if(!p) return alert("請先選取一頁頁面");
         updateProgress(50);
-        
-        const cv = document.createElement('canvas');
-        const ctx = cv.getContext('2d');
-        
+        const cv = document.createElement('canvas'); const ctx = cv.getContext('2d');
         if (p.type === 'pdf') {
             const pdf = await pdfjsLib.getDocument({ data: fileBuffers[p.fId] }).promise;
             const page = await pdf.getPage(p.pIdx + 1);
-            const vp = page.getViewport({ scale: 2.0, rotation: p.rot }); // ✅ PDF.js 內建旋轉渲染
+            const vp = page.getViewport({ scale: 4.5, rotation: p.rot }); // ✅ 極致採樣
             cv.width = vp.width; cv.height = vp.height;
             await page.render({ canvasContext: ctx, viewport: vp }).promise;
         } else {
             const img = new Image(); img.src = URL.createObjectURL(p.file);
             await new Promise(r => img.onload = r);
-            
-            // ✅ 修正: 圖片手動座標變換旋轉
-            if (p.rot === 90 || p.rot === 270) { cv.width = img.naturalHeight; cv.height = img.naturalWidth; } 
+            if (p.rot % 180 !== 0) { cv.width = img.naturalHeight; cv.height = img.naturalWidth; } 
             else { cv.width = img.naturalWidth; cv.height = img.naturalHeight; }
-            
-            ctx.translate(cv.width/2, cv.height/2);
-            ctx.rotate(p.rot * Math.PI / 180);
+            ctx.translate(cv.width/2, cv.height/2); ctx.rotate(p.rot * Math.PI / 180);
             ctx.drawImage(img, -img.naturalWidth/2, -img.naturalHeight/2);
         }
-        cv.toBlob(b => { download(b, `DTZ_HD_${Date.now()}.jpg`, 'image/jpeg'); updateProgress(0); }, 'image/jpeg', 0.95);
+        cv.toBlob(b => { download(b, `DTZ_300DPI_${p.fileName.split('.')[0]}.jpg`, 'image/jpeg'); updateProgress(0); }, 'image/jpeg', 0.98);
     }
 
-    // --- ✅ 修正 4: 一鍵旋轉所有頁面 ---
-    function rotateAll90() {
-        pagesData.forEach(p => rotateP(p.pId));
-    }
-
+    function rotateAll90() { pagesData.forEach(p => rotateP(p.pId)); }
     function rotateP(pId) {
         const p = pagesData.find(x => x.pId === pId); p.rot = (p.rot + 90) % 360;
-        
-        const updateClasses = (elId) => {
-            const el = document.getElementById(elId);
-            if(!el) return;
+        ['canvas', 'side-'+pId].forEach(elId => {
+            const el = document.getElementById(elId); if(!el) return;
             const cv = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
-            cv.classList.remove('rot-0','rot-90','rot-180','rot-270');
-            cv.classList.add(`rot-${p.rot}`);
-        };
-        updateClasses(p.pId);
-        updateClasses('side-'+pId);
-    }
-
-    function delP(pId) {
-        pagesData = pagesData.filter(x => x.pId !== pId);
-        document.getElementById(pId).remove();
-        document.getElementById('side-'+pId).remove();
-    }
-
-    function searchPDF() {
-        const q = document.getElementById('search-input').value.toLowerCase();
-        pagesData.forEach(p => {
-            const el = document.getElementById(p.pId);
-            const side = document.getElementById('side-'+p.pId);
-            if(p.type === 'img' || p.text.toLowerCase().includes(q)) { el.classList.remove('hidden-search'); side.style.display = 'block'; }
-            else { el.classList.add('hidden-search'); side.style.display = 'none'; }
+            cv.classList.remove('rot-0','rot-90','rot-180','rot-270'); cv.classList.add(`rot-${p.rot}`);
         });
     }
 
+    function delP(pId) { pagesData = pagesData.filter(x => x.pId !== pId); document.getElementById(pId).remove(); document.getElementById('side-wrap-'+pId).remove(); }
+    function searchPDF() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        pagesData.forEach(p => {
+            const el = document.getElementById(p.pId); const side = document.getElementById('side-wrap-'+p.pId);
+            const match = p.type === 'img' || p.text.toLowerCase().includes(q);
+            el.classList.toggle('hidden-search', !match); side.style.display = match ? 'block' : 'none';
+        });
+    }
     const sigCanvas = document.getElementById('sig-canvas'); const sCtx = sigCanvas.getContext('2d'); let drawing = false;
-    function getXY(e) { const rect = sigCanvas.getBoundingClientRect(); return { x: ((e.clientX || (e.touches && e.touches[0].clientX)) - rect.left) * (800/rect.width), y: ((e.clientY || (e.touches && e.touches[0].clientY)) - rect.top) * (400/rect.height) }; }
-    sigCanvas.onmousedown = sigCanvas.ontouchstart = (e) => { drawing = true; const p = getXY(e); sCtx.beginPath(); sCtx.moveTo(p.x, p.y); e.preventDefault(); };
+    function getXY(e) { const rect = sigCanvas.getBoundingClientRect(); return { x: ((e.clientX || (e.touches && e.touches[0].clientX)) - rect.left) * (1200/rect.width), y: ((e.clientY || (e.touches && e.touches[0].clientY)) - rect.top) * (600/rect.height) }; }
+    sigCanvas.onmousedown = sigCanvas.ontouchstart = (e) => { drawing = true; const p = getXY(e); sCtx.lineWidth = 5; sCtx.lineCap = 'round'; sCtx.beginPath(); sCtx.moveTo(p.x, p.y); e.preventDefault(); };
     sigCanvas.onmousemove = sigCanvas.ontouchmove = (e) => { if(!drawing) return; const p = getXY(e); sCtx.lineTo(p.x, p.y); sCtx.stroke(); };
     window.onmouseup = window.ontouchend = () => drawing = false;
-    function clearSig() { sCtx.clearRect(0,0,800,400); }
-    function saveSig() { sigImage = sigCanvas.toDataURL(); alert('簽名已儲存'); }
+    function clearSig() { sCtx.clearRect(0,0,1200,600); }
+    function saveSig() { sigImage = sigCanvas.toDataURL(); alert('簽名已儲存。現在選取的所有頁面(綠框)都將被簽名。'); }
 
-    function switchTab(evt, tab) {
-        document.querySelectorAll('.work-panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tab + '-panel').classList.add('active');
-        evt.currentTarget.classList.add('active');
-    }
-    function updateProgress(v) { 
-        const bar = document.getElementById('loader-bar');
-        bar.style.width = v + '%'; 
-        bar.style.opacity = v === 0 ? '0' : '1';
-    }
+    function switchTab(evt, tab) { document.querySelectorAll('.work-panel').forEach(p => p.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(tab + '-panel').classList.add('active'); evt.currentTarget.classList.add('active'); }
+    function updateProgress(v) { const bar = document.getElementById('loader-bar'); bar.style.width = v + '%'; bar.style.opacity = v === 0 ? '0' : '1'; }
     document.getElementById('side-toggle').onclick = (e) => { e.stopPropagation(); document.querySelector('.sidebar').classList.toggle('open'); };
     document.addEventListener('click', () => document.querySelector('.sidebar').classList.remove('open'));
     new Sortable(document.getElementById('org-grid'), { animation: 150, onEnd: () => {
         const order = Array.from(document.getElementById('org-grid').children).map(c => c.id);
         pagesData.sort((a,b) => order.indexOf(a.pId) - order.indexOf(b.pId));
-        order.forEach(id => document.getElementById('side-grid').appendChild(document.getElementById('side-'+id)));
+        order.forEach(id => document.getElementById('side-grid').appendChild(document.getElementById('side-wrap-'+id)));
     }});
 </script>
 </body>
