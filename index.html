@@ -34,7 +34,6 @@
 
         .container { max-width: 1000px; margin: 50px auto; padding: 0 24px; text-align: center; }
         
-        /* ✅ 標題樣式更新 */
         .header h1 { font-size: 2.8rem; margin: 0 0 15px 0; color: #2c3e50; letter-spacing: -1px; font-weight: 900; }
         .header p { color: var(--text-sub); font-size: 1.15rem; line-height: 1.8; margin: 0 auto; max-width: 700px; }
         .highlight-red { color: var(--primary); font-weight: 800; }
@@ -99,9 +98,7 @@
         .anim-card.red { border-top-color: var(--primary); }
         .anim-card.green { border-top-color: var(--success); }
         .anim-card.blue { border-top-color: var(--accent); }
-        
-        /* ✅ 更新標題顏色與間距 */
-        .anim-card h3 { margin-top: 0; color: #2c3e50; font-size: 1.3rem; font-weight: 800; margin-bottom: 15px; }
+        .anim-card h3 { margin-top: 0; color: #2c3e50; font-size: 1.25rem; font-weight: 800; margin-bottom: 15px; }
         .anim-card p { color: var(--text-sub); font-size: 0.95rem; margin: 0; line-height: 1.7; }
 
         /* Q&A 大長條方框 */
@@ -153,7 +150,7 @@
         @keyframes slideInUp { to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 900px) { .feature-grid, .qa-grid { grid-template-columns: 1fr; } }
-        footer { margin: 100px 0 40px; color: #b2bec3; font-size: 0.9rem; text-align: center; }
+        footer { margin: 100px 0 40px; color: #b2bec3; font-size: 0.9rem; text-align: center; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
@@ -176,7 +173,7 @@
 <nav>
     <a href="#" class="logo">DTZ PDF</a>
     <div class="version-btn" onclick="App.ui.toggleHistory(true)">
-        <span>✨ v33.0 Final</span>
+        <span>✨ v34.0 Professional</span>
     </div>
 </nav>
 
@@ -260,18 +257,18 @@
     </div>
 </div>
 
-<footer>&copy; 2026 DTZ PDF ENGINE | Designed for Performance</footer>
+<footer>&copy; 2026 DTZ PDF | Secure, Private & Serverless Architecture</footer>
 
 <script>
 const App = {
     state: { mode: 'merge', pages: [], buffers: {}, sortable: null },
     
-    // 開發歷史
+    // ✅ 完整歷史 (0 -> 34)
     history: [
         { ver: "v1.0 Genesis", date: "2026/01/24 18:00", desc: "專案啟動。建立基礎 HTML 結構，引入 PDF-Lib 與 PDF.js，成功實作最基本的 PDF 合併功能。" },
         { ver: "v5.0 Prototype", date: "2026/01/24 18:30", desc: "加入 Canvas 縮圖渲染功能，但遇到 PDF.js Worker 路徑錯誤，導致頁面無法顯示。" },
         { ver: "v10.0 Fix", date: "2026/01/24 19:00", desc: "修復 Worker 路徑問題。引入 SortableJS 實作基本的拖曳排序功能。" },
-        { ver: "v15.0 Rotate", date: "2026/01/24 19:30", desc: "嘗試加入頁面旋轉功能，但發現旋轉後圖片會被裁切，幾何邏輯尚未完善。" },
+        { ver: "v15.0 Rotation", date: "2026/01/24 19:30", desc: "嘗試加入頁面旋轉功能，但發現旋轉後圖片會被裁切，幾何邏輯尚未完善。" },
         { ver: "v20.0 Logic Core", date: "2026/01/24 20:00", desc: "重構核心邏輯。引入 Undo/Redo 系統（後來因效能考量移除），嘗試加入浮水印與簽名功能。" },
         { ver: "v23.0 Reinforced", date: "2026/01/24 20:30", desc: "決定回歸核心。移除不穩定的加密與轉檔功能，專注於「合併」與「分割」的穩定性。UI 初步定型。" },
         { ver: "v24.0 iOS Bridge", date: "2026/01/24 21:00", desc: "重大突破：解決 iPhone Safari 無法下載 Blob 的問題，改用 `window.open` 橋接技術。" },
@@ -284,7 +281,8 @@ const App = {
         { ver: "v31.0 Time Corridor", date: "2026/01/25 00:30", desc: "優化背景色調與面板質感。將版本歷史升級為動態時間軸動畫。" },
         { ver: "v32.0 The Origin", date: "2026/01/25 01:00", desc: "回歸初心。背景定調為 #f0f4f8，上傳區回歸經典亮白描邊風格。Q&A 整合為全寬區塊。" },
         { ver: "v32.5 Bug Fix", date: "2026/01/25 01:30", desc: "核心修復：解決 CSS Selector ID 數字開頭導致的按鈕失效問題。" },
-        { ver: "v33.0 Final", date: "2026/01/25 02:00", desc: "文案與視覺最終定稿。更新功能矩陣文案，優化標題排版，專案正式完工。" }
+        { ver: "v33.0 Final", date: "2026/01/25 02:00", desc: "文案與視覺最終定稿。更新功能矩陣文案，優化標題排版。" },
+        { ver: "v34.0 Trusted", date: "2026/01/25 02:30", desc: "品牌形象升級。Footer 標語更新為「Secure, Private & Serverless Architecture」，強調專業安全屬性。" }
     ],
 
     ui: {
@@ -414,7 +412,6 @@ const App = {
             const p = App.state.pages.find(x => x.id === id);
             if (p) { 
                 p.rot = (p.rot + 90) % 360; 
-                // Fix: getElementById
                 const card = document.getElementById(id);
                 if(card) {
                     const cv = card.querySelector('canvas');
