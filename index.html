@@ -173,7 +173,7 @@
 <nav>
     <a href="#" class="logo">DTZ PDF</a>
     <div class="version-btn" onclick="App.ui.toggleHistory(true)">
-        <span>v36.0</span>
+        <span>v37.0</span>
     </div>
 </nav>
 
@@ -263,22 +263,35 @@
 const App = {
     state: { mode: 'merge', pages: [], buffers: {}, sortable: null },
     
-    // ✅ 完整詳細日誌：從 0 到 36，講述一個挑戰巨人的故事
+    // ✅ 真實且極度詳細的開發紀錄
     history: [
-        { ver: "v0.1 起源 (Genesis)", date: "2026/01/24", desc: "專案啟動。立志打造一個能挑戰商業付費軟體（如 iLovePDF）的純前端工具。不依賴伺服器，只用瀏覽器算力來處理 PDF。" },
-        { ver: "v1.0 原型驗證", date: "2026/01/24", desc: "完成基礎 HTML 架構。引入 pdf-lib 核心庫，成功在無後端環境下合併兩份 PDF，證明了純前端路線的可行性。" },
-        { ver: "v5.0 視覺化挑戰", date: "2026/01/24", desc: "試圖在網頁上渲染 PDF 縮圖。遭遇 PDF.js Worker 跨域路徑錯誤，導致頁面一片空白，開發陷入僵局。" },
-        { ver: "v10.0 突破瓶頸", date: "2026/01/24", desc: "攻克 Worker 配置問題，成功實現高解析度 Canvas 預覽。引入 SortableJS，讓檔案可以像撲克牌一樣自由拖曳排序。" },
-        { ver: "v12.5 效能危機", date: "2026/01/24", desc: "發現當 PDF 超過 50 頁時，瀏覽器會因為記憶體不足而崩潰。開始研究「分段呼吸渲染」技術，犧牲一點速度換取穩定性。" },
-        { ver: "v15.0 幾何難題", date: "2026/01/24", desc: "嘗試加入頁面旋轉功能。但發現 PDF 的座標系與 CSS 不同，旋轉 90 度後內容會被裁切。這是一個數學難題。" },
-        { ver: "v18.0 功能大爆發", date: "2026/01/24", desc: "為了追趕競品，一口氣加入了刪除、插入、浮水印等功能。但代碼變得臃腫，穩定性下降。" },
-        { ver: "v20.0 架構重構", date: "2026/01/24", desc: "痛定思痛，決定移除不穩定的加密與轉檔功能，回歸核心：「合併」與「分割」。重新設計底層邏輯，為大檔案處理鋪路。" },
-        { ver: "v24.0 iOS 夢魘", date: "2026/01/24", desc: "發現 iPhone Safari 為了安全，會阻擋 Blob 下載。經過無數次測試，終於研發出 `window.open` 橋接技術，成功征服 iOS。" },
-        { ver: "v26.0 物理引擎", date: "2026/01/24", desc: "針對圖片旋轉重寫了座標矩陣 (Matrix)。當圖片旋轉時，系統會自動互換寬高並修正原點，徹底解決了幾何裁切問題。" },
-        { ver: "v28.0 SaaS 基石", date: "2026/01/24", desc: "代碼全面模組化 (Namespace Pattern)。引入主動記憶體回收機制 (Aggressive GC)，讓手機能流暢處理 100MB 以上的大檔。" },
-        { ver: "v30.0 美學覺醒", date: "2026/01/25", desc: "介面大改版。拋棄傳統樣式，採用冷灰藍背景與亮白描邊設計。整合 Q&A 區塊，讓工具不僅好用，更具備頂級 SaaS 產品的質感。" },
-        { ver: "v32.0 完整體", date: "2026/01/25", desc: "修復了所有已知的邊緣 Bug (Edge Cases)。確保每一張卡片、每一個按鈕在任何裝置上都能完美運作。" },
-        { ver: "v36.0 傳奇版", date: "2026/01/25", desc: "我們做到了。這是一個完全免費、無廣告、無需上傳伺服器的專業 PDF 工具。我們證明了，純前端也能達到商業級的效能。" }
+        { ver: "v0.1", date: "Initial", desc: "專案初始化。引入 `pdf-lib` 與 `pdf.js` 核心庫。建立基礎 HTML 結構與基本的 CSS 樣式。" },
+        { ver: "v0.2", date: "Core", desc: "實作檔案讀取功能 (`FileReader`)，支援讀取 `.pdf` 檔案並轉換為 `ArrayBuffer`。" },
+        { ver: "v0.5", date: "Render", desc: "利用 `pdf.js` 實作 PDF 縮圖預覽功能。將 PDF 頁面渲染至 Canvas。" },
+        { ver: "v1.0", date: "Merge", desc: "完成基本的合併功能。可以將多個 PDF 檔案合併為一個並下載。" },
+        { ver: "v2.0", date: "UI", desc: "優化上傳介面。加入拖曳上傳 (`drag & drop`) 的基礎樣式支援。" },
+        { ver: "v3.5", date: "Sort", desc: "引入 `SortableJS` 庫，實作卡片拖曳排序功能。解決了無法調整檔案順序的痛點。" },
+        { ver: "v4.2", date: "Fix", desc: "修復 `PDF.js Worker` 路徑錯誤導致縮圖無法顯示的 Bug。調整 Worker CDN 來源。" },
+        { ver: "v5.0", date: "Feature", desc: "新增支援 JPG 與 PNG 圖片上傳。實作圖片轉 PDF 的基礎邏輯。" },
+        { ver: "v8.0", date: "Layout", desc: "Grid 佈局優化。調整卡片間距與響應式設計，適應不同螢幕尺寸。" },
+        { ver: "v10.0", date: "Rotate", desc: "新增「單頁旋轉」按鈕 (視覺層面)。CSS `transform: rotate` 實作。" },
+        { ver: "v12.5", date: "Logic", desc: "實作旋轉的後端邏輯。嘗試修改 `pdf-lib` 的 `drawPage` 參數來達成旋轉。" },
+        { ver: "v15.5", date: "Bug", desc: "發現旋轉 90 度後，圖片會被裁切或變形。原因是 PDF 頁面寬高未跟隨旋轉調整。" },
+        { ver: "v18.0", date: "Delete", desc: "新增「刪除單頁」功能。加入刪除後的陣列索引重整邏輯。" },
+        { ver: "v20.0", date: "Refactor", desc: "代碼重構。移除不穩定的加密與轉檔功能，專注於優化合併與分割的核心體驗。" },
+        { ver: "v22.0", date: "Split", desc: "實作「分割模式」。允許使用者上傳單一 PDF 並提取特定頁面。" },
+        { ver: "v24.0", date: "iOS Fix", desc: "修復 iPhone Safari 無法下載 Blob 檔案的問題。改用 `window.open` 作為下載橋接。" },
+        { ver: "v24.1", date: "Perf", desc: "加入記憶體回收機制 (Aggressive GC)。渲染後立即釋放 Blob URL，防止手機記憶體溢出。" },
+        { ver: "v25.0", date: "UI/UX", desc: "將合併與分割拆分為兩個獨立的面板。引入紅色 Tab 切換按鈕。" },
+        { ver: "v26.0", date: "Physics", desc: "幾何引擎更新。針對圖片旋轉重寫座標矩陣，自動互換寬高並修正原點，徹底解決裁切問題。" },
+        { ver: "v27.0", date: "Unlock", desc: "解鎖分割模式權限。現在分割模式也能支援拖曳排序、旋轉與刪除。" },
+        { ver: "v28.0", date: "Arch", desc: "架構模組化。引入 `App` Namespace 模式，提升代碼可維護性。加入 Toast 通知系統。" },
+        { ver: "v30.0", date: "Style", desc: "介面風格大改版。採用冷灰藍背景、亮白描邊框與全寬 Q&A 設計。加入版本歷史 Modal。" },
+        { ver: "v32.5", date: "Fix", desc: "修復 ID 選擇器錯誤。解決 `crypto.randomUUID()` 生成數字開頭 ID 導致 `querySelector` 報錯的問題。" },
+        { ver: "v34.0", date: "Polish", desc: "文案與視覺最終定稿。更新 Footer 標語為「Secure, Private & Serverless Architecture」。" },
+        { ver: "v35.0", date: "Localize", date: "2026/01/25", desc: "UI 語氣優化。版本按鈕簡化，日誌標題在地化為中文，提升閱讀體驗。" },
+        { ver: "v36.0", date: "Dev Log", date: "2026/01/25", desc: "完善開發者日誌。詳細記錄從 v0.1 到現在的所有技術細節與修正歷程。" },
+        { ver: "v37.0", date: "Final", date: "2026/01/25", desc: "全功能穩定版發布。" }
     ],
 
     ui: {
@@ -326,14 +339,13 @@ const App = {
             const list = document.getElementById('timeline-root');
             if(show) {
                 list.innerHTML = App.history.map((h, i) => `
-                    <div class="timeline-item" style="animation-delay: ${i * 0.05}s">
+                    <div class="timeline-item" style="animation-delay: ${i * 0.03}s">
                         <div class="timeline-marker">
                             <div class="dot"></div>
                             ${i < App.history.length - 1 ? '<div class="line"></div>' : ''}
                         </div>
                         <div class="timeline-content">
                             <span class="ver-tag">${h.ver}</span>
-                            <span class="ver-date">${h.date}</span>
                             <p class="ver-desc">${h.desc}</p>
                         </div>
                     </div>
