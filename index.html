@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：Slow Roads 極致環境版</title>
+    <title>霓虹西洋棋：Slow Roads 視覺旗艦版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
@@ -36,37 +36,38 @@ let game = new Chess();
 let tilesMap = {}, piecesMap = {};
 let selectedSquare = null, isProcessing = false;
 let grassMat;
+let distantCloudGroup; // 全域變數以便動畫使用
 
 const CHESS_NAMES = { k: '國王', q: '皇后', r: '城堡', b: '主教', n: '騎士', p: '兵卒' };
 
 function init() {
     clock = new THREE.Clock();
     scene = new THREE.Scene();
-    // 調整霧氣，讓遠處的雲和樹稍微朦朧一點，增加深度感
-    scene.fog = new THREE.FogExp2(0x87ceeb, 0.008);
+    // 調整霧氣，讓遠處的物件融入地平線
+    scene.fog = new THREE.FogExp2(0x87ceeb, 0.006);
 
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000); // 增加視距
-    camera.position.set(0, 15, 18); // 視角稍微拉高拉遠，看得到地平線
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.set(0, 15, 20); 
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 更柔和的陰影
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.maxPolarAngle = Math.PI / 2.1; // 允許視角低到接近地平線
+    controls.maxPolarAngle = Math.PI / 2.1; 
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
     const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    sunLight.position.set(50, 100, 50); // 太陽拉遠
+    sunLight.position.set(80, 100, -80); // 調整太陽位置，配合雲層
     sunLight.castShadow = true;
-    // 擴大陰影範圍以覆蓋更多樹木
-    sunLight.shadow.camera.left = -100; sunLight.shadow.camera.right = 100;
-    sunLight.shadow.camera.top = 100; sunLight.shadow.camera.bottom = -100;
-    sunLight.shadow.mapSize.width = 2048; sunLight.shadow.mapSize.height = 2048;
+    // 擴大陰影範圍以覆蓋茂密森林
+    sunLight.shadow.camera.left = -150; sunLight.shadow.camera.right = 150;
+    sunLight.shadow.camera.top = 150; sunLight.shadow.camera.bottom = -150;
+    sunLight.shadow.mapSize.width = 4096; sunLight.shadow.mapSize.height = 4096; // 提高陰影解析度
     scene.add(sunLight);
 
     createEnvironment();
@@ -81,93 +82,93 @@ function init() {
     animate();
 }
 
-// --- 環境生成 (Slow Roads 風格升級) ---
+// --- 環境生成 (視覺旗艦版) ---
 function createEnvironment() {
-    // A. 天空 (Sky Shader) - 調整為更清澈的藍天
+    // A. 天空
     const sky = new THREE.Sky();
     sky.scale.setScalar(450000);
     scene.add(sky);
     const sun = new THREE.Vector3();
     const uniforms = sky.material.uniforms;
-    uniforms['turbidity'].value = 5; // 更清澈
+    uniforms['turbidity'].value = 8;
     uniforms['rayleigh'].value = 2;
     uniforms['mieCoefficient'].value = 0.005;
     uniforms['mieDirectionalG'].value = 0.8;
-    sun.setFromSphericalCoords(1, THREE.MathUtils.degToRad(80), THREE.MathUtils.degToRad(180));
+    // 太陽位置稍微調低一點點，營造午後感
+    sun.setFromSphericalCoords(1, THREE.MathUtils.degToRad(82), THREE.MathUtils.degToRad(170));
     uniforms['sunPosition'].value.copy(sun);
 
     // B. 地面
-    const groundGeo = new THREE.PlaneGeometry(500, 500); // 擴大地面
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a3315, roughness: 0.8 });
+    const groundGeo = new THREE.PlaneGeometry(600, 600); 
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a3815, roughness: 0.9 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // C. 實例化草地 (更茂密、風動更自然)
-    const bladeGeo = new THREE.PlaneGeometry(0.1, 0.6); // 草更高一點
-    bladeGeo.translate(0, 0.3, 0);
-    grassMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27, side: THREE.DoubleSide });
+    // C. 實例化草地 (極致茂密版 - 12000片)
+    const bladeGeo = new THREE.PlaneGeometry(0.12, 0.7); // 草片稍微加大
+    bladeGeo.translate(0, 0.35, 0);
+    grassMat = new THREE.MeshStandardMaterial({ color: 0x3a6b35, side: THREE.DoubleSide }); // 草色稍微調亮
     grassMat.onBeforeCompile = (shader) => {
         shader.uniforms.time = { value: 0 };
         shader.vertexShader = `uniform float time;\n` + shader.vertexShader;
-        // 更柔和自然的風力波形公式
+        // 風力波形
         shader.vertexShader = shader.vertexShader.replace(
             `#include <begin_vertex>`,
             `vec3 transformed = vec3(position);
-             float wave = sin(time * 1.5 + position.x * 1.5 + position.z * 0.5) * 0.1 * position.y;
+             float wave = sin(time * 1.2 + position.x * 1.0 + position.z * 0.7) * 0.15 * position.y;
              transformed.x += wave;
-             transformed.z += sin(time * 2.0 + position.z) * 0.05 * position.y;
+             transformed.z += sin(time * 1.5 + position.z * 1.2) * 0.08 * position.y;
              #include <begin_vertex>`
         );
         grassMat.userData.shader = shader;
     };
-    const instGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 6000); // 增加到 6000 片
+    const grassCount = 12000; // 數量翻倍
+    const instGrass = new THREE.InstancedMesh(bladeGeo, grassMat, grassCount);
     const dummy = new THREE.Object3D();
-    for (let i = 0; i < 6000; i++) {
+    for (let i = 0; i < grassCount; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const radius = 6 + Math.random() * 60; // 分佈在棋盤外圍
+        const radius = 5.5 + Math.random() * 80; // 分佈範圍
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         dummy.position.set(x, -0.2, z);
         dummy.rotation.y = Math.random() * Math.PI;
-        dummy.scale.setScalar(0.7 + Math.random() * 0.5);
+        // 隨機大小增加立體感
+        dummy.scale.setScalar(0.5 + Math.random() * 1.0);
         dummy.updateMatrix();
         instGrass.setMatrixAt(i, dummy.matrix);
     }
     instGrass.receiveShadow = true;
     scene.add(instGrass);
 
-    // D. 多層次松樹森林 (細節升級)
+    // D. 多層次松樹森林 (茂密版 - 250棵)
     const treeGroup = new THREE.Group();
-    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.8, 7);
+    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.5, 2.0, 7);
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e12 });
     const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1e4d2b, roughness: 0.9 });
-    // 建立三層樹葉的幾何體
-    const layer1Geo = new THREE.ConeGeometry(2.2, 2.5, 7);
-    const layer2Geo = new THREE.ConeGeometry(1.8, 2.0, 7);
-    const layer3Geo = new THREE.ConeGeometry(1.2, 1.5, 7);
+    const layer1Geo = new THREE.ConeGeometry(2.5, 3.0, 7);
+    const layer2Geo = new THREE.ConeGeometry(2.0, 2.5, 7);
+    const layer3Geo = new THREE.ConeGeometry(1.5, 2.0, 7);
 
-    for(let i=0; i<60; i++) { // 更多樹
+    for(let i=0; i<250; i++) { // 數量大幅增加
         const angle = Math.random() * Math.PI * 2;
-        // 將樹木推到更遠的地方，形成背景
-        const radius = 35 + Math.random() * 80; 
+        // 推得更遠，形成背景森林牆
+        const radius = 45 + Math.random() * 100; 
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
 
         const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-        trunk.position.set(x, 0.9, z);
+        trunk.position.set(x, 1.0, z);
         trunk.castShadow = true;
         
-        // 堆疊三層樹葉
-        const l1 = new THREE.Mesh(layer1Geo, leavesMat); l1.position.set(x, 2.0, z);
-        const l2 = new THREE.Mesh(layer2Geo, leavesMat); l2.position.set(x, 3.2, z);
-        const l3 = new THREE.Mesh(layer3Geo, leavesMat); l3.position.set(x, 4.2, z);
+        const l1 = new THREE.Mesh(layer1Geo, leavesMat); l1.position.set(x, 2.5, z);
+        const l2 = new THREE.Mesh(layer2Geo, leavesMat); l2.position.set(x, 4.0, z);
+        const l3 = new THREE.Mesh(layer3Geo, leavesMat); l3.position.set(x, 5.2, z);
         l1.castShadow = l2.castShadow = l3.castShadow = true;
 
-        // 隨機縮放和旋轉，增加多樣性
-        const scale = 0.8 + Math.random() * 0.6;
+        const scale = 0.7 + Math.random() * 0.8;
         trunk.scale.set(scale, scale, scale);
         l1.scale.set(scale, scale, scale); l2.scale.set(scale, scale, scale); l3.scale.set(scale, scale, scale);
         l1.rotation.y = l2.rotation.y = l3.rotation.y = Math.random() * Math.PI;
@@ -176,33 +177,32 @@ function createEnvironment() {
     }
     scene.add(treeGroup);
 
-    // E. 遠方地平線雲朵 (新版：不擋視線)
-    const distantCloudGroup = new THREE.Group();
-    // 使用白色、不受霧氣影響太大的材質
+    // E. 遠方動態雲朵 (精緻化、動態、不擋太陽)
+    distantCloudGroup = new THREE.Group();
     const dCloudMat = new THREE.MeshBasicMaterial({ 
-        color: 0xffffff, transparent: true, opacity: 0.5, 
-        fog: false // 關鍵：讓雲在遠處依然明亮
+        color: 0xffffff, transparent: true, opacity: 0.3, // 提高透明度
+        fog: false 
     });
-    // 用巨大的扁平球體模擬遠方積雲
-    const dCloudGeo = new THREE.SphereGeometry(50, 16, 12); 
+    // 使用更扁平的幾何體
+    const dCloudGeo = new THREE.SphereGeometry(40, 16, 8); 
     
-    for(let i=0; i<12; i++) {
+    for(let i=0; i<35; i++) { // 增加雲朵數量
         const cloud = new THREE.Mesh(dCloudGeo, dCloudMat);
         const angle = Math.random() * Math.PI * 2;
-        const distance = 300 + Math.random() * 100; // 極遠處
+        const distance = 350 + Math.random() * 150; // 極遠處
         cloud.position.set(
             Math.cos(angle) * distance, 
-            10 + Math.random() * 20, // 貼近地平線的高度
+            5 + Math.random() * 25, // 貼近地平線
             Math.sin(angle) * distance
         );
-        // 壓扁並拉長
-        cloud.scale.set(2 + Math.random(), 0.6, 1 + Math.random()); 
+        // 壓得更扁，更像積雲
+        cloud.scale.set(1.5 + Math.random()*2, 0.3 + Math.random()*0.2, 1 + Math.random()); 
         distantCloudGroup.add(cloud);
     }
     scene.add(distantCloudGroup);
 }
 
-// --- 棋盤與棋子邏輯 (保持不變，確保穩定) ---
+// --- 棋盤與棋子邏輯 ---
 function createBoard(){
     for(let r=0;r<8;r++){
         for(let c=0;c<8;c++){
@@ -281,13 +281,19 @@ function handleInteraction(square){
     }
 }
 
+// --- 高亮邏輯 (顏色更新版) ---
 function selectSquare(square){
-    clearHighlights(); selectedSquare=square;
-    tilesMap[square].material.emissive.setHex(0xffff00); tilesMap[square].material.emissiveIntensity=0.6;
+    clearHighlights();
+    selectedSquare=square;
+    // 選中：螢光綠，強度拉滿
+    tilesMap[square].material.emissive.setHex(0x00ff00);
+    tilesMap[square].material.emissiveIntensity=1.0;
+
     const moves=game.moves({square,verbose:true});
     moves.forEach(m=>{
         const tile=tilesMap[m.to];
-        tile.material.emissive.setHex(m.captured?0xff0000:0x00ffff);
+        // 吃子：鮮紅；移動：亮橘。強度高。
+        tile.material.emissive.setHex(m.captured?0xff0000:0xffa500);
         tile.material.emissiveIntensity=0.8;
     });
     log(`選中: ${square}`);
@@ -296,7 +302,7 @@ function selectSquare(square){
 function clearHighlights(){
     for(let sq in tilesMap){
         tilesMap[sq].material.emissive.setHex(0x000000);
-        tilesMap[sq].material.emissiveIntensity=1;
+        tilesMap[sq].material.emissiveIntensity=1; // 恢復預設強度
     }
 }
 
@@ -341,6 +347,12 @@ function animate(){
     const time=clock.getElapsedTime();
     TWEEN.update(); controls.update();
     if(grassMat&&grassMat.userData.shader) grassMat.userData.shader.uniforms.time.value=time;
+    
+    // 讓遠方雲層緩慢旋轉飄動
+    if(distantCloudGroup) {
+        distantCloudGroup.rotation.y += 0.0003;
+    }
+
     for(let sq in piecesMap){
         const sprite=piecesMap[sq]; const piece=game.get(sq);
         if(piece&&piece.color==='w'){ sprite.position.y=0.7+Math.sin(time*3+sprite.id)*0.05; }
