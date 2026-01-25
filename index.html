@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：絲滑流暢・完美無縫版</title>
+    <title>霓虹西洋棋：緊急救援順暢版</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -19,25 +19,24 @@
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud { position: absolute; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.8); pointer-events: auto; }
-        #status-panel { top: 30px; right: 30px; text-align: right; background: linear-gradient(to left, rgba(255, 120, 0, 0.2), rgba(0,0,0,0)); padding: 20px 30px; border-right: 3px solid #ffaa00; }
+        #status-panel { top: 30px; right: 30px; text-align: right; background: rgba(0,0,0,0.3); padding: 20px 30px; border-right: 3px solid #ffaa00; }
         h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; color: #ffdd55; margin-bottom: 5px; text-transform: uppercase; font-weight: 300; }
         #turn-txt { font-size: 2.2rem; font-weight: 900; color: #fff; }
         #log-panel { bottom: 30px; left: 30px; width: 350px; font-size: 12px; opacity: 0.8; font-family: monospace; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; }
-        /* 優化載入文字 */
-        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffaa00; font-size: 18px; font-weight: bold; letter-spacing: 2px; z-index: 999; text-align: center; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffaa00; font-size: 18px; font-weight: bold; letter-spacing: 2px; z-index: 999; text-align: center; transition: opacity 0.5s; }
     </style>
 </head>
 <body>
 
-<div id="loading">OPTIMIZING ASSETS...<br><span style="font-size:12px; opacity:0.7">Building Shader Board & Terrain</span></div>
+<div id="loading">SYSTEM REBOOTING...<br><span style="font-size:12px; opacity:0.7">Safe Mode: Enabled</span></div>
 
 <div id="ui" style="display:none;">
     <div id="status-panel" class="hud">
-        <h1>GOLDEN HORIZON</h1>
+        <h1>RESCUE MODE</h1>
         <div id="turn-txt">BLUE TURN</div>
     </div>
     <div id="log-panel" class="hud">
-        <div id="move-log">System: Optimization Complete.<br>Board: Seamless Shader.<br>Render: High Performance.</div>
+        <div id="move-log">System: Online.<br>Performance: Optimized.<br>Visuals: Golden Hour.</div>
     </div>
 </div>
 
@@ -45,26 +44,27 @@
 // --- 核心變數 ---
 let scene, camera, renderer, controls, raycaster, mouse, clock, composer;
 let game = new Chess();
-let piecesMap = {}; // 注意：tilesMap 在此版本移除，改用數學計算點擊
+let piecesMap = {}; 
 let selectedSquare = null, isProcessing = false;
 let grassMat, treeLeafMat, cloudParticles = [];
 const BOARD_HEIGHT = 15; 
-const BOARD_SIZE = 8;
+
+// --- 安全模式配置 ---
+const CONFIG = {
+    shadowSize: 1024,   // 降低陰影解析度 (從4096降到1024)
+    grassCount: 3000,   // 降低草量 (從12000降到3000)
+    treeCount: 50,      // 降低樹木數量 (從350降到50)
+    terrainSegs: 64     // 降低地形面數 (從128降到64)
+};
 
 const CHESS_NAMES = { k: 'KING', q: 'QUEEN', r: 'ROOK', b: 'BISHOP', n: 'KNIGHT', p: 'PAWN' };
 
-// --- 地形高度計算 (優化版) ---
 function getTerrainHeight(x, z) {
     const dist = Math.sqrt(x*x + z*z);
-    if (dist < 40) return -500; // 擴大深淵範圍，確保棋盤下無土
-    
-    // 簡化噪聲計算，提升效能
-    let h = Math.sin(x*0.015)*Math.cos(z*0.015)*25;
-    h += Math.sin(x*0.04 + z*0.03)*5;
-    
-    const cliff = smoothstep(40, 65, dist);
+    if (dist < 40) return -500; 
+    let h = Math.sin(x*0.02)*Math.cos(z*0.02)*20; // 簡化數學運算
+    const cliff = smoothstep(40, 60, dist);
     h = h * cliff + (1-cliff) * -150; 
-    
     return h - 30;
 }
 function smoothstep(min, max, value) {
@@ -73,71 +73,80 @@ function smoothstep(min, max, value) {
 }
 
 function init() {
-    clock = new THREE.Clock();
-    scene = new THREE.Scene();
-    
-    // 1. 氛圍：清澈明亮的黃金時刻
-    scene.fog = new THREE.FogExp2(0xffccaa, 0.001); 
-    scene.background = new THREE.Color(0x442211);
+    try {
+        clock = new THREE.Clock();
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0xffccaa, 0.001); 
+        scene.background = new THREE.Color(0x442211);
 
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
-    camera.position.set(0, 40, 50);
+        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 3000);
+        camera.position.set(0, 40, 50);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2; // 提高亮度
-    document.body.appendChild(renderer.domElement);
+        // 降低渲染壓力
+        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "default" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+        document.body.appendChild(renderer.domElement);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.maxPolarAngle = Math.PI / 1.95;
-    controls.minDistance = 10; controls.maxDistance = 250;
-    controls.target.set(0, BOARD_HEIGHT, 0);
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.maxPolarAngle = Math.PI / 1.95;
+        controls.minDistance = 10; controls.maxDistance = 250;
+        controls.target.set(0, BOARD_HEIGHT, 0);
 
-    setupLighting();
-    setupPostProcessing();
+        setupLighting();
+        setupPostProcessing();
 
-    // 優化：直接執行，因為運算量已減少
-    setTimeout(() => {
-        createFloatingBoardShader(); // 使用 Shader 棋盤
+        // 關鍵：不再等待複雜運算，直接生成核心物件
+        createFloatingBoardShader();
         createRingTerrain();
-        createOptimizedVegetation(); // 優化植被
-        createSunsetClouds();
-        syncPieces();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('ui').style.display = 'block';
-    }, 50); // 極短延遲
+        
+        // 輕量化生成
+        setTimeout(() => {
+            createOptimizedVegetation();
+            createSunsetClouds();
+            syncPieces();
+            
+            // 隱藏 Loading
+            const loader = document.getElementById('loading');
+            loader.style.opacity = 0;
+            setTimeout(() => loader.style.display = 'none', 500);
+            document.getElementById('ui').style.display = 'block';
+        }, 100);
 
-    raycaster = new THREE.Raycaster();
-    mouse = new THREE.Vector2();
-    window.addEventListener('click', onMouseClick);
-    window.addEventListener('resize', onResize);
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
+        window.addEventListener('click', onMouseClick);
+        window.addEventListener('resize', onResize);
 
-    animate();
+        animate();
+    } catch (e) {
+        alert("啟動失敗: " + e.message);
+    }
 }
 
 function setupPostProcessing() {
     const renderScene = new THREE.RenderPass(scene, camera);
     const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPass.strength = 0.4; // 稍微降低輝光，避免過曝
-    bloomPass.radius = 0.4; 
-    bloomPass.threshold = 0.85;
+    bloomPass.strength = 0.4; bloomPass.radius = 0.4; bloomPass.threshold = 0.85;
     composer = new THREE.EffectComposer(renderer);
     composer.addPass(renderScene); composer.addPass(bloomPass);
 }
 
 function setupLighting() {
-    const ambient = new THREE.AmbientLight(0xffddcc, 0.9); // 高亮度環境光
+    const ambient = new THREE.AmbientLight(0xffddcc, 0.8);
     scene.add(ambient);
 
-    const sunLight = new THREE.DirectionalLight(0xffaa55, 3.2);
-    sunLight.position.set(-200, 60, -200); // 稍微拉高角度，減少過長陰影
+    const sunLight = new THREE.DirectionalLight(0xffaa55, 2.5);
+    sunLight.position.set(-150, 60, -150);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.set(2048, 2048); // 降低一點解析度換取效能
-    const d = 400;
+    
+    // 優化：縮小陰影貼圖尺寸
+    sunLight.shadow.mapSize.set(CONFIG.shadowSize, CONFIG.shadowSize);
+    const d = 300;
     sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
     sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
     scene.add(sunLight);
@@ -151,99 +160,59 @@ function setupLighting() {
     const sunGeo = new THREE.SphereGeometry(60, 16, 16);
     const sunMat = new THREE.MeshBasicMaterial({ color: 0xff9900, fog: false });
     const sunSphere = new THREE.Mesh(sunGeo, sunMat);
-    sunSphere.position.copy(sunLight.position).normalize().multiplyScalar(2500);
+    sunSphere.position.copy(sunLight.position).normalize().multiplyScalar(2000);
     scene.add(sunSphere);
 }
 
-// --- 2. 完美無縫棋盤 (Shader Board) ---
+// --- 棋盤 (Shader Board) ---
 function createFloatingBoardShader() {
-    // 懸浮底座
-    const baseGeo = new THREE.CylinderGeometry(2, 12, 6, 32);
+    const baseGeo = new THREE.CylinderGeometry(2, 12, 6, 16); // 降低面數
     const baseMat = new THREE.MeshStandardMaterial({ color: 0x181010, roughness: 0.7 });
     const base = new THREE.Mesh(baseGeo, baseMat);
     base.position.y = BOARD_HEIGHT - 3.5; base.castShadow = true; scene.add(base);
 
-    // 能量環
-    const ringGeo = new THREE.TorusGeometry(8, 0.2, 16, 64);
+    const ringGeo = new THREE.TorusGeometry(8, 0.2, 16, 32); // 降低面數
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xff7700 });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = Math.PI / 2; ring.position.y = BOARD_HEIGHT - 5;
     scene.add(ring);
     new TWEEN.Tween(ring.rotation).to({z: Math.PI*2}, 20000).repeat(Infinity).start();
 
-    // --- 核心：Shader 棋盤面 ---
-    const boardGeo = new THREE.BoxGeometry(8, 0.5, 8); // 8x8 單位
-    
-    // 自定義 Shader：直接在像素層面畫格子，絕對無縫，無 Z-fighting
+    // Shader Board
+    const boardGeo = new THREE.BoxGeometry(8, 0.5, 8);
     const boardShaderMat = new THREE.ShaderMaterial({
-        uniforms: {
-            uColorWhite: { value: new THREE.Color(0xffeebb) }, // 暖白
-            uColorBlack: { value: new THREE.Color(0x553333) }  // 暖黑
-        },
-        vertexShader: `
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
-            }
-        `,
+        uniforms: { uColorWhite: { value: new THREE.Color(0xffeebb) }, uColorBlack: { value: new THREE.Color(0x553333) } },
+        vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0); }`,
         fragmentShader: `
-            uniform vec3 uColorWhite;
-            uniform vec3 uColorBlack;
-            varying vec2 vUv;
-            
-            // 偽隨機噪聲
-            float random(vec2 st) {
-                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-            }
-
+            uniform vec3 uColorWhite; uniform vec3 uColorBlack; varying vec2 vUv;
             void main() {
-                // 將 UV (0~1) 映射到 8x8 格子
                 vec2 grid = floor(vUv * 8.0);
                 float check = mod(grid.x + grid.y, 2.0);
-                
-                // 基礎顏色混合
                 vec3 color = mix(uColorBlack, uColorWhite, check);
-                
-                // 添加細微噪聲紋理 (像石頭質感)
-                float noise = random(vUv * 50.0) * 0.05;
-                color += noise;
-                
-                // 邊緣高光 (可選)
                 gl_FragColor = vec4(color, 1.0);
             }
         `
     });
-
     const board = new THREE.Mesh(boardGeo, boardShaderMat);
-    board.position.y = BOARD_HEIGHT - 0.25; 
-    board.receiveShadow = true; 
-    
-    // 為了 Raycaster 能點擊到正確座標，我們需要一個不可見的 Plane 或邏輯映射
-    // 這裡我們直接利用 board Mesh 本身，稍後在點擊事件中計算 UV
-    board.userData = { isBoard: true };
+    board.position.y = BOARD_HEIGHT - 0.25; board.receiveShadow = true; board.userData = { isBoard: true };
     scene.add(board);
     
-    // 邊框
     const border = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.45, 8.4), new THREE.MeshStandardMaterial({ color: 0x221111 }));
     border.position.y = BOARD_HEIGHT - 0.27; border.receiveShadow=true; scene.add(border);
 }
 
 function createRingTerrain() {
-    const geo = new THREE.PlaneGeometry(2000, 2000, 64, 64); // 降低細分
+    const geo = new THREE.PlaneGeometry(2000, 2000, CONFIG.terrainSegs, CONFIG.terrainSegs);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes.position;
-    for(let i=0; i<pos.count; i++){
-        pos.setY(i, getTerrainHeight(pos.getX(i), pos.getZ(i)));
-    }
+    for(let i=0; i<pos.count; i++){ pos.setY(i, getTerrainHeight(pos.getX(i), pos.getZ(i))); }
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x4a3b2a, roughness: 1.0 }); // 土壤色
+    const mat = new THREE.MeshStandardMaterial({ color: 0x4a3b2a, roughness: 1.0 });
     const terrain = new THREE.Mesh(geo, mat);
     terrain.receiveShadow = true;
     scene.add(terrain);
 }
 
-// --- 3. 優化植被 (減少數量，保持視覺衝擊) ---
 function createOptimizedVegetation() {
     const group = new THREE.Group();
     treeLeafMat = new THREE.MeshStandardMaterial({ color: 0x334422, flatShading: true });
@@ -255,44 +224,40 @@ function createOptimizedVegetation() {
     };
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817 });
     const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 5, 5); trunkGeo.translate(0, 2.5, 0);
-    const leafGeo = new THREE.DodecahedronGeometry(2.5, 0); // 降低細分 (0)
+    const leafGeo = new THREE.DodecahedronGeometry(2.5, 0);
 
-    // 樹木：350 棵 (足夠茂密但效能好)
-    for(let i=0; i<350; i++) {
+    // 樹木：安全數量 50
+    for(let i=0; i<CONFIG.treeCount; i++) {
         const theta = Math.random()*Math.PI*2;
-        const r = 50 + Math.random()*300;
+        const r = 50 + Math.random()*200;
         const x=Math.cos(theta)*r, z=Math.sin(theta)*r;
         const h = getTerrainHeight(x, z);
         if(h < -100) continue;
 
         const tree = new THREE.Group();
-        const trunk = new THREE.Mesh(trunkGeo, trunkMat); 
-        trunk.castShadow=true; tree.add(trunk);
-        
-        for(let j=0; j<4; j++) { // 減少每棵樹的葉團數
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat); trunk.castShadow=true; tree.add(trunk);
+        for(let j=0; j<3; j++) { // 減少每棵樹的葉團
             const leaf = new THREE.Mesh(leafGeo, treeLeafMat);
             leaf.position.set((Math.random()-0.5)*3, 5+Math.random()*2, (Math.random()-0.5)*3);
             leaf.scale.setScalar(0.8+Math.random()*0.4); leaf.castShadow=true; tree.add(leaf);
         }
-        tree.position.set(x, h, z); 
-        tree.scale.setScalar(0.8 + Math.random()*0.5);
-        group.add(tree);
+        tree.position.set(x, h, z); group.add(tree);
     }
     scene.add(group);
     
-    // 草地：InstancedMesh (12000片)
-    const bladeGeo = new THREE.PlaneGeometry(0.25, 1.2); bladeGeo.translate(0, 0.6, 0); // 加寬加高，減少數量
+    // 草地：安全數量 3000
+    const bladeGeo = new THREE.PlaneGeometry(0.3, 1.5); bladeGeo.translate(0, 0.75, 0); // 變大草片，視覺不空
     grassMat = new THREE.MeshStandardMaterial({ color: 0x667722, side: THREE.DoubleSide });
     grassMat.onBeforeCompile = s => {
         s.uniforms.time={value:0}; s.vertexShader=`uniform float time;\n`+s.vertexShader;
         s.vertexShader=s.vertexShader.replace(`#include <begin_vertex>`, `vec3 transformed=vec3(position); float w=sin(time*1.2+position.x*0.5+position.z*0.5)*0.3*position.y; transformed.x+=w; #include <begin_vertex>`);
         grassMat.userData.shader=s;
     };
-    const iGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 12000);
+    const iGrass = new THREE.InstancedMesh(bladeGeo, grassMat, CONFIG.grassCount);
     const dum = new THREE.Object3D();
     let count = 0;
-    for(let i=0; i<20000; i++){
-        if(count >= 12000) break;
+    for(let i=0; i<10000; i++){
+        if(count >= CONFIG.grassCount) break;
         const a=Math.random()*Math.PI*2, r=Math.random()*150;
         const x=Math.cos(a)*r, z=Math.sin(a)*r;
         const h = getTerrainHeight(x, z);
@@ -305,70 +270,51 @@ function createOptimizedVegetation() {
     iGrass.receiveShadow=true; scene.add(iGrass);
 }
 
-// --- 4. 雲與棋子 (維持原樣) ---
 function createSunsetClouds() {
-    const cv=document.createElement('canvas'); cv.width=64; cv.height=64; // 縮小紋理尺寸優化
+    const cv=document.createElement('canvas'); cv.width=64; cv.height=64;
     const cx=cv.getContext('2d'), g=cx.createRadialGradient(32,32,0,32,32,32);
-    g.addColorStop(0, 'rgba(255, 180, 100, 0.5)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    g.addColorStop(0, 'rgba(255, 180, 100, 0.4)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     cx.fillStyle=g; cx.fillRect(0,0,64,64);
     const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     
-    for(let i=0; i<25; i++) {
+    for(let i=0; i<20; i++) {
         const cl = new THREE.Group();
-        for(let j=0; j<20; j++) {
+        for(let j=0; j<15; j++) {
             const p = new THREE.Sprite(mat); 
             p.position.set((Math.random()-0.5)*40, (Math.random()-0.5)*15, (Math.random()-0.5)*40); 
             p.scale.setScalar(20+Math.random()*30); cl.add(p);
         }
-        cl.position.set((Math.random()-0.5)*800, 150+Math.random()*80, (Math.random()-0.5)*800);
+        cl.position.set((Math.random()-0.5)*600, 150+Math.random()*80, (Math.random()-0.5)*600);
         scene.add(cl); cloudParticles.push(cl);
     }
 }
 
-// --- 棋子與邏輯 (適配 Shader Board) ---
+// --- 實體棋子 ---
 function createSolidPiece(t,c){const g=new THREE.Group(),mat=c==='w'?new THREE.MeshStandardMaterial({color:0xeeeeff,roughness:0.2,metalness:0.5}):new THREE.MeshStandardMaterial({color:0x222222,roughness:0.3,metalness:0.8}),glow=c==='w'?new THREE.MeshStandardMaterial({color:0x00e5ff,emissive:0x00e5ff,emissiveIntensity:2}):new THREE.MeshStandardMaterial({color:0xff0055,emissive:0xff0055,emissiveIntensity:2});const base=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.45,0.2,32),mat);base.position.y=0.1;base.castShadow=true;base.receiveShadow=true;g.add(base);
-if(t==='p'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,0.6,16),mat);b.position.y=0.5;b.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32),mat);h.position.y=0.95;h.castShadow=true;g.add(b,h);}else if(t==='r'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.8,32),mat);b.position.y=0.6;b.castShadow=true;const tp=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.3,32),mat);tp.position.y=1.1;tp.castShadow=true;const rg=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.05,16,32),glow);rg.position.y=1.25;rg.rotation.x=Math.PI/2;g.add(b,tp,rg);}else if(t==='b'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,1.0,16),mat);b.position.y=0.7;b.castShadow=true;const h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.25,0.5,16),mat);h.position.y=1.4;h.castShadow=true;const tp=new THREE.Mesh(new THREE.SphereGeometry(0.08),glow);tp.position.y=1.7;g.add(b,h,tp);}else if(t==='n'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,0.6,16),mat);b.position.y=0.5;b.castShadow=true;const h=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.6,0.2),mat);h.position.set(0,1.0,0.1);h.rotation.x=-Math.PI/6;h.castShadow=true;const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.05),glow);m.position.set(0,1.1,-0.15);m.rotation.x=-Math.PI/6;g.add(b,h,m);if(c==='b')g.rotation.y=Math.PI;}else if(t==='q'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.4,1.4,32),mat);b.position.y=0.9;b.castShadow=true;const t=new THREE.Mesh(new THREE.SphereGeometry(0.15),glow);t.position.y=1.7;group.add(b,t);}else if(t==='k'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.45,1.6,32),mat);b.position.y=1.0;b.castShadow=true;const c=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.4,0.1),glow);c.position.y=1.95;group.add(b,c);}
-return group;}
+if(t==='p'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,0.6,16),mat);b.position.y=0.5;b.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32),mat);h.position.y=0.95;h.castShadow=true;g.add(b,h);}else if(t==='r'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.8,32),mat);b.position.y=0.6;b.castShadow=true;const tp=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.3,32),mat);tp.position.y=1.1;tp.castShadow=true;const rg=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.05,16,32),glow);rg.position.y=1.25;rg.rotation.x=Math.PI/2;g.add(b,tp,rg);}else if(t==='b'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,1.0,16),mat);b.position.y=0.7;b.castShadow=true;const h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.25,0.5,16),mat);h.position.y=1.4;h.castShadow=true;const tp=new THREE.Mesh(new THREE.SphereGeometry(0.08),glow);tp.position.y=1.7;g.add(b,h,tp);}else if(t==='n'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,0.6,16),mat);b.position.y=0.5;b.castShadow=true;const h=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.6,0.2),mat);h.position.set(0,1.0,0.1);h.rotation.x=-Math.PI/6;h.castShadow=true;const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.05),glow);m.position.set(0,1.1,-0.15);m.rotation.x=-Math.PI/6;g.add(b,h,m);if(c==='b')g.rotation.y=Math.PI;}else if(t==='q'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.4,1.4,32),mat);b.position.y=0.9;b.castShadow=true;const t=new THREE.Mesh(new THREE.SphereGeometry(0.15),glow);t.position.y=1.7;g.add(b,t);}else if(t==='k'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.45,1.6,32),mat);b.position.y=1.0;b.castShadow=true;const c=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.4,0.1),glow);c.position.y=1.95;g.add(b,c);}
+return g;}
 function syncPieces(){for(let sq in piecesMap)scene.remove(piecesMap[sq]);piecesMap={};const b=game.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const sq=String.fromCharCode(97+c)+(8-r),s=createSolidPiece(p.type,p.color);s.position.set(c-3.5, BOARD_HEIGHT, r-3.5);scene.add(s);piecesMap[sq]=s;}}}
 
-// --- 交互 (更新 Raycaster 適配 Shader Board) ---
+// --- 交互 ---
 function onMouseClick(e){
     if(isProcessing)return;
     mouse.x=(e.clientX/window.innerWidth)*2-1; mouse.y=-(e.clientY/window.innerHeight)*2+1;
     raycaster.setFromCamera(mouse,camera);
-    
-    // 檢測是否點擊到棋盤
     const intersects = raycaster.intersectObjects(scene.children);
     for(let i=0; i<intersects.length; i++) {
         if(intersects[i].object.userData.isBoard) {
-            // 將點擊點轉換為棋盤座標 (8x8)
             const point = intersects[i].point;
-            // 棋盤中心是 (0, BOARD_HEIGHT, 0)，範圍是 -4 到 4
-            const x = Math.floor(point.x + 4);
-            const z = Math.floor(point.z + 4);
+            const x = Math.floor(point.x + 4); const z = Math.floor(point.z + 4);
             if(x>=0 && x<8 && z>=0 && z<8) {
-                // 轉換為西洋棋代號 (z對應row 0-7 -> rank 8-1)
-                const c = x; 
-                const r = 7 - z; // z=0 is top row (rank 8)
-                const square = String.fromCharCode(97+c) + (r+1);
-                handleInteraction(square);
+                handleInteraction(String.fromCharCode(97+x) + (8-z));
                 return;
             }
         }
     }
 }
-function handleInteraction(sq){const p=game.get(sq);if(!selectedSquare){if(p&&p.color==='w'&&game.turn()==='w')selectSquare(sq);}else{if(p&&p.color==='w'){selectSquare(sq);return;}const m=game.move({from:selectedSquare,to:sq,promotion:'q'});if(m)animateMove(m);else{selectedSquare=null;}}} // 移除高亮邏輯簡化
-function selectSquare(sq){selectedSquare=sq; log("Selected: " + sq);} // 簡單日誌，Shader Board 不做複雜高亮以保持效能
-
+function handleInteraction(sq){const p=game.get(sq);if(!selectedSquare){if(p&&p.color==='w'&&game.turn()==='w')selectedSquare=sq;}else{if(p&&p.color==='w'){selectedSquare=sq;return;}const m=game.move({from:selectedSquare,to:sq,promotion:'q'});if(m)animateMove(m);else{selectedSquare=null;}}}
 function animateMove(m){
-    isProcessing=true; 
-    const s=piecesMap[m.from]; 
-    // 計算目標世界座標
-    const c = m.to.charCodeAt(0) - 97;
-    const r = parseInt(m.to[1]) - 1;
-    const tx = c - 3.5;
-    const tz = 3.5 - r;
-
+    isProcessing=true; const s=piecesMap[m.from]; const c=m.to.charCodeAt(0)-97; const r=parseInt(m.to[1])-1; const tx=c-3.5; const tz=3.5-r;
     if(m.captured&&piecesMap[m.to])scene.remove(piecesMap[m.to]);
     new TWEEN.Tween(s.position).to({x:tx, z:tz}, 500).easing(TWEEN.Easing.Quadratic.Out).start();
     new TWEEN.Tween(s.position).to({y: BOARD_HEIGHT + 2}, 250).easing(TWEEN.Easing.Cubic.Out).chain(
@@ -379,9 +325,7 @@ function animateMove(m){
 }
 function makeRandomAI(){const ms=game.moves();if(ms.length===0)return;game.move(ms[Math.floor(Math.random()*ms.length)]);syncPieces();updateStatus();isProcessing=false;}
 function updateStatus(){const t=document.getElementById('turn-txt');t.innerText=game.turn()==='w'?"BLUE TURN":"AI TURN";t.style.color=game.turn()==='w'?"#00e5ff":"#ff0055";}
-function log(m){document.getElementById('move-log').innerText+=`\n> ${m}`;}
 function onResize(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);composer.setSize(window.innerWidth,window.innerHeight);}
-
 function animate(){
     requestAnimationFrame(animate); const t=clock.getElapsedTime(); TWEEN.update(); controls.update();
     if(grassMat&&grassMat.userData.shader)grassMat.userData.shader.uniforms.time.value=t;
