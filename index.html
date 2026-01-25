@@ -2,32 +2,31 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>二次元西洋棋：正統開局版</title>
+    <title>二次元西洋棋：萌妹覺醒版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background: #0f0f0f; font-family: 'Microsoft JhengHei', sans-serif; }
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .panel { position: absolute; background: rgba(0,0,0,0.85); color: white; padding: 20px; border-radius: 12px; pointer-events: auto; border: 1px solid #81b64c; }
-        #gacha-panel { top: 20px; left: 20px; width: 260px; }
+        .panel { position: absolute; background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 15px; pointer-events: auto; border: 2px solid #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+        #gacha-panel { top: 20px; left: 20px; width: 280px; }
         #status-panel { top: 20px; right: 20px; text-align: right; }
-        .btn { background: #81b64c; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-        .btn:hover { background: #a3d160; }
-        .info-text { font-size: 14px; color: #ccc; margin-top: 5px; }
+        .btn { background: linear-gradient(45deg, #ffd700, #ff8c00); color: black; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
+        .btn:hover { filter: brightness(1.2); transform: scale(1.02); }
+        #turn-info { font-size: 1.5em; font-weight: bold; text-shadow: 0 0 10px rgba(0,229,255,0.5); }
     </style>
 </head>
 <body>
 
 <div id="ui">
     <div id="gacha-panel" class="panel">
-        <h2 style="margin:0 0 10px 0; color:#81b64c;">召喚祭壇</h2>
-        <div id="count">點擊召喚以解鎖角色 Skin</div>
-        <button id="draw-btn" class="btn">進行召喚</button>
-        <button id="start-btn" class="btn" style="display:none; background:#4581c5">標準開局</button>
-        <div class="info-text">※ 召喚滿 16 次後依標準規則佈陣</div>
+        <h2 style="margin:0 0 10px 0; color:#ffd700;">英雄召喚</h2>
+        <div id="count">正在同步次元數據...</div>
+        <button id="draw-btn" class="btn">進行十連抽</button>
+        <button id="start-btn" class="btn" style="display:none;">標準開局 (萌妹 Mode)</button>
     </div>
     <div id="status-panel" class="panel">
-        <div style="font-size: 1.2em;">回合：<span id="turn-display" style="color:#00e5ff">白方 (你)</span></div>
-        <div id="msg" style="font-size: 0.9em; color:#aaa; margin-top:5px;">準備就緒</div>
+        <div id="turn-info">回合：<span id="turn-display" style="color:#00e5ff">白方 (玩家)</span></div>
+        <div style="color: #aaa; margin-top: 5px;">目標：吃掉對方的魔王國王！</div>
     </div>
 </div>
 
@@ -36,36 +35,34 @@ let scene, camera, renderer, raycaster, mouse;
 let board = [], pieces = [], playerDrawn = [];
 let selectedPiece = null, currentTurn = 'white', gameState = 'drawing';
 
-// 西洋棋標準角色順序 (由左至右)
-const STANDARD_ORDER = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
-const ROLES_INFO = {
-    king: { label: '♔', name: 'KING' },
-    queen: { label: '♕', name: 'QUEEN' },
-    rook: { label: '♖', name: 'ROOK' },
-    knight: { label: '♘', name: 'KNIGHT' },
-    bishop: { label: '♗', name: 'BISHOP' },
-    pawn: { label: '♙', name: 'PAWN' }
+const CHAR_SKINS = {
+    king: { label: '♔', name: '魔界領主', sub: 'KING', color: '#ff4444' },
+    queen: { label: '♕', name: '冰霜女皇', sub: 'QUEEN', color: '#00ccff' },
+    rook: { label: '♖', name: '重裝姬', sub: 'ROOK', color: '#aaaaaa' },
+    knight: { label: '♘', name: '疾風騎士', sub: 'KNIGHT', color: '#44ff44' },
+    bishop: { label: '♗', name: '星辰聖女', sub: 'BISHOP', color: '#ff44ff' },
+    pawn: { label: '♙', name: '劍士少女', sub: 'PAWN', color: '#ffff44' }
 };
 
 function init() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x222222);
+    scene.background = new THREE.Color(0x111111);
     camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 10, 10);
+    camera.position.set(0, 11, 11);
     camera.lookAt(0, 0, 0);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 1.0);
+    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambient);
 
     // 棋盤
     for(let r=0; r<8; r++) {
         for(let c=0; c<8; c++) {
             const geo = new THREE.PlaneGeometry(0.98, 0.98);
-            const mat = new THREE.MeshBasicMaterial({ color: (r+c)%2===0 ? 0xeeeed2 : 0x769656 });
+            const mat = new THREE.MeshStandardMaterial({ color: (r+c)%2===0 ? 0xdddddd : 0x555555 });
             const tile = new THREE.Mesh(geo, mat);
             tile.rotation.x = -Math.PI / 2;
             tile.position.set(c-3.5, 0, r-3.5);
@@ -81,11 +78,10 @@ function init() {
     animate();
 }
 
-// 抽卡 (純粹解鎖 Skin 感)
 document.getElementById('draw-btn').onclick = () => {
     if(playerDrawn.length >= 16) return;
     playerDrawn.push({ id: Math.random() });
-    document.getElementById('count').innerText = `已解鎖 Skin: ${playerDrawn.length}/16`;
+    document.getElementById('count').innerText = `已解鎖精美立繪: ${playerDrawn.length}/16`;
     if(playerDrawn.length === 16) {
         document.getElementById('draw-btn').style.display='none';
         document.getElementById('start-btn').style.display='block';
@@ -95,46 +91,58 @@ document.getElementById('draw-btn').onclick = () => {
 document.getElementById('start-btn').onclick = () => {
     gameState = 'playing';
     document.getElementById('gacha-panel').style.display = 'none';
-    setupStandardGame();
+    setupBoard();
 };
 
-function setupStandardGame() {
-    // 白方
-    STANDARD_ORDER.forEach((type, c) => createPiece(type, 'white', 0, c));
-    for(let c=0; c<8; c++) createPiece('pawn', 'white', 1, c);
-    // 黑方
-    STANDARD_ORDER.forEach((type, c) => createPiece(type, 'black', 7, c));
-    for(let c=0; c<8; c++) createPiece('pawn', 'black', 6, c);
+function setupBoard() {
+    const layout = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
+    layout.forEach((type, c) => {
+        createPiece(type, 'white', 0, c);
+        createPiece(type, 'black', 7, c);
+    });
+    for(let c=0; c<8; c++) {
+        createPiece('pawn', 'white', 1, c);
+        createPiece('pawn', 'black', 6, c);
+    }
 }
 
 function createPiece(type, side, r, c) {
-    const info = ROLES_INFO[type];
+    const skin = CHAR_SKINS[type];
     const canvas = document.createElement('canvas');
     canvas.width = 256; canvas.height = 384;
     const ctx = canvas.getContext('2d');
     
-    // 敵我鮮明配色：白方青色，黑方紫色
-    const themeColor = side === 'white' ? '#00e5ff' : '#9d00ff';
-    ctx.fillStyle = themeColor;
+    // 背景漸層
+    const grad = ctx.createLinearGradient(0, 0, 0, 384);
+    grad.addColorStop(0, side === 'white' ? '#1a2a6c' : '#4b0082');
+    grad.addColorStop(1, '#000000');
+    ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 256, 384);
     
-    // 角色圖示
+    // 裝飾外框
+    ctx.strokeStyle = side === 'white' ? '#00e5ff' : '#ff00ff';
+    ctx.lineWidth = 15;
+    ctx.strokeRect(5, 5, 246, 374);
+    
+    // 角色符號 (暫代立繪，但加上發光效果)
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = skin.color;
     ctx.fillStyle = 'white';
-    ctx.font = 'bold 180px serif'; ctx.textAlign = 'center';
-    ctx.fillText(info.label, 128, 220);
+    ctx.font = 'bold 160px serif'; ctx.textAlign = 'center';
+    ctx.fillText(skin.label, 128, 200);
     
-    // 底部名稱標註
-    ctx.font = 'bold 40px Arial';
-    ctx.fillText(info.name, 128, 330);
-    
-    // 外邊框
-    ctx.strokeStyle = 'white'; ctx.lineWidth = 15;
-    ctx.strokeRect(0,0,256,384);
+    // 名字與職稱標籤
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = side === 'white' ? '#00e5ff' : '#ff00ff';
+    ctx.font = 'bold 28px Arial';
+    ctx.fillText(`[ ${skin.name} ]`, 128, 280);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'italic 22px Arial';
+    ctx.fillText(skin.sub, 128, 330);
 
     const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.2), mat);
-    mesh.userData = { r, c, side, type, isPiece: true };
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.2), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+    mesh.userData = { r, c, side, type, isPiece: true, moved: false };
     updatePiecePos(mesh);
     scene.add(mesh);
     pieces.push(mesh);
@@ -144,19 +152,25 @@ function updatePiecePos(p) {
     p.position.set(p.userData.c - 3.5, 0.6, p.userData.r - 3.5);
 }
 
-// 標準棋規 (簡化版邏輯，確保嚴謹)
+// 西洋棋進階規則引擎
 function getMoves(p) {
-    const { r, c, type, side } = p.userData;
+    const { r, c, type, side, moved } = p.userData;
     let moves = [];
     const enemy = side === 'white' ? 'black' : 'white';
     const getPiece = (rr, cc) => pieces.find(x => x.userData.r === rr && x.userData.c === cc);
 
     if (type === 'pawn') {
         const dir = side === 'white' ? 1 : -1;
-        if (r+dir>=0 && r+dir<=7 && !getPiece(r+dir, c)) moves.push({r: r+dir, c});
+        // 基本前進
+        if (!getPiece(r + dir, c)) {
+            moves.push({r: r + dir, c});
+            // 第一步走兩格
+            if (!moved && !getPiece(r + dir * 2, c)) moves.push({r: r + dir * 2, c});
+        }
+        // 斜吃
         [-1, 1].forEach(dc => {
-            const t = getPiece(r+dir, c+dc);
-            if (t && t.userData.side === enemy) moves.push({r: r+dir, c: c+dc});
+            const target = getPiece(r + dir, c + dc);
+            if (target && target.userData.side === enemy) moves.push({r: r + dir, c: c + dc});
         });
     } else if (type === 'knight') {
         [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(d=>{
@@ -177,11 +191,11 @@ function getMoves(p) {
                 }
             }
         }
+        // 簡易版王車易位邏輯可以在此擴充
     } else {
-        let dirs = [];
-        if(type==='rook') dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-        if(type==='bishop') dirs = [[1,1],[1,-1],[-1,1],[-1,-1]];
-        if(type==='queen') dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+        const dirs = type==='rook' ? [[1,0],[-1,0],[0,1],[0,-1]] : 
+                     type==='bishop' ? [[1,1],[1,-1],[-1,1],[-1,-1]] : 
+                     [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
         dirs.forEach(d=>{
             let rr=r+d[0], cc=c+d[1];
             while(rr>=0&&rr<=7&&cc>=0&&cc<=7){
@@ -201,18 +215,16 @@ function onClick(e) {
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(scene.children);
     if(hits.length > 0) {
-        const obj = hits[0].object;
-        if(obj.userData.isPiece && obj.userData.side === 'white') {
+        const obj = hits.find(h => h.object.userData.isPiece && h.object.userData.side === 'white')?.object || 
+                    hits.find(h => h.object.userData.isTile)?.object;
+        
+        if(obj && obj.userData.isPiece && obj.userData.side === 'white') {
             selectedPiece = obj;
             highlight(getMoves(obj));
-        } else if(selectedPiece) {
-            const hit = hits.find(h => h.object.userData.isTile || h.object.userData.isPiece);
-            if(hit) {
-                const target = hit.object.userData;
-                const tr = target.r !== undefined ? target.r : target.row;
-                const tc = target.c !== undefined ? target.c : target.col;
-                if(getMoves(selectedPiece).some(m => m.r === tr && m.c === tc)) doMove(selectedPiece, tr, tc);
-            }
+        } else if(selectedPiece && obj) {
+            const tr = obj.userData.r !== undefined ? obj.userData.r : obj.userData.row;
+            const tc = obj.userData.c !== undefined ? obj.userData.c : obj.userData.col;
+            if(getMoves(selectedPiece).some(m => m.r === tr && m.c === tc)) doMove(selectedPiece, tr, tc);
         }
     }
 }
@@ -222,48 +234,51 @@ function doMove(p, r, c) {
     if(enemy) {
         scene.remove(enemy);
         pieces = pieces.filter(x => x !== enemy);
-        if(enemy.userData.type === 'king') alert(p.userData.side === 'white' ? "恭喜獲勝！" : "你輸了...");
+        if(enemy.userData.type === 'king') alert("GAME OVER! 你贏了！");
     }
     p.userData.r = r; p.userData.c = c;
+    p.userData.moved = true; // 標記已移動過
     updatePiecePos(p);
     resetBoard();
     selectedPiece = null;
     currentTurn = currentTurn === 'white' ? 'black' : 'white';
-    const turnDisp = document.getElementById('turn-display');
-    turnDisp.innerText = currentTurn === 'white' ? "白方 (你)" : "黑方 (AI)";
-    turnDisp.style.color = currentTurn === 'white' ? "#00e5ff" : "#9d00ff";
+    updateTurnDisplay();
     if(currentTurn === 'black') setTimeout(simpleAI, 800);
 }
 
 function simpleAI() {
     const blacks = pieces.filter(x => x.userData.side === 'black');
-    // 優先吃子
+    // 優先吃子 AI
     for(let p of blacks) {
         const ms = getMoves(p);
-        for(let m of ms) {
-            if(pieces.find(x => x.userData.r === m.r && x.userData.c === m.c && x.userData.side === 'white')) {
-                doMove(p, m.r, m.c); return;
-            }
-        }
+        const kill = ms.find(m => pieces.find(x => x.userData.r === m.r && x.userData.c === m.c && x.userData.side === 'white'));
+        if(kill) { doMove(p, kill.r, kill.c); return; }
     }
-    // 隨機移動
-    const p = blacks[Math.floor(Math.random()*blacks.length)];
-    const ms = getMoves(p);
-    if(ms.length > 0) doMove(p, ms[0].r, ms[0].c);
-    else currentTurn = 'white';
+    // 沒得吃就隨機動
+    const movePieces = blacks.filter(p => getMoves(p).length > 0);
+    if(movePieces.length > 0) {
+        const p = movePieces[Math.floor(Math.random()*movePieces.length)];
+        const ms = getMoves(p);
+        doMove(p, ms[0].r, ms[0].c);
+    }
 }
 
 function highlight(moves) {
     resetBoard();
     moves.forEach(m => {
         const t = board.find(x => x.userData.row === m.r && x.userData.col === m.c);
-        if(t) t.material.color.set(0x81b64c);
+        if(t) t.material.color.set(0x00ffcc);
     });
 }
 function resetBoard() { board.forEach(t => t.material.color.copy(t.userData.defaultColor)); }
+function updateTurnDisplay() {
+    const disp = document.getElementById('turn-display');
+    disp.innerText = currentTurn === 'white' ? "白方 (玩家)" : "黑方 (電腦)";
+    disp.style.color = currentTurn === 'white' ? "#00e5ff" : "#ff00ff";
+}
 function animate() {
     requestAnimationFrame(animate);
-    pieces.forEach(p => { p.position.y = 0.6 + Math.sin(Date.now()*0.004 + p.userData.r)*0.06; });
+    pieces.forEach(p => { p.position.y = 0.6 + Math.sin(Date.now()*0.005 + p.userData.r)*0.05; });
     renderer.render(scene, camera);
 }
 init();
