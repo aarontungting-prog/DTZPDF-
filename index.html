@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：Gemini Pro 重構版</title>
+    <title>霓虹西洋棋：Slow Roads 極致環境版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
@@ -12,7 +12,7 @@
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Microsoft JhengHei', sans-serif; }
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-        .hud { position: absolute; background: rgba(0,0,0,0.8); color: white; padding: 15px; border-radius: 12px; pointer-events: auto; border: 1px solid #00e5ff; }
+        .hud { position: absolute; background: rgba(0,0,0,0.7); color: white; padding: 15px; border-radius: 12px; pointer-events: auto; border: 1px solid #00e5ff; backdrop-filter: blur(5px); }
         #status-panel { top: 20px; right: 20px; width: 220px; text-align: right; }
         #log-panel { bottom: 20px; left: 20px; width: 300px; max-height: 150px; overflow-y: auto; font-size: 13px; }
     </style>
@@ -26,473 +26,329 @@
         <div id="msg" style="color: #ffff00; font-size: 14px; margin-top: 5px;">點擊藍色棋子開始</div>
     </div>
     <div id="log-panel" class="hud">
-        <div id="move-log">系統啟動...<br>等待指令...</div>
+        <div id="move-log">環境載入完畢...<br>準備對戰。</div>
     </div>
 </div>
 
 <script>
-// --- 全域變數 ---
 let scene, camera, renderer, controls, raycaster, mouse, clock;
 let game = new Chess();
-// tilesMap: 儲存 square名稱 -> Mesh 的映射 (例如 "e2" -> Mesh)
-let tilesMap = {}; 
-// piecesMap: 儲存 square名稱 -> Sprite 的映射
-let piecesMap = {}; 
-let selectedSquare = null;
-let isProcessing = false;
-let grassMat, cloudMesh; // 環境材質
+let tilesMap = {}, piecesMap = {};
+let selectedSquare = null, isProcessing = false;
+let grassMat;
 
 const CHESS_NAMES = { k: '國王', q: '皇后', r: '城堡', b: '主教', n: '騎士', p: '兵卒' };
 
 function init() {
     clock = new THREE.Clock();
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x87ceeb, 20, 80); // 霧氣，遮擋邊緣
+    // 調整霧氣，讓遠處的雲和樹稍微朦朧一點，增加深度感
+    scene.fog = new THREE.FogExp2(0x87ceeb, 0.008);
 
-    // 1. 相機設置
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 12, 12); // 拉高視角，比較好點
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000); // 增加視距
+    camera.position.set(0, 15, 18); // 視角稍微拉高拉遠，看得到地平線
 
-    // 2. 渲染器設置
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 更柔和的陰影
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     document.body.appendChild(renderer.domElement);
 
-    // 3. 控制器
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.maxPolarAngle = Math.PI / 2.2; // 防止鑽到地底下
+    controls.maxPolarAngle = Math.PI / 2.1; // 允許視角低到接近地平線
 
-    // 4. 環境光源
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    sunLight.position.set(10, 20, 10);
+    sunLight.position.set(50, 100, 50); // 太陽拉遠
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048; 
-    sunLight.shadow.mapSize.height = 2048;
+    // 擴大陰影範圍以覆蓋更多樹木
+    sunLight.shadow.camera.left = -100; sunLight.shadow.camera.right = 100;
+    sunLight.shadow.camera.top = 100; sunLight.shadow.camera.bottom = -100;
+    sunLight.shadow.mapSize.width = 2048; sunLight.shadow.mapSize.height = 2048;
     scene.add(sunLight);
 
-    // 5. 建立場景物件
-    createEnvironment(); // 天空、雲、草、樹
-    createBoard();       // 棋盤
-    syncPieces();        // 棋子
+    createEnvironment();
+    createBoard();
+    syncPieces();
 
-    // 6. 交互事件
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
     window.addEventListener('click', onMouseClick);
     window.addEventListener('resize', onResize);
 
-    // 7. 開始動畫
     animate();
 }
 
-// --- 環境生成 (保證有樹有雲) ---
+// --- 環境生成 (Slow Roads 風格升級) ---
 function createEnvironment() {
-    // A. 天空 (Sky Shader)
+    // A. 天空 (Sky Shader) - 調整為更清澈的藍天
     const sky = new THREE.Sky();
     sky.scale.setScalar(450000);
     scene.add(sky);
     const sun = new THREE.Vector3();
     const uniforms = sky.material.uniforms;
-    uniforms['turbidity'].value = 10;
-    uniforms['rayleigh'].value = 3;
+    uniforms['turbidity'].value = 5; // 更清澈
+    uniforms['rayleigh'].value = 2;
     uniforms['mieCoefficient'].value = 0.005;
-    uniforms['mieDirectionalG'].value = 0.7;
-    // 設定太陽位置
-    const phi = THREE.MathUtils.degToRad(88);
-    const theta = THREE.MathUtils.degToRad(180);
-    sun.setFromSphericalCoords(1, phi, theta);
+    uniforms['mieDirectionalG'].value = 0.8;
+    sun.setFromSphericalCoords(1, THREE.MathUtils.degToRad(80), THREE.MathUtils.degToRad(180));
     uniforms['sunPosition'].value.copy(sun);
 
-    // B. 地面 (深綠色)
-    const groundGeo = new THREE.PlaneGeometry(200, 200);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a4015 });
+    // B. 地面
+    const groundGeo = new THREE.PlaneGeometry(500, 500); // 擴大地面
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a3315, roughness: 0.8 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // C. 雲朵 (使用多個透明球體模擬，不依賴圖片)
-    const cloudGroup = new THREE.Group();
-    const cloudGeo = new THREE.DodecahedronGeometry(1, 0);
-    const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
-    
-    for(let i=0; i<15; i++) {
-        const cloud = new THREE.Mesh(cloudGeo, cloudMat);
-        cloud.position.set(Math.random()*60-30, 15 + Math.random()*5, Math.random()*40-30);
-        cloud.scale.setScalar(2 + Math.random()*3);
-        cloudGroup.add(cloud);
-    }
-    cloudMesh = cloudGroup; // 存起來做動畫
-    scene.add(cloudGroup);
-
-    // D. 實例化草地 (使用簡單幾何體，保證顯示)
-    const bladeGeo = new THREE.PlaneGeometry(0.1, 0.5);
-    bladeGeo.translate(0, 0.25, 0); // 底部對齊
-    grassMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, side: THREE.DoubleSide });
-    
-    // 風力 Shader 注入
+    // C. 實例化草地 (更茂密、風動更自然)
+    const bladeGeo = new THREE.PlaneGeometry(0.1, 0.6); // 草更高一點
+    bladeGeo.translate(0, 0.3, 0);
+    grassMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27, side: THREE.DoubleSide });
     grassMat.onBeforeCompile = (shader) => {
         shader.uniforms.time = { value: 0 };
         shader.vertexShader = `uniform float time;\n` + shader.vertexShader;
+        // 更柔和自然的風力波形公式
         shader.vertexShader = shader.vertexShader.replace(
             `#include <begin_vertex>`,
             `vec3 transformed = vec3(position);
-             float wave = sin(time * 2.0 + position.x * 2.0 + position.z) * 0.1 * position.y;
+             float wave = sin(time * 1.5 + position.x * 1.5 + position.z * 0.5) * 0.1 * position.y;
              transformed.x += wave;
+             transformed.z += sin(time * 2.0 + position.z) * 0.05 * position.y;
              #include <begin_vertex>`
         );
         grassMat.userData.shader = shader;
     };
-
-    const instancedGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 4000);
+    const instGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 6000); // 增加到 6000 片
     const dummy = new THREE.Object3D();
-    for (let i = 0; i < 4000; i++) {
-        const x = Math.random() * 60 - 30;
-        const z = Math.random() * 60 - 30;
-        // 避開棋盤中心 (半徑 5)
-        if (Math.abs(x) < 5 && Math.abs(z) < 5) continue;
-        
+    for (let i = 0; i < 6000; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 6 + Math.random() * 60; // 分佈在棋盤外圍
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
         dummy.position.set(x, -0.2, z);
         dummy.rotation.y = Math.random() * Math.PI;
-        dummy.scale.setScalar(0.8 + Math.random());
+        dummy.scale.setScalar(0.7 + Math.random() * 0.5);
         dummy.updateMatrix();
-        instancedGrass.setMatrixAt(i, dummy.matrix);
+        instGrass.setMatrixAt(i, dummy.matrix);
     }
-    scene.add(instancedGrass);
+    instGrass.receiveShadow = true;
+    scene.add(instGrass);
 
-    // E. 簡單樹木 (Low Poly Trees)
+    // D. 多層次松樹森林 (細節升級)
     const treeGroup = new THREE.Group();
-    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.5, 6);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-    const leavesGeo = new THREE.ConeGeometry(1.5, 3, 6);
-    const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.8, 7);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e12 });
+    const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1e4d2b, roughness: 0.9 });
+    // 建立三層樹葉的幾何體
+    const layer1Geo = new THREE.ConeGeometry(2.2, 2.5, 7);
+    const layer2Geo = new THREE.ConeGeometry(1.8, 2.0, 7);
+    const layer3Geo = new THREE.ConeGeometry(1.2, 1.5, 7);
 
-    for(let i=0; i<30; i++) {
-        const x = Math.random() * 50 - 25;
-        const z = Math.random() * 50 - 25;
-        if (Math.abs(x) < 8 && Math.abs(z) < 8) continue; // 樹離遠一點
+    for(let i=0; i<60; i++) { // 更多樹
+        const angle = Math.random() * Math.PI * 2;
+        // 將樹木推到更遠的地方，形成背景
+        const radius = 35 + Math.random() * 80; 
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
 
         const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-        trunk.position.set(x, 0.55, z);
+        trunk.position.set(x, 0.9, z);
         trunk.castShadow = true;
         
-        const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-        leaves.position.set(x, 2.5, z);
-        leaves.castShadow = true;
+        // 堆疊三層樹葉
+        const l1 = new THREE.Mesh(layer1Geo, leavesMat); l1.position.set(x, 2.0, z);
+        const l2 = new THREE.Mesh(layer2Geo, leavesMat); l2.position.set(x, 3.2, z);
+        const l3 = new THREE.Mesh(layer3Geo, leavesMat); l3.position.set(x, 4.2, z);
+        l1.castShadow = l2.castShadow = l3.castShadow = true;
 
-        treeGroup.add(trunk);
-        treeGroup.add(leaves);
+        // 隨機縮放和旋轉，增加多樣性
+        const scale = 0.8 + Math.random() * 0.6;
+        trunk.scale.set(scale, scale, scale);
+        l1.scale.set(scale, scale, scale); l2.scale.set(scale, scale, scale); l3.scale.set(scale, scale, scale);
+        l1.rotation.y = l2.rotation.y = l3.rotation.y = Math.random() * Math.PI;
+
+        treeGroup.add(trunk, l1, l2, l3);
     }
     scene.add(treeGroup);
+
+    // E. 遠方地平線雲朵 (新版：不擋視線)
+    const distantCloudGroup = new THREE.Group();
+    // 使用白色、不受霧氣影響太大的材質
+    const dCloudMat = new THREE.MeshBasicMaterial({ 
+        color: 0xffffff, transparent: true, opacity: 0.5, 
+        fog: false // 關鍵：讓雲在遠處依然明亮
+    });
+    // 用巨大的扁平球體模擬遠方積雲
+    const dCloudGeo = new THREE.SphereGeometry(50, 16, 12); 
+    
+    for(let i=0; i<12; i++) {
+        const cloud = new THREE.Mesh(dCloudGeo, dCloudMat);
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 300 + Math.random() * 100; // 極遠處
+        cloud.position.set(
+            Math.cos(angle) * distance, 
+            10 + Math.random() * 20, // 貼近地平線的高度
+            Math.sin(angle) * distance
+        );
+        // 壓扁並拉長
+        cloud.scale.set(2 + Math.random(), 0.6, 1 + Math.random()); 
+        distantCloudGroup.add(cloud);
+    }
+    scene.add(distantCloudGroup);
 }
 
-// --- 棋盤生成 (關鍵：UserData 綁定) ---
-function createBoard() {
-    // 棋盤是 8x8，我們設定原點 (0,0) 在中心
-    // c: 0~7 (a~h), r: 0~7 (1~8)
-    // 修正座標對應：x 對應 col, z 對應 row
-    for(let r=0; r<8; r++) {
-        for(let c=0; c<8; c++) {
-            const squareName = String.fromCharCode(97+c) + (r+1); // e.g., "a1", "e5"
-            
-            const geo = new THREE.BoxGeometry(1, 0.2, 1);
-            const isWhite = (r+c) % 2 !== 0; // 修正黑白格邏輯
-            const color = isWhite ? 0xeeeeee : 0x222222;
-            const mat = new THREE.MeshStandardMaterial({ 
-                color: color,
-                emissive: 0x000000 
-            });
-
-            const tile = new THREE.Mesh(geo, mat);
-            // 座標轉換：c=0 -> x=-3.5, c=7 -> x=3.5
-            // r=0 (row 1) -> z=3.5, r=7 (row 8) -> z=-3.5
-            tile.position.set(c - 3.5, 0, 3.5 - r); 
-            
-            tile.userData = { 
-                square: squareName, 
-                isTile: true,
-                originalColor: color 
-            };
-            tile.receiveShadow = true;
-            
+// --- 棋盤與棋子邏輯 (保持不變，確保穩定) ---
+function createBoard(){
+    for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+            const squareName=String.fromCharCode(97+c)+(r+1);
+            const geo=new THREE.BoxGeometry(1,0.2,1);
+            const isWhite=(r+c)%2!==0;
+            const color=isWhite?0xeeeeee:0x222222;
+            const mat=new THREE.MeshStandardMaterial({color:color,emissive:0x000000});
+            const tile=new THREE.Mesh(geo,mat);
+            tile.position.set(c-3.5,0,3.5-r);
+            tile.userData={square:squareName,isTile:true,originalColor:color};
+            tile.receiveShadow=true;
             scene.add(tile);
-            tilesMap[squareName] = tile; // 存入 Map 方便查找
+            tilesMap[squareName]=tile;
         }
     }
 }
 
-// --- 棋子生成 (使用 Sprite) ---
-function createPieceSprite(type, color) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 384;
-    const ctx = canvas.getContext('2d');
-
-    // 漸層背景
-    const grad = ctx.createLinearGradient(0,0,0,384);
-    grad.addColorStop(0, '#000'); 
-    grad.addColorStop(1, color==='w' ? '#001a33' : '#2a0033');
-    ctx.fillStyle = grad; 
-    ctx.fillRect(0,0,256,384);
-
-    // 邊框
-    ctx.strokeStyle = color==='w' ? '#00e5ff' : '#bd00ff'; 
-    ctx.lineWidth = 20; 
-    ctx.strokeRect(10, 10, 236, 364);
-
-    // 文字符號
-    const symbols = { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' };
-    ctx.fillStyle = 'white'; 
-    ctx.textAlign = 'center'; 
-    ctx.font = '180px serif';
-    ctx.fillText(symbols[type], 128, 220);
-    
-    // 名稱
-    ctx.font = 'bold 50px sans-serif';
-    ctx.fillText(CHESS_NAMES[type], 128, 320);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({ map: tex });
-    const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(0.8, 1.2, 1);
-    sprite.castShadow = true;
+function createPieceSprite(type,color){
+    const canvas=document.createElement('canvas'); canvas.width=256; canvas.height=384;
+    const ctx=canvas.getContext('2d');
+    const grad=ctx.createLinearGradient(0,0,0,384);
+    grad.addColorStop(0,'#000'); grad.addColorStop(1,color==='w'?'#001a33':'#2a0033');
+    ctx.fillStyle=grad; ctx.fillRect(0,0,256,384);
+    ctx.strokeStyle=color==='w'?'#00e5ff':'#bd00ff';
+    ctx.lineWidth=20; ctx.strokeRect(10,10,236,364);
+    const symbols={k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'};
+    ctx.fillStyle='white'; ctx.textAlign='center'; ctx.font='180px serif';
+    ctx.fillText(symbols[type],128,220);
+    ctx.font='bold 50px sans-serif'; ctx.fillText(CHESS_NAMES[type],128,320);
+    const tex=new THREE.CanvasTexture(canvas);
+    const mat=new THREE.SpriteMaterial({map:tex});
+    const sprite=new THREE.Sprite(mat);
+    sprite.scale.set(0.8,1.2,1);
+    sprite.castShadow=true;
     return sprite;
 }
 
-// --- 同步棋盤狀態 (完全重繪法 - 最穩定的除錯方式) ---
-function syncPieces() {
-    // 1. 清除場景中現有的棋子
-    for(let sq in piecesMap) {
-        scene.remove(piecesMap[sq]);
-    }
-    piecesMap = {};
-
-    // 2. 根據 game.board() 重新生成
-    const board = game.board(); // 8x8 array
-    // board[0] 是 row 8 (a8...h8), board[7] 是 row 1 (a1...h1)
-    
-    for(let r=0; r<8; r++) {
-        for(let c=0; c<8; c++) {
-            const piece = board[r][c];
-            if(piece) {
-                const squareName = String.fromCharCode(97+c) + (8-r); // row index 0 -> rank 8
-                const sprite = createPieceSprite(piece.type, piece.color);
-                
-                // 必須與 Tile 座標邏輯一致
-                // squareName "a1" -> c=0, r=7 -> x=-3.5, z=3.5
-                sprite.position.set(c - 3.5, 0.7, (r - 3.5)); // 注意這裡 r 的對應
-                
+function syncPieces(){
+    for(let sq in piecesMap) scene.remove(piecesMap[sq]);
+    piecesMap={};
+    const board=game.board();
+    for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+            const piece=board[r][c];
+            if(piece){
+                const squareName=String.fromCharCode(97+c)+(8-r);
+                const sprite=createPieceSprite(piece.type,piece.color);
+                sprite.position.set(c-3.5,0.7,(r-3.5));
                 scene.add(sprite);
-                piecesMap[squareName] = sprite;
+                piecesMap[squareName]=sprite;
             }
         }
     }
 }
 
-// --- 點擊事件 (修復版) ---
-function onMouseClick(event) {
-    if (isProcessing) return; // 動畫中禁止點擊
+function onMouseClick(e){
+    if(isProcessing)return;
+    mouse.x=(e.clientX/window.innerWidth)*2-1;
+    mouse.y=-(e.clientY/window.innerHeight)*2+1;
+    raycaster.setFromCamera(mouse,camera);
+    const intersects=raycaster.intersectObjects(Object.values(tilesMap));
+    if(intersects.length>0){ handleInteraction(intersects[0].object.userData.square); }
+}
 
-    // 1. 計算滑鼠位置
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    // 2. 射線檢測 (只檢測 Tile，無視 Sprite，這樣最準)
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(Object.values(tilesMap));
-
-    if (intersects.length > 0) {
-        const clickedTile = intersects[0].object;
-        const square = clickedTile.userData.square;
-        
-        handleInteraction(square);
+function handleInteraction(square){
+    const piece=game.get(square);
+    if(!selectedSquare){
+        if(piece&&piece.color==='w'&&game.turn()==='w') selectSquare(square);
+        else if(piece&&piece.color==='b') log("那不是你的棋子","red");
+    }else{
+        if(piece&&piece.color==='w'){ selectSquare(square); return; }
+        const move=game.move({from:selectedSquare,to:square,promotion:'q'});
+        if(move) animateMove(move);
+        else { log("無法移動到這裡","orange"); clearHighlights(); selectedSquare=null; }
     }
 }
 
-// --- 交互邏輯 (狀態機) ---
-function handleInteraction(square) {
-    const piece = game.get(square);
-    
-    // A. 還沒選棋子 -> 嘗試選取
-    if (!selectedSquare) {
-        if (piece && piece.color === 'w' && game.turn() === 'w') {
-            selectSquare(square);
-        } else if (piece && piece.color === 'b') {
-            log("那不是你的棋子 (那是紫方/AI)", "red");
-        }
-    } 
-    // B. 已經選了棋子 -> 嘗試移動或換選
-    else {
-        // 如果點到自己另一顆棋子 -> 換選
-        if (piece && piece.color === 'w') {
-            selectSquare(square);
-            return;
-        }
-
-        // 嘗試移動
-        const move = game.move({
-            from: selectedSquare,
-            to: square,
-            promotion: 'q' // 簡化：一律升變皇后
-        });
-
-        if (move) {
-            // 移動成功
-            animateMove(move);
-        } else {
-            // 移動失敗
-            log("無法移動到這裡", "orange");
-            clearHighlights();
-            selectedSquare = null;
-        }
-    }
-}
-
-function selectSquare(square) {
-    clearHighlights();
-    selectedSquare = square;
-    
-    // 高亮選中格
-    tilesMap[square].material.emissive.setHex(0xffff00);
-    tilesMap[square].material.emissiveIntensity = 0.5;
-
-    // 高亮可行步
-    const moves = game.moves({ square: square, verbose: true });
-    moves.forEach(m => {
-        const tile = tilesMap[m.to];
-        if(m.captured) {
-            tile.material.emissive.setHex(0xff0000); // 吃子：紅
-        } else {
-            tile.material.emissive.setHex(0x00ffff); // 移動：青
-        }
-        tile.material.emissiveIntensity = 0.5;
+function selectSquare(square){
+    clearHighlights(); selectedSquare=square;
+    tilesMap[square].material.emissive.setHex(0xffff00); tilesMap[square].material.emissiveIntensity=0.6;
+    const moves=game.moves({square,verbose:true});
+    moves.forEach(m=>{
+        const tile=tilesMap[m.to];
+        tile.material.emissive.setHex(m.captured?0xff0000:0x00ffff);
+        tile.material.emissiveIntensity=0.8;
     });
-    
-    log(`選中了: ${square}`);
+    log(`選中: ${square}`);
 }
 
-function clearHighlights() {
-    for(let sq in tilesMap) {
+function clearHighlights(){
+    for(let sq in tilesMap){
         tilesMap[sq].material.emissive.setHex(0x000000);
+        tilesMap[sq].material.emissiveIntensity=1;
     }
 }
 
-function animateMove(move) {
-    isProcessing = true;
-    clearHighlights();
-    
-    // 視覺移動
-    const startSprite = piecesMap[move.from];
-    const endPos = tilesMap[move.to].position.clone();
-    endPos.y = 0.7; // 保持高度
-
-    // 如果有吃子，先移除被吃掉的 Sprite
-    if (move.captured) {
-        const capturedSprite = piecesMap[move.to];
-        if(capturedSprite) scene.remove(capturedSprite);
-    }
-
-    // TWEEN 動畫
-    new TWEEN.Tween(startSprite.position)
-        .to(endPos, 500)
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onComplete(() => {
-            // 動畫結束，重整盤面
-            syncPieces(); 
-            updateStatus();
-            log(`移動: ${move.from} -> ${move.to}`);
-
-            if (game.game_over()) {
-                log("遊戲結束！", "gold");
-                return;
-            }
-
-            // 輪到 AI
-            if (game.turn() === 'b') {
-                setTimeout(makeRandomAI, 500);
-            } else {
-                isProcessing = false;
-            }
-        })
-        .start();
+function animateMove(move){
+    isProcessing=true; clearHighlights();
+    const startSprite=piecesMap[move.from];
+    const endPos=tilesMap[move.to].position.clone(); endPos.y=0.7;
+    if(move.captured){ const capturedSprite=piecesMap[move.to]; if(capturedSprite) scene.remove(capturedSprite);}
+    new TWEEN.Tween(startSprite.position).to(endPos,500).easing(TWEEN.Easing.Quadratic.Out).onComplete(()=>{
+        syncPieces(); updateStatus(); log(`移動: ${move.from} -> ${move.to}`);
+        if(game.game_over()){ log("遊戲結束!","gold"); return;}
+        if(game.turn()==='b'){ setTimeout(makeRandomAI,500); }else{ isProcessing=false; }
+    }).start();
 }
 
-function makeRandomAI() {
-    const moves = game.moves();
-    if (moves.length === 0) return;
-    
-    // 簡單 AI：隨機選步
-    const randomMove = moves[Math.floor(Math.random() * moves.length)];
-    const move = game.move(randomMove); // 執行邏輯移動
-    
-    // 執行對應的視覺動畫 (需要反推 from/to)
-    // 為了簡單穩定，AI 回合直接重繪並顯示日誌，不做複雜 Tween (避免 Bug)
-    syncPieces();
-    updateStatus();
-    log(`AI 移動: ${move.from} -> ${move.to}`, "#bd00ff");
-    isProcessing = false;
+function makeRandomAI(){
+    const moves=game.moves(); if(moves.length===0)return;
+    const randomMove=moves[Math.floor(Math.random()*moves.length)];
+    const move=game.move(randomMove);
+    syncPieces(); updateStatus(); log(`AI 移動: ${move.from} -> ${move.to}`,"#bd00ff");
+    isProcessing=false;
 }
 
-// --- 輔助函數 ---
-function log(msg, color='white') {
-    const el = document.getElementById('move-log');
-    el.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
-    el.scrollTop = el.scrollHeight;
+function log(msg,color='white'){
+    const el=document.getElementById('move-log');
+    el.innerHTML+=`<div style="color:${color}">> ${msg}</div>`; el.scrollTop=el.scrollHeight;
 }
 
-function updateStatus() {
-    const el = document.getElementById('turn-txt');
-    if(game.turn() === 'w') {
-        el.innerText = "藍方 (你)";
-        el.style.color = "#00e5ff";
-    } else {
-        el.innerText = "紫方 (AI)";
-        el.style.color = "#bd00ff";
-    }
+function updateStatus(){
+    const el=document.getElementById('turn-txt');
+    if(game.turn()==='w'){ el.innerText="藍方 (你)"; el.style.color="#00e5ff"; }
+    else { el.innerText="紫方 (AI)"; el.style.color="#bd00ff"; }
 }
 
-function onResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+function onResize(){
+    camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
 }
 
-function animate() {
+function animate(){
     requestAnimationFrame(animate);
-    const time = clock.getElapsedTime();
-    TWEEN.update();
-    controls.update();
-
-    // 更新草地 Shader 時間
-    if(grassMat && grassMat.userData.shader) {
-        grassMat.userData.shader.uniforms.time.value = time;
+    const time=clock.getElapsedTime();
+    TWEEN.update(); controls.update();
+    if(grassMat&&grassMat.userData.shader) grassMat.userData.shader.uniforms.time.value=time;
+    for(let sq in piecesMap){
+        const sprite=piecesMap[sq]; const piece=game.get(sq);
+        if(piece&&piece.color==='w'){ sprite.position.y=0.7+Math.sin(time*3+sprite.id)*0.05; }
     }
-
-    // 更新雲朵位置
-    if(cloudMesh) {
-        cloudMesh.rotation.y = time * 0.05;
-    }
-
-    // 棋子呼吸
-    for(let sq in piecesMap) {
-        const sprite = piecesMap[sq];
-        const piece = game.get(sq);
-        // 只讓藍方呼吸
-        if(piece && piece.color === 'w') {
-            sprite.position.y = 0.7 + Math.sin(time * 3 + sprite.id) * 0.05;
-        }
-    }
-
-    renderer.render(scene, camera);
+    renderer.render(scene,camera);
 }
 
-// 啟動
 init();
-
 </script>
 </body>
 </html>
