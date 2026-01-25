@@ -2,38 +2,400 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：極致寫實創世紀版</title>
+    <title>霓虹西洋棋：黑暗騎士 AAA 氛圍版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/objects/Sky.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Microsoft JhengHei', sans-serif; }
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Segoe UI', sans-serif; }
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-        .hud { position: absolute; background: rgba(0,0,0,0.3); color: white; padding: 15px; border-radius: 8px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px); }
-        #status-panel { top: 20px; right: 20px; width: 220px; text-align: right; }
-        #log-panel { bottom: 20px; left: 20px; width: 350px; max-height: 150px; overflow-y: auto; font-size: 13px; }
-        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00e5ff; font-size: 24px; font-weight: bold; text-shadow: 0 0 20px #00e5ff; z-index: 200; }
+        /* UI 改為極簡透明風格 */
+        .hud { position: absolute; color: rgba(255,255,255,0.8); text-shadow: 0 0 10px rgba(0,255,255,0.5); pointer-events: auto; }
+        #status-panel { top: 30px; right: 30px; text-align: right; }
+        #log-panel { bottom: 30px; left: 30px; width: 300px; font-size: 12px; opacity: 0.7; }
+        h1 { margin: 0; font-weight: 300; letter-spacing: 2px; font-size: 1.2rem; border-bottom: 1px solid rgba(0,255,255,0.3); padding-bottom: 5px; display: inline-block; }
+        #turn-txt { font-size: 2rem; font-weight: 700; margin-top: 5px; color: #fff; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00e5ff; letter-spacing: 4px; font-size: 14px; animation: pulse 1s infinite; z-index: 999; }
+        @keyframes pulse { 0% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-<div id="loading">正在程序化生成高細節世界，請稍候...</div>
+<div id="loading">GENERATING AAA ASSETS...</div>
 
 <div id="ui" style="display:none;">
     <div id="status-panel" class="hud">
-        <div style="color: #00e5ff; font-size: 0.9em; letter-spacing: 1px;">REALITY ENGINE</div>
-        <div id="turn-txt" style="font-size: 20px; font-weight: bold;">藍方 (玩家)</div>
+        <h1>NEON CHESS</h1>
+        <div id="turn-txt">PLAYER TURN</div>
     </div>
     <div id="log-panel" class="hud">
-        <div id="move-log">極致細節場景載入完成。<br>準備對弈。</div>
+        <div id="move-log">System Online.</div>
     </div>
 </div>
 
 <script>
+// --- AAA Shader: 樹葉破碎化 (讓圓錐看起來像松針) ---
+const treeVertexShader = `
+    varying vec2 vUv;
+    varying float vElevation;
+    uniform float time;
+    
+    // 噪聲函數
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    float noise(vec3 p) { 
+        vec3 i = floor(p); vec3 f = fract(p); f = f*f*(3.0-2.0*f);
+        float n = i.x + i.y*57.0 + 113.0*i.z;
+        return mix(mix(mix(hash(i.xy), hash(i.xy+vec2(1,0)), f.x),
+                   mix(hash(i.xy+vec2(0,1)), hash(i.xy+vec2(1,1)), f.x), f.y),
+                   mix(mix(hash(i.xy+vec2(0,0)), hash(i.xy+vec2(1,0)), f.x),
+                   mix(hash(i.xy+vec2(0,1)), hash(i.xy+vec2(1,1)), f.x), f.y), f.z);
+    }
+
+    void main() {
+        vUv = uv;
+        vec3 pos = position;
+        
+        // 核心魔法：根據位置進行隨機偏移，把光滑的圓錐"炸"開
+        float dist = noise(pos * 8.0 + time * 0.1); 
+        pos += normal * (dist * 0.4); // 向外推擠
+        
+        // 風吹效果
+        float wind = sin(time * 0.5 + position.x * 0.5) * 0.1 * position.y;
+        pos.x += wind;
+
+        vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
+        gl_Position = projectionMatrix * viewMatrix * modelPosition;
+    }
+`;
+
+const treeFragmentShader = `
+    uniform vec3 color;
+    void main() {
+        // 簡單的漫反射加上一點點暗部細節
+        gl_FragColor = vec4(color * (0.5 + 0.5 * gl_FragCoord.z), 1.0);
+    }
+`;
+
+// --- 核心變數 ---
+let scene, camera, renderer, controls, raycaster, mouse, clock;
+let game = new Chess();
+let tilesMap = {}, piecesMap = {};
+let selectedSquare = null, isProcessing = false;
+let grassMat, treeMat;
+let fogParticles = [];
+
+const CHESS_NAMES = { k: 'KING', q: 'QUEEN', r: 'ROOK', b: 'BISHOP', n: 'KNIGHT', p: 'PAWN' };
+
+function init() {
+    clock = new THREE.Clock();
+    scene = new THREE.Scene();
+    
+    // 1. 氛圍核心：暗夜迷霧 (AAA 遊戲感)
+    scene.background = new THREE.Color(0x05070a);
+    scene.fog = new THREE.FogExp2(0x05070a, 0.015); // 濃霧，隱藏遠處細節
+
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 18, 22);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 柔和陰影
+    renderer.toneMapping = THREE.ReinhardToneMapping; // 適合暗部的色調映射
+    renderer.toneMappingExposure = 1.2;
+    document.body.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.maxPolarAngle = Math.PI / 2.1;
+    controls.minDistance = 10; controls.maxDistance = 80;
+
+    setupDarkLighting();
+    
+    // 延遲執行以避免 UI 卡頓
+    setTimeout(() => {
+        createRuggedTerrain();
+        createDetailedForest();
+        createVolumetricFog();
+        createBoard();
+        syncPieces();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('ui').style.display = 'block';
+    }, 100);
+
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+    window.addEventListener('click', onMouseClick);
+    window.addEventListener('resize', onResize);
+
+    animate();
+}
+
+function setupDarkLighting() {
+    // 月光/環境光 (冷色調)
+    const ambient = new THREE.AmbientLight(0x112233, 0.8); 
+    scene.add(ambient);
+
+    // 主光源：月亮 (強烈的側逆光，製造輪廓)
+    const moonLight = new THREE.DirectionalLight(0xaaccff, 0.8);
+    moonLight.position.set(-50, 100, -50);
+    moonLight.castShadow = true;
+    moonLight.shadow.mapSize.set(2048, 2048);
+    // 擴大陰影範圍
+    const d = 100;
+    moonLight.shadow.camera.left = -d; moonLight.shadow.camera.right = d;
+    moonLight.shadow.camera.top = d; moonLight.shadow.camera.bottom = -d;
+    scene.add(moonLight);
+
+    // 棋盤上方的補光 (模擬棋盤發光照亮周圍)
+    const boardLight = new THREE.PointLight(0x00e5ff, 1.5, 30);
+    boardLight.position.set(0, 10, 0);
+    scene.add(boardLight);
+}
+
+// --- 2. AAA 地形：崎嶇且黑暗 ---
+function createRuggedTerrain() {
+    // 地面：粗糙的黑色火山岩
+    const groundGeo = new THREE.PlaneGeometry(300, 300, 128, 128);
+    groundGeo.rotateX(-Math.PI / 2);
+    
+    // 簡單的頂點位移，製造凹凸不平的地面
+    const pos = groundGeo.attributes.position;
+    for(let i=0; i<pos.count; i++){
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        // 棋盤區域 (半徑10) 保持平坦
+        const dist = Math.sqrt(x*x + z*z);
+        if(dist > 8) {
+            // 隨機噪聲模擬岩石
+            const h = (Math.sin(x*0.2)*Math.cos(z*0.2) + Math.random()*0.5) * 2;
+            pos.setY(i, h);
+        }
+    }
+    groundGeo.computeVertexNormals();
+
+    const groundMat = new THREE.MeshStandardMaterial({ 
+        color: 0x0a0c10, 
+        roughness: 1.0, 
+        flatShading: true // 關鍵：讓多邊形可見，增加岩石感
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // 遠山：巨大的黑色剪影，不再是圓潤的，而是尖銳的
+    const mountainGeo = new THREE.ConeGeometry(40, 150, 4, 1, true); // 四角錐，像金字塔
+    const mountainMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1, flatShading: true });
+    
+    for(let i=0; i<15; i++) {
+        const m = new THREE.Mesh(mountainGeo, mountainMat);
+        const angle = Math.random() * Math.PI * 2;
+        const r = 80 + Math.random() * 50;
+        m.position.set(Math.cos(angle)*r, -10, Math.sin(angle)*r);
+        const s = 1 + Math.random();
+        m.scale.set(s*2, s, s*2); // 拉寬
+        m.rotation.y = Math.random() * Math.PI;
+        scene.add(m);
+    }
+}
+
+// --- 3. AAA 植被：破碎化樹木與暗夜草地 ---
+function createDetailedForest() {
+    // 樹木材質：使用 Shader 讓表面看起來破碎
+    treeMat = new THREE.ShaderMaterial({
+        vertexShader: treeVertexShader,
+        fragmentShader: treeFragmentShader,
+        uniforms: {
+            time: { value: 0 },
+            color: { value: new THREE.Color(0x0d1a10) } // 極深的墨綠色
+        }
+    });
+
+    const treeGroup = new THREE.Group();
+    const coneGeo = new THREE.ConeGeometry(2, 6, 16, 8); // 高細分圓錐，讓 Shader 有頂點可玩
+    coneGeo.translate(0, 3, 0);
+
+    for(let i=0; i<400; i++) { // 400 棵樹
+        const r = 25 + Math.random() * 80;
+        const theta = Math.random() * Math.PI * 2;
+        
+        const tree = new THREE.Mesh(coneGeo, treeMat);
+        tree.position.set(Math.cos(theta)*r, -1, Math.sin(theta)*r);
+        
+        const s = 0.8 + Math.random() * 1.5;
+        tree.scale.set(s, s*1.2, s);
+        tree.rotation.y = Math.random();
+        
+        // 樹幹
+        const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.3*s, 0.5*s, 2*s),
+            new THREE.MeshStandardMaterial({color: 0x111111})
+        );
+        trunk.position.set(tree.position.x, 1, tree.position.z);
+        
+        scene.add(tree);
+        scene.add(trunk);
+    }
+
+    // 暗夜草地 (Instanced)
+    const bladeGeo = new THREE.PlaneGeometry(0.1, 0.6); bladeGeo.translate(0, 0.3, 0);
+    grassMat = new THREE.MeshStandardMaterial({ color: 0x142211, side: THREE.DoubleSide }); // 暗綠色
+    grassMat.onBeforeCompile = (shader) => {
+        shader.uniforms.time = { value: 0 };
+        shader.vertexShader = `uniform float time;\n` + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(`#include <begin_vertex>`, 
+        `vec3 transformed = vec3(position);
+         float w = sin(time + position.x * 2.0) * 0.15 * position.y;
+         transformed.x += w; #include <begin_vertex>`);
+        grassMat.userData.shader = shader;
+    };
+    
+    const instGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 8000);
+    const dummy = new THREE.Object3D();
+    for(let i=0; i<8000; i++) {
+        const r = 10 + Math.random() * 70;
+        const theta = Math.random() * Math.PI * 2;
+        dummy.position.set(Math.cos(theta)*r, 0, Math.sin(theta)*r);
+        dummy.rotation.y = Math.random() * Math.PI;
+        dummy.scale.setScalar(0.5 + Math.random());
+        dummy.updateMatrix();
+        instGrass.setMatrixAt(i, dummy.matrix);
+    }
+    instGrass.receiveShadow = true;
+    scene.add(instGrass);
+}
+
+// --- 4. 體積霧氣 (代替假雲) ---
+function createVolumetricFog() {
+    const fogGeo = new THREE.PlaneGeometry(30, 30);
+    const fogMat = new THREE.MeshBasicMaterial({
+        color: 0x88ccff,
+        transparent: true,
+        opacity: 0.03, // 極淡，疊加產生體積感
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+
+    for(let i=0; i<30; i++) {
+        const fog = new THREE.Mesh(fogGeo, fogMat);
+        fog.position.set(Math.random()*100-50, 2+Math.random()*5, Math.random()*100-50);
+        fog.rotation.x = -Math.PI/2;
+        fog.rotation.z = Math.random() * Math.PI;
+        scene.add(fog);
+        fogParticles.push({ mesh: fog, speed: (Math.random()-0.5)*0.01 });
+    }
+}
+
+// --- 5. 棋盤與棋子 (霓虹對比) ---
+function createBoard(){
+    for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+            const n=String.fromCharCode(97+c)+(r+1);
+            const geo=new THREE.BoxGeometry(1,0.2,1);
+            const isW=(r+c)%2!==0;
+            // 棋盤本身更暗，讓霓虹光突出
+            const mat=new THREE.MeshStandardMaterial({
+                color:isW?0x222222:0x050505, 
+                roughness: 0.2, metalness: 0.8 // 增加反射感
+            });
+            const t=new THREE.Mesh(geo,mat);
+            t.position.set(c-3.5,0,3.5-r); t.userData={square:n,isTile:true}; t.receiveShadow=true; scene.add(t); tilesMap[n]=t;
+        }
+    }
+    // 棋盤邊框發光
+    const border = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.15, 8.2), new THREE.MeshBasicMaterial({color:0x00e5ff}));
+    border.position.y = -0.05; scene.add(border);
+}
+
+function createPieceSprite(t,c){
+    const cv=document.createElement('canvas');cv.width=256;cv.height=384;const cx=cv.getContext('2d');
+    // 只有霓虹線條，背景全黑透明
+    cx.clearRect(0,0,256,384);
+    
+    // 強烈的發光邊框
+    cx.shadowBlur = 20; cx.shadowColor = c==='w'?'#00e5ff':'#bd00ff';
+    cx.strokeStyle=c==='w'?'#00e5ff':'#bd00ff'; cx.lineWidth=15; cx.strokeRect(20,20,216,344);
+    
+    const s={k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'};
+    cx.fillStyle='white'; cx.textAlign='center'; cx.font='180px serif'; cx.fillText(s[t],128,220);
+    
+    const tex=new THREE.CanvasTexture(cv);
+    const mat=new THREE.SpriteMaterial({map:tex, transparent:true, blending: THREE.AdditiveBlending}); // 發光疊加模式
+    const sprite=new THREE.Sprite(mat);
+    sprite.scale.set(0.8,1.2,1); return sprite;
+}
+
+function syncPieces(){
+    for(let sq in piecesMap) scene.remove(piecesMap[sq]); piecesMap={}; const b=game.board();
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const sq=String.fromCharCode(97+c)+(8-r),s=createPieceSprite(p.type,p.color);s.position.set(c-3.5,0.7,r-3.5);scene.add(s);piecesMap[sq]=s;}}
+}
+
+// --- 交互邏輯 ---
+function onMouseClick(e){if(isProcessing)return;mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;raycaster.setFromCamera(mouse,camera);const i=raycaster.intersectObjects(Object.values(tilesMap));if(i.length>0)handleInteraction(i[0].object.userData.square);}
+function handleInteraction(sq){const p=game.get(sq);if(!selectedSquare){if(p&&p.color==='w'&&game.turn()==='w')selectSquare(sq);}else{if(p&&p.color==='w'){selectSquare(sq);return;}const m=game.move({from:selectedSquare,to:sq,promotion:'q'});if(m)animateMove(m);else{clearHighlights();selectedSquare=null;}}}
+
+// 霓虹高亮
+function selectSquare(sq){
+    clearHighlights(); selectedSquare=sq;
+    tilesMap[sq].material.emissive.setHex(0x00ff00); tilesMap[sq].material.emissiveIntensity=2.0;
+    game.moves({square:sq,verbose:true}).forEach(m=>{
+        tilesMap[m.to].material.emissive.setHex(m.captured?0xff0000:0xffaa00); tilesMap[m.to].material.emissiveIntensity=1.5;
+    });
+}
+function clearHighlights(){for(let sq in tilesMap){tilesMap[sq].material.emissive.setHex(0x000000);tilesMap[sq].material.emissiveIntensity=0;}}
+
+function animateMove(m){
+    isProcessing=true; clearHighlights();
+    const s=piecesMap[m.from], e=tilesMap[m.to].position.clone(); e.y=0.7;
+    if(m.captured&&piecesMap[m.to])scene.remove(piecesMap[m.to]);
+    new TWEEN.Tween(s.position).to(e,400).easing(TWEEN.Easing.Quadratic.Out).onComplete(()=>{
+        syncPieces(); updateStatus();
+        if(game.game_over())return;
+        if(game.turn()==='b')setTimeout(makeRandomAI,400);else isProcessing=false;
+    }).start();
+}
+function makeRandomAI(){const ms=game.moves();if(ms.length===0)return;game.move(ms[Math.floor(Math.random()*ms.length)]);syncPieces();updateStatus();isProcessing=false;}
+function updateStatus(){
+    const t=document.getElementById('turn-txt');
+    t.innerText=game.turn()==='w'?"BLUE TURN":"PURPLE AI";
+    t.style.color=game.turn()==='w'?"#00e5ff":"#bd00ff";
+    log(`Move: ${game.history().pop()}`);
+}
+function log(m){document.getElementById('move-log').innerText += `\n> ${m}`;}
+
+function onResize(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);}
+
+function animate(){
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    TWEEN.update(); controls.update();
+    
+    // Shader 更新
+    if(grassMat.userData.shader) grassMat.userData.shader.uniforms.time.value = t;
+    treeMat.uniforms.time.value = t;
+
+    // 霧氣流動
+    fogParticles.forEach(f => {
+        f.mesh.rotation.z += f.speed;
+        f.mesh.position.y += Math.sin(t + f.mesh.position.x)*0.005;
+    });
+
+    // 棋子呼吸
+    for(let sq in piecesMap){
+        const s=piecesMap[sq], p=game.get(sq);
+        if(p&&p.color==='w') s.position.y=0.7+Math.sin(t*4+s.id)*0.03;
+    }
+    renderer.render(scene,camera);
+}
+
+init();
+</script>
+</body>
+</html>
 // --- 0. 核心變數 ---
 let scene, camera, renderer, controls, raycaster, mouse, clock;
 let game = new Chess();
@@ -318,3 +680,4 @@ init();
 </script>
 </body>
 </html>
+
