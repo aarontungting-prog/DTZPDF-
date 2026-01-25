@@ -2,88 +2,142 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：幻想世界旗艦版</title>
+    <title>霓虹西洋棋：Slow Roads 旗艦整合版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/objects/Sky.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #87ceeb; font-family: 'PingFang TC', sans-serif; }
-        #gui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        .panel { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 15px; border-radius: 15px; border: 1px solid #00e5ff; pointer-events: auto; }
-        #status-panel { top: 20px; right: 20px; text-align: right; width: 200px; }
-        #log-panel { bottom: 20px; left: 20px; width: 250px; max-height: 200px; overflow-y: auto; font-size: 12px; }
-        .check-msg { color: #ff4444; font-weight: bold; animation: blink 0.8s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Microsoft JhengHei', sans-serif; }
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        .hud { position: absolute; background: rgba(0,0,0,0.7); color: white; padding: 15px; border-radius: 12px; pointer-events: auto; backdrop-filter: blur(8px); border: 1px solid rgba(0,229,255,0.4); }
+        #status-panel { top: 20px; right: 20px; text-align: right; width: 220px; }
+        #log-panel { bottom: 20px; left: 20px; width: 260px; max-height: 150px; overflow-y: auto; font-size: 13px; }
+        .check-warning { color: #ff4444; font-weight: bold; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
-<div id="gui">
-    <div id="status-panel" class="panel">
-        <div style="font-size: 18px; color: #00e5ff;">當前回合</div>
-        <div id="turn-txt" style="font-size: 24px; font-weight: bold;">白方 (玩家)</div>
-        <div id="check-status" class="check-msg" style="display:none;">⚠️ 國王受威脅</div>
+<div id="ui">
+    <div id="status-panel" class="hud">
+        <div style="font-size: 1.1em; color: #00e5ff;">當前回合</div>
+        <div id="turn-txt" style="font-size: 22px; font-weight: bold;">白方 (玩家)</div>
+        <div id="check-alert" class="check-warning" style="display:none;">⚠️ 國王受威脅</div>
     </div>
-    <div id="log-panel" class="panel">
-        <div id="move-log">戰鬥日誌：等待開局...</div>
+    <div id="log-panel" class="hud">
+        <div id="move-log">系統初始化中...</div>
     </div>
 </div>
 
 <script>
-/** * 核心變數
+/** * 1. 核心變數
  */
-let scene, camera, renderer, controls, raycaster, mouse;
-let game = new Chess();
-let tiles = [], pieceObjects = {};
+let scene, camera, renderer, controls, raycaster, mouse, clock;
+let game = new Chess(), tiles = [], pieceObjects = {};
 let selectedSquare = null, isProcessing = false;
+let grassMat;
 
-// 繁體中文配置
 const CHESS_NAMES = { k: '國王', q: '皇后', r: '城堡', b: '主教', n: '騎士', p: '兵卒' };
+const THEME_COLORS = { w: '#00e5ff', b: '#bd00ff' };
 
 function init() {
+    clock = new THREE.Clock();
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x87ceeb, 10, 50);
+    scene.fog = new THREE.Fog(0x87ceeb, 15, 50);
 
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 11, 11);
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 10, 14);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true; // 開啟陰影引擎
+    renderer.shadowMap.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.maxPolarAngle = Math.PI / 2.1;
 
-    // 光影環境
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-    sun.position.set(10, 20, 10);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
-    scene.add(sun);
+    setupEnvironment();
+    createBoard();
+    syncInitialPieces();
 
-    // 天空與草地
-    const sky = new THREE.Mesh(new THREE.SphereGeometry(100, 32, 32), new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.BackSide }));
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+    window.addEventListener('click', onInteract);
+    window.addEventListener('resize', onWindowResize);
+    animate();
+}
+
+/** * 2. Slow Roads 環境渲染
+ */
+function setupEnvironment() {
+    // 天空模擬
+    const sky = new THREE.Sky();
+    sky.scale.setScalar(500); // 修正為適中尺寸避免浮點誤差
     scene.add(sky);
 
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x2d5a27 }));
+    const sun = new THREE.Vector3();
+    const uniforms = sky.material.uniforms;
+    uniforms['turbidity'].value = 10;
+    uniforms['rayleigh'].value = 2;
+    uniforms['mieCoefficient'].value = 0.005;
+    uniforms['mieDirectionalG'].value = 0.8;
+
+    const phi = THREE.MathUtils.degToRad(88);
+    const theta = THREE.MathUtils.degToRad(180);
+    sun.setFromSphericalCoords(1, phi, theta);
+    uniforms['sunPosition'].value.copy(sun);
+
+    // 陽光照射
+    const light = new THREE.DirectionalLight(0xffffff, 1.0);
+    light.position.set(10, 20, 10);
+    light.castShadow = true;
+    light.shadow.mapSize.set(1024, 1024);
+    scene.add(light, new THREE.AmbientLight(0xffffff, 0.6));
+
+    // 草地平面
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({ color: 0x2d5a27 }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.15;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    createBoard();
-    syncPieces();
+    // 實例化草葉 (優化至 3000 片)
+    const grassGeo = new THREE.PlaneGeometry(0.1, 0.4, 1, 3);
+    grassGeo.translate(0, 0.2, 0);
+    grassMat = new THREE.MeshStandardMaterial({ color: 0x3d7a3a, side: THREE.DoubleSide });
+    grassMat.onBeforeCompile = (shader) => {
+        shader.uniforms.time = { value: 0 };
+        shader.vertexShader = `uniform float time;\n` + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(`#include <begin_vertex>`, `
+            vec3 transformed = vec3(position);
+            float wave = sin(time * 2.0 + position.x * 2.0 + position.z * 2.0) * 0.05 * position.y;
+            transformed.x += wave;
+            #include <begin_vertex>
+        `);
+        grassMat.userData.shader = shader;
+    };
 
-    raycaster = new THREE.Raycaster();
-    mouse = new THREE.Vector2();
-    window.addEventListener('click', onInteract);
-    animate();
+    const instancedGrass = new THREE.InstancedMesh(grassGeo, grassMat, 3000);
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < 3000; i++) {
+        const x = Math.random() * 40 - 20;
+        const z = Math.random() * 40 - 20;
+        if (Math.abs(x) < 4.5 && Math.abs(z) < 4.5) continue; // 修正避讓區域
+        dummy.position.set(x, -0.1, z);
+        dummy.rotation.y = Math.random() * Math.PI;
+        dummy.scale.setScalar(0.6 + Math.random());
+        dummy.updateMatrix();
+        instancedGrass.setMatrixAt(i, dummy.matrix);
+    }
+    scene.add(instancedGrass);
 }
 
+/** * 3. 霓虹棋盤與棋子生成
+ */
 function createBoard() {
     for(let r=0; r<8; r++) {
         for(let c=0; c<8; c++) {
@@ -91,7 +145,7 @@ function createBoard() {
             const isWhite = (r+c)%2 === 1;
             const mat = new THREE.MeshStandardMaterial({ 
                 color: isWhite ? 0xffffff : 0x222222,
-                emissive: isWhite ? 0x111111 : 0x000033, // 預設微光
+                emissive: isWhite ? 0x000000 : 0x000033,
                 emissiveIntensity: 0.2
             });
             const tile = new THREE.Mesh(geo, mat);
@@ -105,117 +159,13 @@ function createBoard() {
     }
 }
 
-/** * 核心交互邏輯：修復所有 Bug 的狀態機
- */
-function onInteract(e) {
-    if(isProcessing || game.turn() === 'b' || game.game_over()) return;
-
-    mouse.x = (e.clientX/window.innerWidth)*2-1;
-    mouse.y = -(e.clientY/window.innerHeight)*2+1;
-    raycaster.setFromCamera(mouse, camera);
-
-    // 1. 只檢測棋盤格，確保點擊精準
-    const hits = raycaster.intersectObjects(tiles);
-    if(hits.length === 0) return;
-
-    const square = hits[0].object.userData.square;
-    const piece = game.get(square);
-
-    // 2. 狀態判斷
-    if (!selectedSquare) {
-        // 選取己方棋子
-        if (piece && piece.color === 'w') {
-            selectedSquare = square;
-            highlightMoves(game.moves({ square, verbose: true }));
-        }
-    } else {
-        // 如果點到另一個己方棋子 -> 切換選取 (Bug 修正)
-        if (piece && piece.color === 'w') {
-            selectedSquare = square;
-            highlightMoves(game.moves({ square, verbose: true }));
-            return;
-        }
-
-        // 執行移動
-        const move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
-        if (move) {
-            isProcessing = true; // 鎖定輸入防止連點
-            executeMoveAnimation(move);
-        } else {
-            // 點擊無效區域 -> 取消選取
-            selectedSquare = null;
-            resetBoard();
-        }
-    }
-}
-
-function executeMoveAnimation(move) {
-    // 這裡可以加入平滑移動動畫 TWEEN
-    syncPieces();
-    resetBoard();
-    selectedSquare = null;
-    updateHUD();
-    logAction(`${CHESS_NAMES[move.piece]} 移動至 ${move.to}`);
-
-    if(!game.game_over()) {
-        setTimeout(makeAIMove, 800);
-    } else {
-        isProcessing = false;
-        alert("將軍！遊戲結束。");
-    }
-}
-
-function makeAIMove() {
-    const moves = game.moves();
-    // 優先吃子 AI
-    let bestMove = moves[Math.floor(Math.random()*moves.length)];
-    for(let m of moves) if(m.includes('x')) bestMove = m;
-    
-    const moveInfo = game.move(bestMove);
-    syncPieces();
-    updateHUD();
-    logAction(`電腦移動: ${moveInfo.from} -> ${moveInfo.to}`);
-    isProcessing = false; // 解鎖玩家操作
-}
-
-/** * 視覺增強
- */
-function highlightMoves(moves) {
-    resetBoard();
-    const selTile = tiles.find(t => t.userData.square === selectedSquare);
-    if(selTile) selTile.material.emissive.set(0xffff00), selTile.material.emissiveIntensity = 0.5;
-
-    moves.forEach(m => {
-        const t = tiles.find(tile => tile.userData.square === m.to);
-        if(t) {
-            t.material.emissive.set(m.captured ? 0xff4444 : 0x00e5ff);
-            t.material.emissiveIntensity = 0.8;
-        }
-    });
-}
-
-function resetBoard() {
-    tiles.forEach(t => {
-        t.material.emissive.set(t.userData.baseColor.getHex() === 0xffffff ? 0x111111 : 0x000033);
-        t.material.emissiveIntensity = 0.2;
-    });
-}
-
-function syncPieces() {
-    Object.values(pieceObjects).forEach(p => scene.remove(p));
-    pieceObjects = {};
+function syncInitialPieces() {
     game.board().forEach((row, rIdx) => {
         row.forEach((cell, cIdx) => {
             if(cell) {
                 const square = String.fromCharCode(97+cIdx)+(8-rIdx);
-                const mat = new THREE.SpriteMaterial({ 
-                    map: createPieceTexture(cell.type, cell.color),
-                    transparent: true 
-                });
-                const sprite = new THREE.Sprite(mat);
-                sprite.scale.set(0.8, 1.2, 1);
+                const sprite = createPieceSprite(cell.type, cell.color);
                 sprite.position.set(cIdx-3.5, 0.7, (8-rIdx)-1-3.5);
-                sprite.castShadow = true; // 棋子投影 (Bug 修正)
                 scene.add(sprite);
                 pieceObjects[square] = sprite;
             }
@@ -223,7 +173,7 @@ function syncPieces() {
     });
 }
 
-function createPieceTexture(type, color) {
+function createPieceSprite(type, color) {
     const canvas = document.createElement('canvas');
     canvas.width = 256; canvas.height = 384;
     const ctx = canvas.getContext('2d');
@@ -231,36 +181,139 @@ function createPieceTexture(type, color) {
     grad.addColorStop(0, '#000');
     grad.addColorStop(1, color==='w'?'#001a33':'#1a0033');
     ctx.fillStyle = grad; ctx.fillRect(0,0,256,384);
-    ctx.strokeStyle = color==='w'?'#00e5ff':'#bd00ff'; ctx.lineWidth = 15;
+    ctx.strokeStyle = THEME_COLORS[color]; ctx.lineWidth = 15;
     ctx.strokeRect(10, 10, 236, 364);
-    const symbols = { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' };
-    ctx.fillStyle = 'white'; ctx.textAlign='center'; ctx.font='160px serif';
-    ctx.fillText(symbols[type], 128, 200);
-    ctx.font='bold 45px sans-serif'; ctx.fillText(CHESS_NAMES[type], 128, 300);
-    return new THREE.CanvasTexture(canvas);
+    const symbols = { k: '國王', q: '皇后', r: '城堡', b: '主教', n: '騎士', p: '兵卒' };
+    ctx.fillStyle = 'white'; ctx.textAlign='center'; ctx.font='bold 45px sans-serif';
+    ctx.fillText(symbols[type], 128, 300);
+    ctx.font='160px serif'; ctx.fillText({k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'}[type], 128, 200);
+
+    const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.8, 1.2, 1);
+    sprite.castShadow = true;
+    return sprite;
 }
 
-function logAction(txt) {
-    const log = document.getElementById('move-log');
-    log.innerHTML += `<br>• ${txt}`;
-    log.scrollTop = log.scrollHeight;
+/** * 4. 交互與 AI 邏輯 (整合 Bug 修正)
+ */
+function onInteract(e) {
+    if(isProcessing || game.turn() === 'b' || game.game_over()) return;
+    mouse.x = (e.clientX/window.innerWidth)*2-1;
+    mouse.y = -(e.clientY/window.innerHeight)*2+1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const hits = raycaster.intersectObjects(tiles);
+    if(hits.length === 0) return;
+
+    const square = hits[0].object.userData.square;
+    const piece = game.get(square);
+
+    if (!selectedSquare) {
+        if (piece && piece.color === 'w') {
+            selectedSquare = square;
+            highlight(game.moves({ square, verbose: true }));
+        }
+    } else {
+        if (piece && piece.color === 'w') {
+            selectedSquare = square; // 切換選取
+            highlight(game.moves({ square, verbose: true }));
+            return;
+        }
+
+        const move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
+        if (move) {
+            isProcessing = true;
+            executeMove(move);
+        } else {
+            selectedSquare = null;
+            resetHighlights();
+        }
+    }
+}
+
+function executeMove(move) {
+    const movingSprite = pieceObjects[move.from];
+    if (move.captured) {
+        const victim = pieceObjects[move.to];
+        if (victim) { scene.remove(victim); delete pieceObjects[move.to]; }
+    }
+
+    const tx = (move.to.charCodeAt(0) - 97) - 3.5;
+    const tz = (parseInt(move.to[1]) - 1) - 3.5;
+
+    new TWEEN.Tween(movingSprite.position)
+        .to({ x: tx, z: tz }, 600)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onComplete(() => {
+            pieceObjects[move.to] = movingSprite;
+            delete pieceObjects[move.from];
+            updateHUD();
+            if(!game.game_over()) {
+                setTimeout(makeAI, 800);
+            } else { isProcessing = false; alert("對局結束"); }
+        })
+        .start();
+
+    resetHighlights();
+    selectedSquare = null;
+}
+
+function makeAI() {
+    const moves = game.moves();
+    let best = moves[Math.floor(Math.random()*moves.length)];
+    for(let m of moves) if(m.includes('x')) best = m;
+    const info = game.move(best);
+    executeMove(info);
+    isProcessing = false;
+}
+
+function highlight(moves) {
+    resetHighlights();
+    const sel = tiles.find(t => t.userData.square === selectedSquare);
+    if(sel) sel.material.emissive.set(0xffff00);
+    moves.forEach(m => {
+        const t = tiles.find(tile => tile.userData.square === m.to);
+        if(t) t.material.emissive.set(m.captured ? 0xff4444 : 0x00e5ff);
+    });
+}
+
+function resetHighlights() {
+    tiles.forEach(t => {
+        const isWhite = (t.userData.baseColor.getHex() === 0xffffff);
+        t.material.emissive.set(isWhite ? 0x000000 : 0x000033);
+        t.material.emissiveIntensity = 0.2;
+    });
 }
 
 function updateHUD() {
-    document.getElementById('turn-txt').innerText = game.turn() === 'w' ? "白方 (你)" : "黑方 (電腦)";
-    document.getElementById('turn-txt').style.color = game.turn() === 'w' ? "#00e5ff" : "#bd00ff";
-    document.getElementById('check-status').style.display = game.in_check() ? 'block' : 'none';
+    document.getElementById('turn-txt').innerText = game.turn()==='w'?"白方 (玩家)":"黑方 (電腦)";
+    document.getElementById('check-alert').style.display = game.in_check()?'block':'none';
 }
 
-function animate(time) {
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
     requestAnimationFrame(animate);
+    const time = clock.getElapsedTime();
     controls.update();
-    TWEEN.update(time);
+    TWEEN.update();
+    
+    if (grassMat && grassMat.userData.shader) {
+        grassMat.userData.shader.uniforms.time.value = time;
+    }
+
     Object.values(pieceObjects).forEach((p, i) => {
-        p.position.y = 0.7 + Math.sin(time*0.003 + i)*0.05;
+        p.position.y = 0.7 + Math.sin(time * 3 + i) * 0.05;
     });
+
     renderer.render(scene, camera);
 }
+
 init();
 </script>
 </body>
