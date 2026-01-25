@@ -2,18 +2,17 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>二次元西洋棋：覺醒 2.5 版</title>
+    <title>二次元西洋棋：正統開局版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .panel { position: absolute; background: rgba(0,0,0,0.85); color: white; padding: 20px; border-radius: 12px; pointer-events: auto; border: 1px solid #81b64c; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        .panel { position: absolute; background: rgba(0,0,0,0.85); color: white; padding: 20px; border-radius: 12px; pointer-events: auto; border: 1px solid #81b64c; }
         #gacha-panel { top: 20px; left: 20px; width: 260px; }
         #status-panel { top: 20px; right: 20px; text-align: right; }
-        .btn { background: #81b64c; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; transition: 0.2s; }
-        .btn:hover { background: #a3d160; transform: scale(1.02); }
-        .ssr-text { color: #ffd700; font-weight: bold; text-shadow: 0 0 5px #ffd700; }
-        #skill-toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: rgba(129, 182, 76, 0.9); padding: 10px 30px; border-radius: 30px; display: none; font-weight: bold; }
+        .btn { background: #81b64c; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn:hover { background: #a3d160; }
+        .info-text { font-size: 14px; color: #ccc; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -21,15 +20,15 @@
 <div id="ui">
     <div id="gacha-panel" class="panel">
         <h2 style="margin:0 0 10px 0; color:#81b64c;">召喚祭壇</h2>
-        <div id="count">準備召喚英雄...</div>
+        <div id="count">點擊召喚以解鎖角色 Skin</div>
         <button id="draw-btn" class="btn">進行召喚</button>
-        <button id="start-btn" class="btn" style="display:none; background:#4581c5">進入戰場</button>
+        <button id="start-btn" class="btn" style="display:none; background:#4581c5">標準開局</button>
+        <div class="info-text">※ 召喚滿 16 次後依標準規則佈陣</div>
     </div>
     <div id="status-panel" class="panel">
-        <div style="font-size: 1.2em;">當前回合：<span id="turn-display" style="color:#81b64c">白方</span></div>
-        <div id="last-action" style="font-size: 0.9em; color:#aaa; margin-top:5px;">等待開局...</div>
+        <div style="font-size: 1.2em;">回合：<span id="turn-display" style="color:#00e5ff">白方 (你)</span></div>
+        <div id="msg" style="font-size: 0.9em; color:#aaa; margin-top:5px;">準備就緒</div>
     </div>
-    <div id="skill-toast">技能發動！</div>
 </div>
 
 <script>
@@ -37,14 +36,16 @@ let scene, camera, renderer, raycaster, mouse;
 let board = [], pieces = [], playerDrawn = [];
 let selectedPiece = null, currentTurn = 'white', gameState = 'drawing';
 
-const ROLES = [
-    { type: 'king', label: '♔', rarity: 'SSR', color: '#FFD700', skill: '守護者：不可被輕易擊敗' },
-    { type: 'queen', label: '♕', rarity: 'SSR', color: '#FF69B4', skill: '瞬移：全領域移動' },
-    { type: 'rook', label: '♖', rarity: 'SR', color: '#4682B4', skill: '重裝：直線衝鋒' },
-    { type: 'knight', label: '♘', rarity: 'SR', color: '#32CD32', skill: '跳躍：無視阻礙' },
-    { type: 'bishop', rarity: 'SR', label: '♗', color: '#9370DB', skill: '聖光：斜向遠攻' },
-    { type: 'pawn', label: '♙', rarity: 'R', color: '#F0E68C', skill: '勇敢：步步為營' }
-];
+// 西洋棋標準角色順序 (由左至右)
+const STANDARD_ORDER = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
+const ROLES_INFO = {
+    king: { label: '♔', name: 'KING' },
+    queen: { label: '♕', name: 'QUEEN' },
+    rook: { label: '♖', name: 'ROOK' },
+    knight: { label: '♘', name: 'KNIGHT' },
+    bishop: { label: '♗', name: 'BISHOP' },
+    pawn: { label: '♙', name: 'PAWN' }
+};
 
 function init() {
     scene = new THREE.Scene();
@@ -57,10 +58,10 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+    const ambient = new THREE.AmbientLight(0xffffff, 1.0);
     scene.add(ambient);
 
-    // 建立棋盤 (Chess.com 配色)
+    // 棋盤
     for(let r=0; r<8; r++) {
         for(let c=0; c<8; c++) {
             const geo = new THREE.PlaneGeometry(0.98, 0.98);
@@ -80,13 +81,11 @@ function init() {
     animate();
 }
 
-// 抽卡邏輯
+// 抽卡 (純粹解鎖 Skin 感)
 document.getElementById('draw-btn').onclick = () => {
     if(playerDrawn.length >= 16) return;
-    let template = ROLES[Math.floor(Math.random()*ROLES.length)];
-    let char = { ...template, id: Math.random(), side: playerDrawn.length < 8 ? 'white' : 'black' };
-    playerDrawn.push(char);
-    document.getElementById('count').innerHTML = `召喚進度: ${playerDrawn.length}/16 <br>最新: <span class="${char.rarity==='SSR'?'ssr-text':''}">${char.label} ${char.rarity}</span>`;
+    playerDrawn.push({ id: Math.random() });
+    document.getElementById('count').innerText = `已解鎖 Skin: ${playerDrawn.length}/16`;
     if(playerDrawn.length === 16) {
         document.getElementById('draw-btn').style.display='none';
         document.getElementById('start-btn').style.display='block';
@@ -96,31 +95,46 @@ document.getElementById('draw-btn').onclick = () => {
 document.getElementById('start-btn').onclick = () => {
     gameState = 'playing';
     document.getElementById('gacha-panel').style.display = 'none';
-    playerDrawn.forEach((char, i) => {
-        let r = char.side === 'white' ? Math.floor(i/8) : 7 - Math.floor((i-8)/8);
-        let c = i % 8;
-        createPiece(char, r, c);
-    });
+    setupStandardGame();
 };
 
-function createPiece(char, r, c) {
+function setupStandardGame() {
+    // 白方
+    STANDARD_ORDER.forEach((type, c) => createPiece(type, 'white', 0, c));
+    for(let c=0; c<8; c++) createPiece('pawn', 'white', 1, c);
+    // 黑方
+    STANDARD_ORDER.forEach((type, c) => createPiece(type, 'black', 7, c));
+    for(let c=0; c<8; c++) createPiece('pawn', 'black', 6, c);
+}
+
+function createPiece(type, side, r, c) {
+    const info = ROLES_INFO[type];
     const canvas = document.createElement('canvas');
     canvas.width = 256; canvas.height = 384;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = char.color;
+    
+    // 敵我鮮明配色：白方青色，黑方紫色
+    const themeColor = side === 'white' ? '#00e5ff' : '#9d00ff';
+    ctx.fillStyle = themeColor;
     ctx.fillRect(0, 0, 256, 384);
+    
+    // 角色圖示
     ctx.fillStyle = 'white';
-    ctx.font = 'bold 160px serif'; ctx.textAlign = 'center';
-    ctx.fillText(char.label, 128, 220);
-    ctx.font = 'bold 30px sans-serif';
-    ctx.fillText(char.rarity, 128, 300);
-    ctx.font = '20px sans-serif';
-    ctx.fillText(char.side === 'white' ? "MYOJO" : "DARKNESS", 128, 350);
+    ctx.font = 'bold 180px serif'; ctx.textAlign = 'center';
+    ctx.fillText(info.label, 128, 220);
+    
+    // 底部名稱標註
+    ctx.font = 'bold 40px Arial';
+    ctx.fillText(info.name, 128, 330);
+    
+    // 外邊框
+    ctx.strokeStyle = 'white'; ctx.lineWidth = 15;
+    ctx.strokeRect(0,0,256,384);
 
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.2), mat);
-    mesh.userData = { r, c, side: char.side, type: char.type, isPiece: true, rarity: char.rarity };
+    mesh.userData = { r, c, side, type, isPiece: true };
     updatePiecePos(mesh);
     scene.add(mesh);
     pieces.push(mesh);
@@ -130,7 +144,7 @@ function updatePiecePos(p) {
     p.position.set(p.userData.c - 3.5, 0.6, p.userData.r - 3.5);
 }
 
-// 核心規則邏輯 (由你提供的精準版本)
+// 標準棋規 (簡化版邏輯，確保嚴謹)
 function getMoves(p) {
     const { r, c, type, side } = p.userData;
     let moves = [];
@@ -139,24 +153,25 @@ function getMoves(p) {
 
     if (type === 'pawn') {
         const dir = side === 'white' ? 1 : -1;
-        if (r+dir >=0 && r+dir <=7 && !getPiece(r+dir, c)) moves.push({r: r+dir, c});
+        if (r+dir>=0 && r+dir<=7 && !getPiece(r+dir, c)) moves.push({r: r+dir, c});
         [-1, 1].forEach(dc => {
             const t = getPiece(r+dir, c+dc);
             if (t && t.userData.side === enemy) moves.push({r: r+dir, c: c+dc});
         });
     } else if (type === 'knight') {
         [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(d=>{
-            const rr = r+d[0], cc = c+d[1];
-            if(rr<0||rr>7||cc<0||cc>7) return;
-            const t = getPiece(rr,cc);
-            if(!t || t.userData.side===enemy) moves.push({r:rr,c:cc});
+            const rr=r+d[0], cc=c+d[1];
+            if(rr>=0&&rr<=7&&cc>=0&&cc<=7) {
+                const t=getPiece(rr,cc);
+                if(!t || t.userData.side===enemy) moves.push({r:rr,c:cc});
+            }
         });
     } else if (type === 'king') {
         for(let dr=-1; dr<=1; dr++){
             for(let dc=-1; dc<=1; dc++){
                 if(dr===0 && dc===0) continue;
                 const rr=r+dr, cc=c+dc;
-                if(rr>=0&&rr<8&&cc>=0&&cc<8){
+                if(rr>=0&&rr<=7&&cc>=0&&cc<=7){
                     const t=getPiece(rr,cc);
                     if(!t||t.userData.side===enemy) moves.push({r:rr,c:cc});
                 }
@@ -167,10 +182,9 @@ function getMoves(p) {
         if(type==='rook') dirs = [[1,0],[-1,0],[0,1],[0,-1]];
         if(type==='bishop') dirs = [[1,1],[1,-1],[-1,1],[-1,-1]];
         if(type==='queen') dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-        
         dirs.forEach(d=>{
             let rr=r+d[0], cc=c+d[1];
-            while(rr>=0&&rr<8&&cc>=0&&cc<8){
+            while(rr>=0&&rr<=7&&cc>=0&&cc<=7){
                 const t=getPiece(rr,cc);
                 if(!t) moves.push({r:rr,c:cc});
                 else { if(t.userData.side===enemy) moves.push({r:rr,c:cc}); break; }
@@ -208,50 +222,35 @@ function doMove(p, r, c) {
     if(enemy) {
         scene.remove(enemy);
         pieces = pieces.filter(x => x !== enemy);
-        if(p.userData.rarity === 'SSR') triggerSkill(p.userData.type);
+        if(enemy.userData.type === 'king') alert(p.userData.side === 'white' ? "恭喜獲勝！" : "你輸了...");
     }
-    
-    // 吃子動畫
-    p.scale.set(1.4, 1.4, 1.4);
-    setTimeout(()=>p.scale.set(1, 1, 1), 200);
-
     p.userData.r = r; p.userData.c = c;
     updatePiecePos(p);
     resetBoard();
     selectedPiece = null;
     currentTurn = currentTurn === 'white' ? 'black' : 'white';
-    document.getElementById('turn-display').innerText = currentTurn === 'white' ? "白方" : "黑方 (AI)";
-    document.getElementById('turn-display').style.color = currentTurn === 'white' ? "#81b64c" : "#ff69b4";
-    if(currentTurn === 'black') setTimeout(killAI, 600);
+    const turnDisp = document.getElementById('turn-display');
+    turnDisp.innerText = currentTurn === 'white' ? "白方 (你)" : "黑方 (AI)";
+    turnDisp.style.color = currentTurn === 'white' ? "#00e5ff" : "#9d00ff";
+    if(currentTurn === 'black') setTimeout(simpleAI, 800);
 }
 
-// 優先吃子 AI
-function killAI() {
-    const blacks = pieces.filter(p => p.userData.side === 'black');
-    let kills = [];
-    blacks.forEach(p => {
-        getMoves(p).forEach(m => {
-            if(pieces.find(x => x.userData.r === m.r && x.userData.c === m.c && x.userData.side === 'white')) kills.push({p, m});
-        });
-    });
-
-    if(kills.length > 0) {
-        const choice = kills[Math.floor(Math.random()*kills.length)];
-        doMove(choice.p, choice.m.r, choice.m.c);
-    } else {
-        for(let p of blacks) {
-            const ms = getMoves(p);
-            if(ms.length > 0) { doMove(p, ms[0].r, ms[0].c); return; }
+function simpleAI() {
+    const blacks = pieces.filter(x => x.userData.side === 'black');
+    // 優先吃子
+    for(let p of blacks) {
+        const ms = getMoves(p);
+        for(let m of ms) {
+            if(pieces.find(x => x.userData.r === m.r && x.userData.c === m.c && x.userData.side === 'white')) {
+                doMove(p, m.r, m.c); return;
+            }
         }
-        currentTurn = 'white'; // 困斃判定簡化
     }
-}
-
-function triggerSkill(type) {
-    const toast = document.getElementById('skill-toast');
-    toast.innerText = `奧義發動：${type.toUpperCase()} 斬擊！`;
-    toast.style.display = 'block';
-    setTimeout(()=>toast.style.display='none', 1500);
+    // 隨機移動
+    const p = blacks[Math.floor(Math.random()*blacks.length)];
+    const ms = getMoves(p);
+    if(ms.length > 0) doMove(p, ms[0].r, ms[0].c);
+    else currentTurn = 'white';
 }
 
 function highlight(moves) {
@@ -261,15 +260,12 @@ function highlight(moves) {
         if(t) t.material.color.set(0x81b64c);
     });
 }
-
 function resetBoard() { board.forEach(t => t.material.color.copy(t.userData.defaultColor)); }
-
 function animate() {
     requestAnimationFrame(animate);
     pieces.forEach(p => { p.position.y = 0.6 + Math.sin(Date.now()*0.004 + p.userData.r)*0.06; });
     renderer.render(scene, camera);
 }
-
 init();
 </script>
 </body>
