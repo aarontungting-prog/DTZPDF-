@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：深綠廣袤盆地版</title>
+    <title>霓虹西洋棋：天空之城・終極廣袤版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
@@ -23,15 +23,15 @@
 </head>
 <body>
 
-<div id="loading">正在生成廣袤深綠盆地...</div>
+<div id="loading">正在構建平流層雲系與廣袤地形...</div>
 
 <div id="ui" style="display:none;">
     <div id="status-panel" class="hud">
-        <h1>DEEP GREEN BASIN</h1>
+        <h1>STRATOSPHERE BASIN</h1>
         <div id="turn-txt">BLUE'S TURN</div>
     </div>
     <div id="log-panel" class="hud">
-        <div id="move-log">System Online. Location: Vast Deep Plain.<br>Ecosystem: Simulated.</div>
+        <div id="move-log">System Online. Clouds: High Altitude.<br>Visibility: Unlimited.</div>
     </div>
 </div>
 
@@ -45,17 +45,17 @@ const BOARD_HEIGHT = 15;
 
 const CHESS_NAMES = { k: 'KING', q: 'QUEEN', r: 'ROOK', b: 'BISHOP', n: 'KNIGHT', p: 'PAWN' };
 
-// --- 更新的地形函數：更大的平原 ---
+// --- 地形函數：保持史詩級廣袤平原 ---
 function getTerrainHeight(x, z) {
     const dist = Math.sqrt(x*x + z*z);
     
-    // 1. 廣袤中央平原 (半徑擴大到 250)
-    if (dist < 250) {
-        return -12 + Math.sin(x*0.005)*Math.cos(z*0.005)*2.0; // 微小起伏，頻率降低適應大平原
+    // 1. 中央平原 (半徑 400)
+    if (dist < 400) {
+        return -12 + Math.sin(x*0.004)*Math.cos(z*0.004)*2.0;
     }
 
-    // 2. 遠處隆起的山脈 (過渡範圍調整為 250-500)
-    const blend = smoothstep(250, 500, dist);
+    // 2. 遠山
+    const blend = smoothstep(400, 750, dist);
     let h = blend * 140; 
 
     h += Math.sin(x * 0.015) * Math.cos(z * 0.015) * 25;
@@ -73,11 +73,11 @@ function init() {
     clock = new THREE.Clock();
     scene = new THREE.Scene();
     
-    scene.fog = new THREE.FogExp2(0xff9966, 0.001); 
+    scene.fog = new THREE.FogExp2(0xff9966, 0.0007); // 霧氣更淡，適合高空雲層
     scene.background = new THREE.Color(0x331111);
 
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
-    camera.position.set(0, 45, 75); // 視角再拉高拉遠一點，俯瞰更大的平原
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 8000); // 視距拉遠
+    camera.position.set(0, 60, 100); 
 
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -91,7 +91,7 @@ function init() {
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.maxPolarAngle = Math.PI / 2.05;
-    controls.minDistance = 10; controls.maxDistance = 350;
+    controls.minDistance = 10; controls.maxDistance = 500;
     controls.target.set(0, BOARD_HEIGHT, 0);
 
     setupSunsetLighting();
@@ -99,7 +99,7 @@ function init() {
     setTimeout(() => {
         createProceduralTerrain(); 
         createVegetation(); 
-        createSunsetClouds();
+        createHighAltitudeClouds(); // 新：高空雲層
         createFloatingBoard();
         syncPieces();
         
@@ -118,14 +118,14 @@ function init() {
 }
 
 function setupSunsetLighting() {
-    const ambient = new THREE.AmbientLight(0xffccaa, 0.7);
+    const ambient = new THREE.AmbientLight(0xffccaa, 0.75); // 環境光稍亮
     scene.add(ambient);
 
-    const sunLight = new THREE.DirectionalLight(0xff8800, 3.0);
-    sunLight.position.set(-250, 80, -250); 
+    const sunLight = new THREE.DirectionalLight(0xff8800, 3.2);
+    sunLight.position.set(-300, 100, -300); 
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.set(2048, 2048);
-    const d = 500; // 擴大陰影範圍以適應更大的地形
+    const d = 700; 
     sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
     sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
     scene.add(sunLight);
@@ -136,21 +136,20 @@ function setupSunsetLighting() {
     uniforms['mieCoefficient'].value = 0.005; uniforms['mieDirectionalG'].value = 0.8;
     uniforms['sunPosition'].value.copy(sunLight.position);
 
-    const sunGeo = new THREE.SphereGeometry(60, 32, 32);
+    const sunGeo = new THREE.SphereGeometry(80, 32, 32);
     const sunMat = new THREE.MeshBasicMaterial({ color: 0xff5500, fog: false });
     const sunSphere = new THREE.Mesh(sunGeo, sunMat);
-    sunSphere.position.copy(sunLight.position).normalize().multiplyScalar(2000);
+    sunSphere.position.copy(sunLight.position).normalize().multiplyScalar(3000);
     scene.add(sunSphere);
 }
 
-// --- 更新：帶有頂點著色的地形 (顏色更深，漸層更低) ---
+// --- 地形 (頂點著色) ---
 function createProceduralTerrain() {
-    const terrainGeo = new THREE.PlaneGeometry(3000, 3000, 160, 160); // 地形範圍擴大
+    const terrainGeo = new THREE.PlaneGeometry(3500, 3500, 180, 180);
     terrainGeo.rotateX(-Math.PI / 2);
 
     const pos = terrainGeo.attributes.position;
     const colors = [];
-    // 更新：深綠色草地
     const grassColor = new THREE.Color(0x226622); 
     const rockColor = new THREE.Color(0x665544);
 
@@ -159,9 +158,6 @@ function createProceduralTerrain() {
         const h = getTerrainHeight(x, z);
         pos.setY(i, h);
 
-        // 更新：漸層高度下移
-        // 現在只要高度超過 -12 (平原基準面) 一點點，就會開始變色
-        // 到高度 25 時就完全變成岩石色
         const colorBlend = smoothstep(-12, 25, h);
         const finalColor = grassColor.clone().lerp(rockColor, colorBlend);
         colors.push(finalColor.r, finalColor.g, finalColor.b);
@@ -170,10 +166,7 @@ function createProceduralTerrain() {
     terrainGeo.computeVertexNormals();
 
     const terrainMat = new THREE.MeshStandardMaterial({ 
-        vertexColors: true, 
-        roughness: 0.9,
-        metalness: 0.1,
-        flatShading: true 
+        vertexColors: true, roughness: 0.9, metalness: 0.1, flatShading: true 
     });
     
     const terrain = new THREE.Mesh(terrainGeo, terrainMat);
@@ -181,22 +174,18 @@ function createProceduralTerrain() {
     scene.add(terrain);
 }
 
-// --- 更新：生態植被生成 (適應更大平原與深色草) ---
+// --- 植被 ---
 function createVegetation() {
-    // 1. 樹木
     const treeGroup = new THREE.Group();
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x1a3d1a, roughness: 0.9, flatShading: true }); // 葉子也調深一點
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x1a3d1a, roughness: 0.9, flatShading: true });
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 1.0 });
     const leafGeo = new THREE.DodecahedronGeometry(4, 0);
     const trunkGeo = new THREE.CylinderGeometry(0.7, 1.0, 6, 7); trunkGeo.translate(0, 3, 0);
 
-    // 樹木分佈範圍擴大
-    for (let i = 0; i < 650; i++) {
+    for (let i = 0; i < 850; i++) {
         const angle = Math.random() * Math.PI * 2;
-        // 分佈範圍擴大到新的綠色區域邊界 (半徑 60 ~ 350)
-        const r = 60 + Math.random() * 290; 
-        const x = Math.cos(angle) * r;
-        const z = Math.sin(angle) * r;
+        const r = 70 + Math.random() * 380; 
+        const x = Math.cos(angle) * r; const z = Math.sin(angle) * r;
         const h = getTerrainHeight(x, z);
 
         const tree = new THREE.Group();
@@ -212,9 +201,8 @@ function createVegetation() {
     }
     scene.add(treeGroup);
     
-    // 2. 中央草地 (深綠色，覆蓋更大範圍)
+    // 草地
     const bladeGeo = new THREE.PlaneGeometry(0.25, 1.2); bladeGeo.translate(0, 0.6, 0);
-    // 更新：深綠色草材質
     grassMat = new THREE.MeshStandardMaterial({ color: 0x226622, side: THREE.DoubleSide });
     grassMat.onBeforeCompile = s => {
         s.uniforms.time={value:0}; s.vertexShader=`uniform float time;\n`+s.vertexShader;
@@ -222,18 +210,16 @@ function createVegetation() {
         grassMat.userData.shader=s;
     };
     
-    // 增加草地數量並擴大範圍
-    const iGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 50000);
+    const iGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 80000);
     const dum = new THREE.Object3D();
     let grassCount = 0;
-    for(let i=0; i<60000; i++){ 
-        if(grassCount >= 50000) break;
-        const r = Math.random() * 300; // 擴大草地分佈半徑以匹配新平原
+    for(let i=0; i<100000; i++){ 
+        if(grassCount >= 80000) break;
+        const r = Math.random() * 420;
         const a = Math.random() * Math.PI * 2;
         const x = Math.cos(a)*r; const z = Math.sin(a)*r;
         const h = getTerrainHeight(x, z);
         
-        // 只在平坦低地種草 (高度小於 -8)
         if(h < -8) {
             dum.position.set(x, h, z);
             dum.rotation.y = Math.random() * Math.PI;
@@ -244,6 +230,33 @@ function createVegetation() {
     }
     iGrass.receiveShadow = true; 
     scene.add(iGrass);
+}
+
+// --- 更新：高空平流層雲系 (避免與山相撞) ---
+function createHighAltitudeClouds() {
+    const cv=document.createElement('canvas'); cv.width=128; cv.height=128;
+    const cx=cv.getContext('2d'), g=cx.createRadialGradient(64,64,0,64,64,64);
+    g.addColorStop(0, 'rgba(255, 180, 120, 0.5)'); 
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    cx.fillStyle=g; cx.fillRect(0,0,128,128);
+    
+    const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const cGrp = new THREE.Group();
+    
+    for(let i=0; i<25; i++) {
+        const cl = new THREE.Group();
+        for(let j=0; j<18; j++) {
+            const p = new THREE.Sprite(mat); 
+            p.position.set((Math.random()-0.5)*50, (Math.random()-0.5)*20, (Math.random()-0.5)*50); 
+            // 雲朵尺寸加大，因為距離變遠了
+            p.scale.setScalar(40+Math.random()*40); cl.add(p);
+        }
+        // 【關鍵調整】高度設置在 400~600，遠高於任何山峰 (山高 ~140)
+        // 範圍也擴大到 1500，覆蓋整個天頂
+        cl.position.set((Math.random()-0.5)*1500, 400+Math.random()*200, (Math.random()-0.5)*1500); 
+        cGrp.add(cl); cloudParticles.push(cl);
+    }
+    scene.add(cGrp);
 }
 
 function createFloatingBoard() {
@@ -265,29 +278,6 @@ function createFloatingBoard() {
         t.userData={square:n,isTile:true}; t.receiveShadow=true; t.castShadow=true; 
         scene.add(t); tilesMap[n]=t;
     }
-}
-
-function createSunsetClouds() {
-    const cv=document.createElement('canvas'); cv.width=128; cv.height=128;
-    const cx=cv.getContext('2d'), g=cx.createRadialGradient(64,64,0,64,64,64);
-    g.addColorStop(0, 'rgba(255, 170, 110, 0.5)'); 
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    cx.fillStyle=g; cx.fillRect(0,0,128,128);
-    
-    const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-    const cGrp = new THREE.Group();
-    
-    for(let i=0; i<25; i++) {
-        const cl = new THREE.Group();
-        for(let j=0; j<18; j++) {
-            const p = new THREE.Sprite(mat); 
-            p.position.set((Math.random()-0.5)*45, (Math.random()-0.5)*18, (Math.random()-0.5)*45); 
-            p.scale.setScalar(25+Math.random()*35); cl.add(p);
-        }
-        cl.position.set((Math.random()-0.5)*900, 130+Math.random()*60, (Math.random()-0.5)*900); 
-        cGrp.add(cl); cloudParticles.push(cl);
-    }
-    scene.add(cGrp);
 }
 
 function createSolidPiece(t,c){
