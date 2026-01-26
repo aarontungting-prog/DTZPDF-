@@ -2,9 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：連線對戰版</title>
+    <title>霓虹西洋棋：DTZ 最終行動優化版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#000000">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -23,127 +22,191 @@
     </script>
 
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; -webkit-user-select: none; user-select: none; }
-        
-        /* UI 層級設定 */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
-        .hud-element { pointer-events: auto; padding: 15px; }
-
-        /* 頂部資訊列 */
-        .top-bar {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-            display: flex; justify-content: space-between; align-items: flex-start;
-            padding-top: 10px;
+        /* --- 核心優化：禁止選取與原生觸控滾動 --- */
+        body { 
+            margin: 0; overflow: hidden; background: #000; 
+            font-family: 'Microsoft JhengHei', sans-serif; 
+            color: white; 
+            touch-action: none; /* 關鍵：防止手機瀏覽器下拉刷新或滾動 */
+            user-select: none;  /* 防止長按選取文字 */
+            -webkit-user-select: none;
         }
-        .status-box { text-align: right; text-shadow: 0 0 5px #000; }
-        .status-title { color: #00e5ff; font-weight: bold; letter-spacing: 1px; font-size: 14px; margin-bottom: 2px; }
-        .turn-indicator { font-size: 1.4rem; font-weight: 900; color: #fff; transition: color 0.3s; }
         
-        /* 底部控制區 (手機優化) */
-        .bottom-controls {
-            background: rgba(0, 0, 0, 0.85);
-            border-top: 1px solid #333;
-            padding: 15px;
-            display: flex; flex-direction: column; gap: 10px;
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        .hud { position: absolute; pointer-events: auto; }
+        
+        /* --- 登入視窗 RWD 優化 --- */
+        #auth-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000; display: flex;
+            justify-content: center; align-items: center; pointer-events: auto;
             backdrop-filter: blur(5px);
         }
-
-        .user-info { color: #aaa; font-size: 12px; display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .room-info { color: #00ff00; font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 5px; min-height: 20px; }
-
-        /* 按鈕樣式 */
-        .btn-group { display: flex; gap: 10px; }
-        button {
-            flex: 1; border: none; padding: 12px 0; border-radius: 8px;
-            font-weight: bold; font-size: 16px; cursor: pointer; color: #000;
-            transition: transform 0.1s, opacity 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        .auth-box {
+            background: rgba(20, 20, 30, 0.95); border: 1px solid #00e5ff;
+            padding: 30px 20px; border-radius: 15px; 
+            width: 90%; max-width: 320px; /* 手機版寬度自適應 */
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.2); 
         }
-        button:active { transform: scale(0.96); }
-        .btn-create { background: #00e5ff; } /* 藍色 */
-        .btn-join { background: #ff0055; color: white; } /* 紅色 */
-        .btn-copy { background: #444; color: #fff; flex: 0.4; font-size: 14px; }
-
-        /* 載入畫面 */
-        #loading {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #050505; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #00e5ff; transition: opacity 0.5s;
+        .auth-input {
+            width: 100%; padding: 12px; margin: 8px 0;
+            background: #111; border: 1px solid #444; color: #fff;
+            border-radius: 6px; box-sizing: border-box; font-size: 16px; /* 16px 防止 iOS 輸入時縮放 */
         }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid #333;
-            border-top: 4px solid #00e5ff; border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 15px;
+        .auth-btn, .guest-btn {
+            width: 100%; padding: 12px; margin-top: 5px; border-radius: 6px; font-size: 16px;
+            cursor: pointer; font-weight: bold; border: none;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .auth-btn { background: #00e5ff; color: #000; }
+        .guest-btn { background: transparent; color: #aaa; border: 1px solid #444; }
 
-        /* 浮水印 */
-        .watermark { position: absolute; bottom: 80px; width: 100%; text-align: center; color: rgba(255,255,255,0.1); font-size: 10px; pointer-events: none; }
-
-        @media (min-width: 768px) {
-            .bottom-controls {
-                position: absolute; top: 20px; left: 20px; bottom: auto;
-                width: 260px; border-radius: 10px; border: 1px solid #333;
+        /* --- 遊戲內介面優化 --- */
+        #status-panel { 
+            top: 20px; right: 20px; text-align: right; 
+            background: linear-gradient(to left, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)); 
+            padding: 15px; border-right: 3px solid #00e5ff; 
+        }
+        #menu-panel { 
+            top: 20px; left: 20px; 
+            background: rgba(0,0,0,0.8); padding: 15px; 
+            border-radius: 8px; border: 1px solid #333; width: 240px;
+        }
+        
+        button.game-btn { 
+            background: #00e5ff; color: #000; border: none; 
+            padding: 12px; margin-top: 8px; width: 100%; /* 加大點擊區域 */
+            font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 14px;
+        }
+        
+        /* --- 手機版面配置 (Media Query) --- */
+        @media (max-width: 600px) {
+            /* 狀態列移到底部，防止擋住上方視線 */
+            #status-panel { 
+                top: auto; bottom: 0; left: 0; right: 0; 
+                text-align: center; border-right: none; border-top: 2px solid #00e5ff; 
+                background: rgba(0,0,0,0.9); padding: 10px;
             }
-            .watermark { bottom: 10px; }
+            #status-panel h1 { font-size: 1rem; display: inline-block; margin-right: 10px; }
+            #turn-txt { font-size: 1.2rem; display: inline-block; }
+            
+            /* 選單改為左上角縮小版，點擊展開 (這裡簡化為固定左上) */
+            #menu-panel { 
+                top: 10px; left: 10px; width: 180px; padding: 10px;
+                transform: scale(0.9); transform-origin: top left;
+            }
+            
+            /* 教學按鈕上移，避開底部的狀態列 */
+            #tutorial-btn { bottom: 80px; right: 10px; width: 35px; height: 35px; font-size: 16px;}
+            #tutorial-content { bottom: 120px; right: 10px; left: 10px; width: auto; max-height: 50vh; }
+            
+            #footer-watermark { display: none; } /* 手機隱藏浮水印以節省空間 */
+        }
+        
+        /* 其他樣式維持原樣 */
+        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; color: #ffaa00; font-size: 18px; z-index: 1500; }
+        .user-card { margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        
+        /* 隱藏元素 */
+        #nickname-container { display: none; margin-top: 5px; }
+        .rank-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; font-weight: bold; }
+        .rank-bronze { background: #cd7f32; color: #000; }
+        .rank-silver { background: #c0c0c0; color: #000; }
+        .rank-gold { background: #ffd700; color: #000; }
+        
+        /* 教學相關 */
+        #tutorial-btn {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(0,0,0,0.7); border: 2px solid #ffaa00;
+            color: #ffaa00; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 110; font-weight: bold;
+        }
+        #tutorial-content {
+            position: absolute; bottom: 70px; right: 20px; width: 280px;
+            background: rgba(0, 0, 0, 0.95); border: 1px solid #ffaa00;
+            border-radius: 8px; padding: 15px; display: none; z-index: 110;
         }
     </style>
 </head>
 <body>
 
-<div id="loading">
-    <div class="spinner"></div>
-    <div id="loading-txt">正在連線至伺服器...</div>
+<div id="loading">遊戲載入中...</div>
+
+<div id="auth-modal">
+    <div class="auth-box">
+        <h2 style="color:#00e5ff; margin:0 0 10px 0;">DTZ CHESS</h2>
+        <div id="auth-error" style="color:#ff0055; font-size:12px; margin-bottom:10px; min-height:15px;"></div>
+        
+        <input type="email" id="email" class="auth-input" placeholder="Email">
+        <input type="password" id="password" class="auth-input" placeholder="密碼">
+        
+        <div id="nickname-container">
+            <input type="text" id="nickname" class="auth-input" placeholder="輸入暱稱 (用於註冊)" style="border-color:#00ff00;">
+        </div>
+
+        <button id="auth-action-btn" class="auth-btn">登入 / 註冊</button>
+        <div id="forgot-pw" style="color:#aaa; font-size:12px; margin:10px 0; cursor:pointer;">忘記密碼？</div>
+        <button id="guest-btn" class="guest-btn">訪客試玩</button>
+    </div>
 </div>
 
-<div id="ui-layer">
-    <div class="top-bar hud-element">
-        <div style="font-size:12px; color:#666;">NEON CHESS <span style="color:#00e5ff;">v2.0</span></div>
-        <div class="status-box">
-            <div class="status-title" id="connection-status">連線中...</div>
-            <div class="turn-indicator" id="turn-txt">準備中</div>
+<div id="ui" style="display:none;">
+    <div id="menu-panel" class="hud">
+        <div class="user-card">
+            <div style="display:flex; justify-content:space-between;">
+                <span id="user-name" style="font-weight:bold; color:#fff;">Player</span>
+                <span id="user-rank" class="rank-badge rank-bronze">銅牌</span>
+            </div>
+            <div style="font-size:12px; color:#aaa; margin-top:5px;">ELO: <span id="user-elo" style="color:#00e5ff;">0</span></div>
         </div>
+        <div id="room-display" style="font-size:12px; color:#0f0; margin-bottom:5px;">狀態：閒置</div>
+        <button id="btn-create" class="game-btn">創建房間 (執白)</button>
+        <button id="btn-join" class="game-btn" style="background:#ff0055; color:#fff;">加入房間 (執黑)</button>
+        <button id="btn-logout" class="game-btn" style="background:#333; color:#aaa; margin-top:10px;">登出</button>
     </div>
 
-    <div class="bottom-controls hud-element">
-        <div class="user-info">
-            <span id="player-id">ID: ---</span>
-            <span id="ping-txt" style="color:#0f0;">● Online</span>
-        </div>
-        <div class="room-info" id="room-display">尚未加入房間</div>
-        
-        <div class="btn-group">
-            <button class="btn-create" onclick="createRoom()">創建 (執白)</button>
-            <button class="btn-join" onclick="joinRoom()">加入 (執黑)</button>
-        </div>
-        <div class="btn-group" style="margin-top:5px; display:none;" id="copy-area">
-            <button class="btn-copy" onclick="copyRoomId()">複製房號</button>
-        </div>
-        <div style="font-size:10px; color:#555; margin-top:10px; text-align:center;">
-            單指旋轉視角 • 雙指縮放 • 點擊移動
-        </div>
+    <div id="tutorial-btn" onclick="toggleTutorial()">?</div>
+    <div id="tutorial-content" class="hud">
+        <h3 style="color:#ffaa00; margin:0 0 10px 0;">操作說明</h3>
+        <ul style="padding-left:20px; color:#ccc; font-size:13px; margin:0;">
+            <li>單指拖曳：旋轉視角</li>
+            <li>雙指縮放：遠近調整</li>
+            <li>點擊棋子：選擇/移動</li>
+            <li>手機建議橫向遊玩</li>
+        </ul>
     </div>
-    <div class="watermark">DTZ STABLE VERSION</div>
+
+    <div id="status-panel" class="hud">
+        <h1>NEON CHESS</h1>
+        <div id="turn-txt">等待對戰</div>
+        <div id="opponent-info" style="font-size: 12px; color: #aaa;">對手: ---</div>
+    </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "firebase/app";
-    import { getDatabase, ref, set, get, update, onValue, onDisconnect } from "firebase/database";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+    import { getDatabase, ref, set, get, update, onValue } from "firebase/database";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
 
-    // 1. 環境偵測與參數設定
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // ==========================================
+    // 🚀 手機效能優化配置
+    // ==========================================
+    const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
     
-    // 手機端大幅降低渲染負擔
     const CONFIG = {
-        grassCount: isMobile ? 5000 : 60000,   // 手機草量減少 90%
-        treeCount: isMobile ? 100 : 600,       // 樹木減少
-        shadowSize: isMobile ? 512 : 2048,     // 陰影解析度降低
-        pixelRatio: Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2) // 限制渲染解析度
+        // 手機版大幅減少物件數量 (從 80000 降至 5000)
+        grassCount: isMobile ? 5000 : 80000, 
+        // 減少樹木數量
+        treeCount: isMobile ? 150 : 850,
+        // 降低陰影貼圖大小 (512 vs 2048)
+        shadowSize: isMobile ? 512 : 2048,
+        // 限制像素比，防止高解析度手機發燙 (Max 1.5)
+        pixelRatio: isMobile ? Math.min(window.devicePixelRatio, 1.5) : window.devicePixelRatio,
+        // 手機版地形細節降低
+        terrainSegs: isMobile ? 60 : 180
     };
 
-    // 2. Firebase 初始化
     const firebaseConfig = {
         apiKey: "AIzaSyCxPppnUG864v3E2j1OzykzFmhLpsEJCSE",
         authDomain: "chess-1885a.firebaseapp.com",
@@ -154,635 +217,494 @@
         appId: "1:824383572856:web:7c663d6bf0f970f6acd68d"
     };
 
-    let app, db, auth, myUid;
+    let app, db, auth;
     try {
         app = initializeApp(firebaseConfig);
         db = getDatabase(app);
         auth = getAuth(app);
-    } catch(e) { 
-        alert("連線錯誤：無法連接伺服器"); 
-    }
+    } catch(e) { console.error("Firebase Error", e); }
 
-    // 遊戲變數
-    let gameId = null;
-    let playerColor = 'w'; // w 或 b
-    let isOnline = false;
+    let currentUser = null, gameId = null, playerColor = 'w', isOnline = false, isRegistering = false;
+    let scene, camera, renderer, controls, raycaster, mouse, clock;
     let game = new Chess();
-    let scene, camera, renderer, controls, raycaster;
     let tilesMap = {}, piecesMap = {};
-    let selectedSquare = null;
-    let isProcessing = false;
-    let grassMat;
+    let selectedSquare = null, isProcessing = false;
+    let grassMat, cloudParticles = [];
     const BOARD_HEIGHT = 15;
 
-    // ==========================================
-    // 🚀 自動登入與連線邏輯
-    // ==========================================
-    
-    function autoLogin() {
-        signInAnonymously(auth).catch((error) => {
-            alert("登入失敗: " + error.message);
-        });
-    }
+    // --- 介面邏輯 ---
+    window.toggleTutorial = () => {
+        const el = document.getElementById('tutorial-content');
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
+
+    const authModal = document.getElementById('auth-modal');
+    const authActionBtn = document.getElementById('auth-action-btn');
+    const emailInput = document.getElementById('email');
+    const passInput = document.getElementById('password');
+    const nicknameInput = document.getElementById('nickname');
+    const errorMsg = document.getElementById('auth-error');
 
     onAuthStateChanged(auth, (user) => {
+        document.getElementById('loading').style.display = 'none';
         if (user) {
-            myUid = user.uid;
-            document.getElementById('loading').style.opacity = 0;
-            setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
-            document.getElementById('player-id').innerText = `ID: Guest_${myUid.substring(0,4)}`;
-            document.getElementById('turn-txt').innerText = "等待開始";
-            
-            // 斷線自動清除狀態 (Presence System)
-            const conRef = ref(db, '.info/connected');
-            onValue(conRef, (snap) => {
-                if (snap.val() === true) {
-                    document.getElementById('ping-txt').style.color = "#0f0";
-                } else {
-                    document.getElementById('ping-txt').style.color = "#f00";
-                }
-            });
+            currentUser = user;
+            authModal.style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            checkProfile(user);
+        } else {
+            currentUser = null;
+            authModal.style.display = 'flex';
+            document.getElementById('ui').style.display = 'none';
+            resetAuthUI();
         }
     });
 
-    // ==========================================
-    // ⚔️ 遊戲房大廳功能
-    // ==========================================
-
-    window.createRoom = function() {
-        if (!myUid) return;
-        gameId = Math.floor(10000 + Math.random() * 90000).toString(); // 5位數房間號
-        
-        set(ref(db, 'games/' + gameId), {
-            fen: game.fen(),
-            turn: 'w',
-            white: myUid,
-            black: null,
-            status: 'waiting',
-            lastMove: null
-        }).then(() => {
-            playerColor = 'w';
-            isOnline = true;
-            setupGameListener();
-            updateUI("waiting");
-            resetCamera();
-        });
-    };
-
-    window.joinRoom = function() {
-        if (!myUid) return;
-        let inputId = prompt("請輸入 5 位數房間號碼：");
-        if (!inputId) return;
-        
-        const gameRef = ref(db, 'games/' + inputId);
-        get(gameRef).then((snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                if (data.status !== 'waiting' && data.black !== myUid) {
-                    alert("房間已滿或遊戲進行中");
-                    return;
-                }
-                
-                update(gameRef, {
-                    black: myUid,
-                    status: 'playing'
-                });
-
-                gameId = inputId;
-                playerColor = 'b';
-                isOnline = true;
-                
-                game.load(data.fen);
-                syncPieces();
-                setupGameListener();
-                updateUI("playing");
-                resetCamera();
-            } else {
-                alert("找不到房間");
-            }
-        });
-    };
-
-    window.copyRoomId = function() {
-        if(gameId) {
-            navigator.clipboard.writeText(gameId);
-            alert("已複製房號: " + gameId);
-        }
+    function resetAuthUI() {
+        isRegistering = false;
+        document.getElementById('nickname-container').style.display = 'none';
+        authActionBtn.innerText = "登入 / 註冊";
+        errorMsg.innerText = "";
     }
 
-    function updateUI(state) {
-        const display = document.getElementById('room-display');
-        const copyArea = document.getElementById('copy-area');
-        const status = document.getElementById('connection-status');
+    function checkProfile(user) {
+        const userRef = ref(db, 'users/' + user.uid);
+        get(userRef).then(snap => {
+            if (!snap.exists()) {
+                const name = nicknameInput.value.trim() || (user.isAnonymous ? `Guest_${user.uid.substr(0,4)}` : user.email.split('@')[0]);
+                set(userRef, { name: name, email: user.email || 'guest', elo: 0 });
+            }
+            loadProfile();
+        });
+    }
+    
+    function loadProfile() {
+        if(!currentUser) return;
+        onValue(ref(db, 'users/' + currentUser.uid), snap => {
+            const d = snap.val();
+            if(d) {
+                document.getElementById('user-name').innerText = d.name;
+                document.getElementById('user-elo').innerText = d.elo;
+            }
+        });
+    }
+
+    authActionBtn.addEventListener('click', async () => {
+        const e = emailInput.value.trim(), p = passInput.value.trim();
+        if(!e || !p) { errorMsg.innerText = "請輸入帳號密碼"; return; }
         
-        if (state === 'waiting') {
-            display.innerText = `房間號: ${gameId} (等待對手)`;
-            display.style.color = "#ffff00";
-            copyArea.style.display = 'flex';
-            status.innerText = "等待玩家加入...";
-        } else if (state === 'playing') {
-            display.innerText = `房間號: ${gameId} (對戰中)`;
-            display.style.color = "#00ff00";
-            copyArea.style.display = 'flex';
-            status.innerText = "連線穩定";
+        if (isRegistering) {
+            if(!nicknameInput.value.trim()) { errorMsg.innerText = "請輸入暱稱"; return; }
+            try { await createUserWithEmailAndPassword(auth, e, p); } catch(err) { errorMsg.innerText = err.message; }
+        } else {
+            try { await signInWithEmailAndPassword(auth, e, p); } catch(err) {
+                if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                    isRegistering = true;
+                    document.getElementById('nickname-container').style.display = 'block';
+                    authActionBtn.innerText = "確認註冊";
+                    errorMsg.innerText = "帳號不存在，請輸入暱稱進行註冊";
+                    errorMsg.style.color = "#00ff00";
+                } else { errorMsg.innerText = err.message; }
+            }
         }
+    });
+
+    document.getElementById('guest-btn').addEventListener('click', () => signInAnonymously(auth));
+    document.getElementById('forgot-pw').addEventListener('click', () => {
+        const e = emailInput.value.trim();
+        if(e) sendPasswordResetEmail(auth, e).then(()=>alert('重設信已寄出')).catch(er=>alert(er.message));
+        else alert('請先輸入 Email');
+    });
+    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+    // --- 遊戲房間邏輯 ---
+    window.createGameRoom = function() {
+        gameId = Math.floor(1000 + Math.random() * 9000).toString();
+        get(ref(db, 'users/' + currentUser.uid)).then(snap => {
+            const u = snap.val();
+            set(ref(db, 'games/' + gameId), {
+                fen: game.fen(), turn: 'w', white: { uid: currentUser.uid, name: u.name, elo: u.elo },
+                status: 'waiting'
+            }).then(() => {
+                playerColor = 'w'; isOnline = true;
+                document.getElementById('room-display').innerText = `房號: ${gameId} (等待中)`;
+                alert(`房間已建立！號碼：${gameId}`);
+                setupGameListener();
+                resetCamera();
+            });
+        });
+    }
+
+    window.joinGameRoom = function() {
+        const id = prompt('請輸入房間號碼:');
+        if(!id) return;
+        get(ref(db, 'games/' + id)).then(snap => {
+            if(snap.exists() && snap.val().status === 'waiting') {
+                gameId = id;
+                get(ref(db, 'users/' + currentUser.uid)).then(uSnap => {
+                    const u = uSnap.val();
+                    update(ref(db, 'games/' + gameId), {
+                        black: { uid: currentUser.uid, name: u.name, elo: u.elo }, status: 'playing'
+                    });
+                    playerColor = 'b'; isOnline = true;
+                    document.getElementById('room-display').innerText = `房號: ${gameId} (對戰中)`;
+                    game.load(snap.val().fen);
+                    syncPieces();
+                    setupGameListener();
+                    resetCamera();
+                });
+            } else alert('房間不存在或已滿');
+        });
     }
 
     function setupGameListener() {
-        const gameRef = ref(db, 'games/' + gameId);
-        
-        // 監聽遊戲變動
-        onValue(gameRef, (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
-
-            // 1. 檢查是否有對手加入
-            if (playerColor === 'w' && data.black && data.status === 'playing') {
-                updateUI("playing");
+        onValue(ref(db, 'games/' + gameId), snap => {
+            const d = snap.val();
+            if(!d) return;
+            if(d.black && playerColor === 'w') document.getElementById('opponent-info').innerText = `VS: ${d.black.name}`;
+            if(d.white && playerColor === 'b') document.getElementById('opponent-info').innerText = `VS: ${d.white.name}`;
+            
+            if(d.fen !== game.fen()) {
+                game.load(d.fen);
+                syncPieces();
+                updateHUD();
             }
-
-            // 2. 同步棋盤狀態
-            if (data.fen !== game.fen()) {
-                game.load(data.fen);
-                // 執行動畫或強制同步
-                if (data.lastMove) {
-                     // 簡單處理：直接重繪所有棋子，確保絕對同步
-                     syncPieces(); 
-                } else {
-                    syncPieces();
-                }
-            }
-
-            // 3. 更新回合顯示
-            const turn = game.turn();
-            const turnTxt = document.getElementById('turn-txt');
-            if (turn === 'w') {
-                turnTxt.innerText = "白方回合";
-                turnTxt.style.color = "#00e5ff";
-            } else {
-                turnTxt.innerText = "黑方回合";
-                turnTxt.style.color = "#ff0055";
-            }
-
-            // 4. 判斷勝負
-            if (data.winner) {
-                turnTxt.innerText = data.winner === 'w' ? "白方獲勝!" : "黑方獲勝!";
-                turnTxt.style.color = "#ffff00";
-                setTimeout(() => alert(data.winner === 'w' ? "白方獲勝!" : "黑方獲勝!"), 100);
-            }
-        });
-        
-        // 斷線處理：如果我斷線了，嘗試標記遊戲
-        onDisconnect(gameRef).update({
-            status: 'interrupted'
+            if(d.winner) { alert(d.winner === playerColor ? "勝利！" : "戰敗..."); updateHUD(); }
         });
     }
 
-    function sendMove(move) {
-        if (!isOnline || !gameId) return;
-        
-        let updateData = {
-            fen: game.fen(),
-            turn: game.turn(),
-            lastMove: move
-        };
-
-        if (game.in_checkmate()) {
-            updateData.winner = game.turn() === 'w' ? 'b' : 'w'; // 被將死的人輸了，所以贏家是對家
-            updateData.status = 'finished';
-        }
-
+    function sendMove(m) {
+        let updateData = { fen: game.fen(), turn: game.turn() };
+        if(game.in_checkmate()) { updateData.winner = game.turn() === 'w' ? 'b' : 'w'; updateData.status = 'finished'; }
         update(ref(db, 'games/' + gameId), updateData);
     }
 
-    // ==========================================
-    // 🎨 3D 場景與渲染 (Three.js)
-    // ==========================================
+    function resetCamera() {
+        const z = playerColor === 'w' ? 80 : -80; // 手機版拉近一點
+        new TWEEN.Tween(camera.position).to({x:0, y:50, z:z}, 1500).easing(TWEEN.Easing.Cubic.Out).start();
+        controls.target.set(0, BOARD_HEIGHT, 0);
+    }
 
-    function init3D() {
-        const clock = new THREE.Clock();
+    // --- 3D 場景邏輯 (優化版) ---
+    function getTerrainHeight(x, z) {
+        // 簡化計算
+        if(Math.abs(x) < 50 && Math.abs(z) < 50) return -12; // 棋盤中心平坦
+        const dist = Math.sqrt(x*x + z*z);
+        if (dist < 300) return -12;
+        return -12 + (dist - 300) * 0.1 + Math.sin(x*0.02)*5;
+    }
+
+    function init() {
+        clock = new THREE.Clock();
         scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x111111, 0.002); // 黑色迷霧
-        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.FogExp2(0x331111, 0.001); // 霧氣增加一點遮蔽遠處
+        scene.background = new THREE.Color(0x331111);
 
-        // 攝影機
-        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 3000);
-        camera.position.set(0, 80, 120);
+        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 4000);
+        camera.position.set(0, 60, 100);
 
-        // 渲染器
-        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: "high-performance" }); // 手機關閉反鋸齒
         renderer.setPixelRatio(CONFIG.pixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = !isMobile; // 手機關閉陰影運算以提升FPS
+        renderer.shadowMap.enabled = !isMobile; // 手機關閉即時陰影以提升 FPS
         if(!isMobile) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.body.appendChild(renderer.domElement);
 
-        // 控制器
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.maxPolarAngle = Math.PI / 2.1;
-        controls.minDistance = 20;
-        controls.maxDistance = 300;
-        controls.target.set(0, BOARD_HEIGHT, 0);
+        controls.minDistance = 20; controls.maxDistance = 300;
 
-        // 燈光
-        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        // 燈光優化
+        const ambient = new THREE.AmbientLight(0xffccaa, 0.8);
         scene.add(ambient);
-
-        const dirLight = new THREE.DirectionalLight(0xffaa00, 1.5);
-        dirLight.position.set(-100, 150, -100);
-        if (!isMobile) {
+        
+        const dirLight = new THREE.DirectionalLight(0xff8800, 2);
+        dirLight.position.set(-100, 100, -100);
+        if(!isMobile) {
             dirLight.castShadow = true;
-            dirLight.shadow.mapSize.set(1024, 1024);
+            dirLight.shadow.mapSize.width = CONFIG.shadowSize;
+            dirLight.shadow.mapSize.height = CONFIG.shadowSize;
+            dirLight.shadow.camera.left = -200; dirLight.shadow.camera.right = 200;
+            dirLight.shadow.camera.top = 200; dirLight.shadow.camera.bottom = -200;
         }
         scene.add(dirLight);
 
-        // 環境生成 (非同步以免卡頓)
-        setTimeout(() => {
-            createEnvironment();
-            createBoard();
-            syncPieces();
-        }, 50);
+        // 天空
+        const sky = new THREE.Sky();
+        sky.scale.setScalar(450000);
+        sky.material.uniforms['turbidity'].value = 10;
+        sky.material.uniforms['rayleigh'].value = 2;
+        sky.material.uniforms['sunPosition'].value.copy(dirLight.position);
+        scene.add(sky);
 
-        // 事件監聽
+        // 初始化物件
+        createTerrain();
+        createVegetation();
+        createBoard();
+        syncPieces();
+
         raycaster = new THREE.Raycaster();
-        window.addEventListener('resize', onWindowResize);
-        
-        // 統一處理點擊與觸控
-        const canvas = renderer.domElement;
-        canvas.addEventListener('touchstart', onTouch, {passive: false});
-        canvas.addEventListener('click', onClick);
+        mouse = new THREE.Vector2();
 
-        // 動畫迴圈
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-            TWEEN.update();
-            controls.update();
-            
-            // 草地擺動效果 (僅在非手機或低負載時開啟)
-            if (grassMat && grassMat.userData.shader) {
-                grassMat.userData.shader.uniforms.time.value = time;
-            }
-            
-            renderer.render(scene, camera);
-        }
+        window.addEventListener('resize', onResize);
+        window.addEventListener('click', onClick);
+        window.addEventListener('touchstart', onTouch, {passive: false});
+
         animate();
     }
 
-    function resetCamera() {
-        // 根據執黑或執白旋轉視角
-        const z = playerColor === 'w' ? 100 : -100;
-        // 根據螢幕寬度調整遠近 (手機要拉遠一點)
-        const y = window.innerWidth < 600 ? 90 : 60; 
-        
-        new TWEEN.Tween(camera.position)
-            .to({ x: 0, y: y, z: z }, 1500)
-            .easing(TWEEN.Easing.Cubic.Out)
-            .start();
-        controls.target.set(0, BOARD_HEIGHT, 0);
-    }
-
-    // 簡化的環境生成
-    function createEnvironment() {
-        // 地面
-        const geo = new THREE.PlaneGeometry(1000, 1000, 32, 32);
-        geo.rotateX(-Math.PI / 2);
-        
-        // 簡單的起伏
+    function createTerrain() {
+        const geo = new THREE.PlaneGeometry(2000, 2000, CONFIG.terrainSegs, CONFIG.terrainSegs);
+        geo.rotateX(-Math.PI/2);
         const pos = geo.attributes.position;
-        for(let i=0; i<pos.count; i++) {
-            const x = pos.getX(i);
-            const z = pos.getZ(i);
-            const dist = Math.sqrt(x*x + z*z);
-            let h = 0;
-            if(dist > 50) h = Math.sin(x*0.02)*5 + Math.cos(z*0.02)*5;
-            if(dist > 300) h -= 20; // 遠處下沉
-            pos.setY(i, h - 15);
+        const colors = [];
+        const c1 = new THREE.Color(0x224422), c2 = new THREE.Color(0x443322);
+        
+        for(let i=0; i<pos.count; i++){
+            const x = pos.getX(i), z = pos.getZ(i);
+            const h = getTerrainHeight(x, z);
+            pos.setY(i, h);
+            const alpha = (h + 12) / 50; 
+            const c = c1.clone().lerp(c2, Math.min(1, Math.max(0, alpha)));
+            colors.push(c.r, c.g, c.b);
         }
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
         geo.computeVertexNormals();
-
-        const mat = new THREE.MeshStandardMaterial({
-            color: 0x112211, 
-            roughness: 0.8,
-            flatShading: true
-        });
+        const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
         const mesh = new THREE.Mesh(geo, mat);
         if(!isMobile) mesh.receiveShadow = true;
         scene.add(mesh);
+    }
 
-        // 隨機發光柱子 (霓虹氛圍)
-        const pillarGeo = new THREE.CylinderGeometry(0.5, 0.5, 20, 6);
-        const pillarMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa });
-        for(let i=0; i<30; i++) {
-            const mesh = new THREE.Mesh(pillarGeo, pillarMat);
-            const r = 100 + Math.random() * 200;
+    function createVegetation() {
+        // 樹木 (簡化幾何體)
+        const tGeo = new THREE.CylinderGeometry(0, 1.5, 8, 5); // 減少面數
+        const tMat = new THREE.MeshStandardMaterial({color: 0x113311, flatShading:true});
+        const treeMesh = new THREE.InstancedMesh(tGeo, tMat, CONFIG.treeCount);
+        const dummy = new THREE.Object3D();
+        
+        for(let i=0; i<CONFIG.treeCount; i++){
+            const r = 100 + Math.random()*800;
             const a = Math.random() * Math.PI * 2;
-            mesh.position.set(Math.cos(a)*r, 0, Math.sin(a)*r);
-            scene.add(mesh);
+            const x = Math.cos(a)*r, z = Math.sin(a)*r;
+            dummy.position.set(x, getTerrainHeight(x,z)+4, z);
+            dummy.scale.setScalar(1 + Math.random());
+            dummy.updateMatrix();
+            treeMesh.setMatrixAt(i, dummy.matrix);
         }
+        if(!isMobile) treeMesh.castShadow = true;
+        scene.add(treeMesh);
 
-        // 簡單的草地 (InstancedMesh)
-        if (CONFIG.grassCount > 0) {
-            const bGeo = new THREE.PlaneGeometry(0.5, 2);
-            bGeo.translate(0, 1, 0);
-            grassMat = new THREE.MeshBasicMaterial({color: 0x226622, side: THREE.DoubleSide});
-            
-            // 注入 Shader 讓草動起來
-            grassMat.onBeforeCompile = (shader) => {
-                shader.uniforms.time = { value: 0 };
-                shader.vertexShader = `uniform float time;\n` + shader.vertexShader;
-                shader.vertexShader = shader.vertexShader.replace(
-                    `#include <begin_vertex>`,
-                    `vec3 transformed = vec3( position );
-                     float wave = sin(time * 2.0 + position.x * 0.5) * 0.3 * position.y;
-                     transformed.x += wave;
-                     #include <begin_vertex>`
-                );
-                grassMat.userData.shader = shader;
-            };
-
-            const iMesh = new THREE.InstancedMesh(bGeo, grassMat, CONFIG.grassCount);
-            const dummy = new THREE.Object3D();
-            let count = 0;
-            for(let i=0; i<CONFIG.grassCount; i++) {
-                const r = 40 + Math.random() * 150;
-                const a = Math.random() * Math.PI * 2;
-                dummy.position.set(Math.cos(a)*r, -15, Math.sin(a)*r);
-                dummy.rotation.y = Math.random() * Math.PI;
-                dummy.updateMatrix();
-                iMesh.setMatrixAt(count++, dummy.matrix);
-            }
-            scene.add(iMesh);
+        // 草地 (使用 Shader 讓草隨風動，但在手機上減少數量)
+        const bGeo = new THREE.PlaneGeometry(0.5, 1.5);
+        bGeo.translate(0, 0.75, 0);
+        grassMat = new THREE.MeshStandardMaterial({color:0x338833, side:THREE.DoubleSide});
+        grassMat.onBeforeCompile = s => {
+            s.uniforms.time = {value:0};
+            s.vertexShader = `uniform float time;\n` + s.vertexShader;
+            s.vertexShader = s.vertexShader.replace(`#include <begin_vertex>`, `vec3 transformed=vec3(position); float w=sin(time*2.0+position.x*0.5)*0.2*position.y; transformed.x+=w; #include <begin_vertex>`);
+            grassMat.userData.shader = s;
+        };
+        const grass = new THREE.InstancedMesh(bGeo, grassMat, CONFIG.grassCount);
+        let count = 0;
+        for(let i=0; i<CONFIG.grassCount * 2; i++){ // 嘗試生成
+            if(count >= CONFIG.grassCount) break;
+            const r = Math.random() * 500;
+            if(r < 60) continue; // 不要在棋盤中間長草
+            const a = Math.random() * Math.PI * 2;
+            const x = Math.cos(a)*r, z = Math.sin(a)*r;
+            dummy.position.set(x, getTerrainHeight(x,z), z);
+            dummy.rotation.y = Math.random()*3;
+            dummy.updateMatrix();
+            grass.setMatrixAt(count++, dummy.matrix);
         }
+        scene.add(grass);
     }
 
     function createBoard() {
-        // 棋盤底座
-        const base = new THREE.Mesh(
-            new THREE.BoxGeometry(9, 1, 9),
-            new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.2})
-        );
-        base.position.y = BOARD_HEIGHT - 0.5;
+        const base = new THREE.Mesh(new THREE.BoxGeometry(9, 0.5, 9), new THREE.MeshStandardMaterial({color:0x221111}));
+        base.position.y = BOARD_HEIGHT - 0.25;
+        if(!isMobile) base.receiveShadow = true;
         scene.add(base);
 
-        // 邊框光圈
-        const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(8, 0.2, 8, 32),
-            new THREE.MeshBasicMaterial({color: 0x00e5ff})
-        );
-        ring.rotation.x = Math.PI/2;
-        ring.position.y = BOARD_HEIGHT - 0.5;
-        scene.add(ring);
-
-        // 格子
-        for(let r=0; r<8; r++) {
-            for(let c=0; c<8; c++) {
-                const isWhite = (r+c)%2 !== 0;
-                const tile = new THREE.Mesh(
-                    new THREE.BoxGeometry(1, 0.2, 1),
-                    new THREE.MeshStandardMaterial({
-                        color: isWhite ? 0xccddff : 0x222233,
-                        roughness: 0.5
-                    })
-                );
-                tile.position.set(c-3.5, BOARD_HEIGHT, 3.5-r);
-                
-                const sqName = String.fromCharCode(97+c) + (r+1);
-                tile.userData = { square: sqName, isTile: true };
-                
-                if(!isMobile) tile.receiveShadow = true;
-                scene.add(tile);
-                tilesMap[sqName] = tile;
-            }
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++){
+            const n = String.fromCharCode(97+c)+(r+1), w = (r+c)%2!==0;
+            const t = new THREE.Mesh(new THREE.BoxGeometry(1, 0.2, 1), new THREE.MeshStandardMaterial({
+                color: w ? 0xffddbb : 0x443333, roughness: 0.4
+            }));
+            t.position.set(c-3.5, BOARD_HEIGHT, 3.5-r);
+            t.userData = { square: n };
+            if(!isMobile) t.receiveShadow = true;
+            scene.add(t);
+            tilesMap[n] = t;
         }
     }
 
-    function createPiece(type, color) {
-        const group = new THREE.Group();
-        // 簡化材質以提升效能
+    function createPieceMesh(type, color) {
+        // 簡化棋子幾何，提升效能
+        const segs = isMobile ? 12 : 32; 
+        const g = new THREE.Group();
         const mat = new THREE.MeshStandardMaterial({
-            color: color === 'w' ? 0xffffff : 0x333333,
-            roughness: 0.3,
-            metalness: 0.2
+            color: color==='w'?0xeeeeff:0x222222, 
+            roughness: 0.3, metalness: 0.5
         });
-        const glowColor = color === 'w' ? 0x00e5ff : 0xff0055;
-        const glowMat = new THREE.MeshBasicMaterial({ color: glowColor });
+        const glow = new THREE.MeshBasicMaterial({ color: color==='w'?0x00e5ff:0xff0055 }); // 簡化發光材質，不用 emissive 標準材質
 
-        // 通用底座
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.2, 16), mat);
-        group.add(base);
+        let geo;
+        // 簡單造型代替複雜組合
+        if(type==='p') geo = new THREE.CylinderGeometry(0.2, 0.3, 0.8, segs);
+        else if(type==='r') geo = new THREE.BoxGeometry(0.6, 1, 0.6);
+        else if(type==='n') geo = new THREE.CylinderGeometry(0.2, 0.4, 1, 4); // 馬用4邊形柱體
+        else if(type==='b') geo = new THREE.ConeGeometry(0.3, 1.2, segs);
+        else if(type==='q') geo = new THREE.CylinderGeometry(0.3, 0.2, 1.5, segs);
+        else if(type==='k') geo = new THREE.CylinderGeometry(0.3, 0.3, 1.6, segs);
+        
+        const body = new THREE.Mesh(geo, mat);
+        body.position.y = 0.5;
+        if(!isMobile) body.castShadow = true;
+        g.add(body);
+        
+        // 頂部發光點
+        const top = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), glow);
+        top.position.y = 1.0;
+        if(type==='k'||type==='q') top.position.y = 1.6;
+        g.add(top);
 
-        let body;
-        // 根據棋子類型建立簡單幾何體
-        switch(type) {
-            case 'p': // 兵
-                body = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.8, 16), mat);
-                body.position.y = 0.5;
-                break;
-            case 'r': // 車
-                body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.5), mat);
-                body.position.y = 0.5;
-                break;
-            case 'n': // 馬 (用切角的Box代替)
-                body = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), mat);
-                body.position.y = 0.5;
-                body.rotation.x = Math.PI/4; // 傾斜
-                break;
-            case 'b': // 象
-                body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.3, 1.0, 16), mat);
-                body.position.y = 0.6;
-                break;
-            case 'q': // 后
-                body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 1.4, 16), mat);
-                body.position.y = 0.8;
-                // 后冠光環
-                const crown = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.05, 8, 16), glowMat);
-                crown.rotation.x = Math.PI/2;
-                crown.position.y = 1.5;
-                group.add(crown);
-                break;
-            case 'k': // 王
-                body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 1.6, 16), mat);
-                body.position.y = 0.9;
-                const cross = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), glowMat);
-                cross.position.y = 1.8;
-                group.add(cross);
-                break;
-        }
-        if(body) {
-            if(!isMobile) body.castShadow = true;
-            group.add(body);
-        }
-
-        return group;
+        return g;
     }
 
     function syncPieces() {
-        // 清除舊棋子
-        for (let sq in piecesMap) {
-            scene.remove(piecesMap[sq]);
-        }
+        for(let s in piecesMap) scene.remove(piecesMap[s]);
         piecesMap = {};
-
-        const board = game.board();
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const p = board[r][c];
-                if (p) {
-                    const mesh = createPiece(p.type, p.color);
-                    mesh.position.set(c - 3.5, BOARD_HEIGHT + 0.1, 3.5 - r); // r 對應 z (反向)
-                    // 修正：棋盤座標 0,0 是 a8，但在 3D 中 z 軸是反的
-                    // Chess.js: row 0 is rank 8. 
-                    // 3D: z -3.5 is top.
-                    // 修正座標對應：
-                    // row 0 (rank 8) -> z = -3.5
-                    // row 7 (rank 1) -> z = 3.5
-                    mesh.position.z = (r - 3.5); 
-                    
-                    scene.add(mesh);
-                    const sqName = String.fromCharCode(97 + c) + (8 - r);
-                    piecesMap[sqName] = mesh;
-                }
+        const b = game.board();
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++){
+            const p = b[r][c];
+            if(p){
+                const mesh = createPieceMesh(p.type, p.color);
+                mesh.position.set(c-3.5, BOARD_HEIGHT, r-3.5);
+                scene.add(mesh);
+                piecesMap[String.fromCharCode(97+c)+(8-r)] = mesh;
             }
         }
     }
-
-    // ==========================================
-    // 🎮 互動控制
-    // ==========================================
 
     function onTouch(e) {
-        if (e.touches.length > 1) return; // 雙指縮放交給 OrbitControls
-        e.preventDefault(); // 防止滾動
-        
-        // 轉換觸控座標
-        const touch = e.touches[0];
-        const mouse = new THREE.Vector2();
-        mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
-        
-        handleInput(mouse);
+        if(e.touches.length > 1) return; // 允許雙指縮放
+        // e.preventDefault(); // 註解掉，因為 CSS touch-action 已處理，保留部分原生行為更順暢
+        mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+        checkIntersection();
     }
-
+    
     function onClick(e) {
-        const mouse = new THREE.Vector2();
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        handleInput(mouse);
+        checkIntersection();
     }
 
-    function handleInput(mouse) {
-        // 1. 檢查是否輪到自己
-        if (isOnline && game.turn() !== playerColor) return;
-        if (isProcessing) return;
-
+    function checkIntersection() {
+        if(isProcessing) return;
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(Object.values(tilesMap));
-
-        if (intersects.length > 0) {
-            const sq = intersects[0].object.userData.square;
-            onSquareClick(sq);
-        }
+        if(intersects.length > 0) handleSquareClick(intersects[0].object.userData.square);
     }
 
-    function onSquareClick(sq) {
-        const piece = game.get(sq);
+    function handleSquareClick(sq) {
+        if(isOnline && game.turn() !== playerColor) return;
 
-        // 情況 A: 選中自己的棋子
-        if (piece && piece.color === playerColor) { // 強制只能選自己的顏色
-            highlightSquare(sq);
-            selectedSquare = sq;
-            return;
-        }
-
-        // 情況 B: 已經選了棋子，現在點擊目標格 (移動或吃子)
-        if (selectedSquare) {
-            const move = game.move({
-                from: selectedSquare,
-                to: sq,
-                promotion: 'q' // 簡化：一律升變皇后
-            });
-
-            if (move) {
-                // 移動成功
+        const p = game.get(sq);
+        // 選擇棋子
+        if(!selectedSquare) {
+            if(p && p.color === game.turn()) {
+                if(isOnline && p.color !== playerColor) return;
+                selectSquare(sq);
+            }
+        } else {
+            // 移動
+            const move = game.move({ from: selectedSquare, to: sq, promotion: 'q' });
+            if(move) {
                 animateMove(move);
-                sendMove(move); // 發送給伺服器
+                if(isOnline) sendMove(move);
             } else {
-                // 移動不合法，取消選取
-                clearHighlight();
-                selectedSquare = null;
+                // 如果點擊同色棋子，切換選擇
+                if(p && p.color === game.turn() && (!isOnline || p.color === playerColor)) selectSquare(sq);
+                else clearSelection();
             }
         }
     }
 
-    function highlightSquare(sq) {
-        clearHighlight();
-        // 高亮選中的格子
-        if(tilesMap[sq]) {
-            tilesMap[sq].material.emissive.setHex(0xffff00);
-            tilesMap[sq].material.emissiveIntensity = 0.5;
-        }
-        // 高亮可移動的格子
-        const moves = game.moves({ square: sq, verbose: true });
-        moves.forEach(m => {
-            if(tilesMap[m.to]) {
-                const color = m.captured ? 0xff0000 : 0x00ff00; // 吃子顯紅，移動顯綠
-                tilesMap[m.to].material.emissive.setHex(color);
-                tilesMap[m.to].material.emissiveIntensity = 0.3;
-            }
+    function selectSquare(sq) {
+        clearSelection();
+        selectedSquare = sq;
+        tilesMap[sq].material.color.setHex(0xffff00);
+        game.moves({square:sq, verbose:true}).forEach(m => {
+            tilesMap[m.to].material.color.setHex(m.captured ? 0xff5555 : 0x00ff00); // 手機版用顏色區分比較明顯
         });
     }
 
-    function clearHighlight() {
-        for(let s in tilesMap) {
-            tilesMap[s].material.emissive.setHex(0x000000);
-            tilesMap[s].material.emissiveIntensity = 0;
+    function clearSelection() {
+        selectedSquare = null;
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++){
+            const n = String.fromCharCode(97+c)+(r+1), w = (r+c)%2!==0;
+            tilesMap[n].material.color.setHex(w ? 0xffddbb : 0x443333);
         }
     }
 
-    function animateMove(move) {
+    function animateMove(m) {
         isProcessing = true;
-        clearHighlight();
-        selectedSquare = null;
-
-        const startMesh = piecesMap[move.from];
-        const endPos = tilesMap[move.to].position.clone();
-        endPos.y += 0.1; // 修正高度
-
-        // 如果有吃子，先移除被吃掉的棋子
-        if (move.captured && piecesMap[move.to]) {
-            scene.remove(piecesMap[move.to]);
-            delete piecesMap[move.to];
-        }
-
-        // 移動動畫
-        new TWEEN.Tween(startMesh.position)
-            .to(endPos, 300)
+        clearSelection();
+        const p = piecesMap[m.from];
+        delete piecesMap[m.from];
+        
+        if(m.captured && piecesMap[m.to]) scene.remove(piecesMap[m.to]);
+        
+        const targetPos = tilesMap[m.to].position.clone();
+        new TWEEN.Tween(p.position).to({x:targetPos.x, z:targetPos.z}, 300) // 加快移動速度
             .easing(TWEEN.Easing.Quadratic.Out)
             .onComplete(() => {
-                // 動畫結束後，重新同步最準確的狀態
                 syncPieces();
+                updateHUD();
                 isProcessing = false;
-                
-                // 檢查將死 (本地顯示)
-                if(game.in_checkmate()) alert("Checkmate!");
-            })
-            .start();
+                if(!isOnline && game.turn() === 'b') setTimeout(aiMove, 100);
+            }).start();
     }
 
-    function onWindowResize() {
+    function aiMove() {
+        const moves = game.moves();
+        if(moves.length === 0) return;
+        const m = moves[Math.floor(Math.random() * moves.length)];
+        game.move(m);
+        syncPieces();
+        updateHUD();
+    }
+
+    function updateHUD() {
+        const t = document.getElementById('turn-txt');
+        const turn = game.turn();
+        let txt = turn === 'w' ? "白方回合" : "黑方回合";
+        if(isOnline && playerColor === turn) txt += " (你)";
+        t.innerText = txt;
+        t.style.color = turn === 'w' ? "#00e5ff" : "#ff0055";
+    }
+
+    function onResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // 啟動
-    autoLogin();
-    init3D();
+    function animate() {
+        requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+        TWEEN.update();
+        controls.update();
+        if(grassMat && grassMat.userData.shader) grassMat.userData.shader.uniforms.time.value = t;
+        renderer.render(scene, camera);
+    }
 
+    init();
 </script>
 </body>
 </html>
