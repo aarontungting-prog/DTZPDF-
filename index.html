@@ -176,17 +176,17 @@
     };
 
     // ==========================================
-    // ⭐⭐ 請在此填入 FIREBASE 設定 ⭐⭐
+    // ⭐⭐ 已填入你的 PROJECT: chess-1885a ⭐⭐
     // ==========================================
     const firebaseConfig = {
-        apiKey: "你的_API_KEY",
-        authDomain: "你的專案ID.firebaseapp.com",
-        databaseURL: "https://你的專案ID-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "你的專案ID",
-        storageBucket: "你的專案ID.firebasestorage.app",
-        messagingSenderId: "...",
-        appId: "...",
-        measurementId: "..."
+      apiKey: "AIzaSyCxPppnUG864v3E2j1OzykzFmhLpsEJCSE",
+      authDomain: "chess-1885a.firebaseapp.com",
+      databaseURL: "https://chess-1885a-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "chess-1885a",
+      storageBucket: "chess-1885a.firebasestorage.app",
+      messagingSenderId: "824383572856",
+      appId: "1:824383572856:web:7c663d6bf0f970f6acd68d",
+      measurementId: "G-0EMJ4W2KLS"
     };
 
     let app, db, auth;
@@ -194,7 +194,7 @@
         app = initializeApp(firebaseConfig);
         db = getDatabase(app);
         auth = getAuth(app);
-    } catch(e) { console.error("Firebase Config Error"); }
+    } catch(e) { console.error("Firebase Config Error:", e); }
 
     // --- 全域變數 ---
     let currentUser = null;
@@ -544,14 +544,14 @@
         animate();
     }
 
-    // 簡化重複函數 (與前版相同)
+    // 簡化重複函數
     function setupSunsetLighting(){const ambient=new THREE.AmbientLight(0xffccaa,0.75);scene.add(ambient);const sunLight=new THREE.DirectionalLight(0xff8800,3.2);sunLight.position.set(-300,100,-300);sunLight.castShadow=true;sunLight.shadow.mapSize.set(CONFIG.shadowSize,CONFIG.shadowSize);const d=700;sunLight.shadow.camera.left=-d;sunLight.shadow.camera.right=d;sunLight.shadow.camera.top=d;sunLight.shadow.camera.bottom=-d;scene.add(sunLight);const sky=new THREE.Sky();sky.scale.setScalar(450000);scene.add(sky);const uniforms=sky.material.uniforms;uniforms['turbidity'].value=10;uniforms['rayleigh'].value=3;uniforms['mieCoefficient'].value=0.005;uniforms['mieDirectionalG'].value=0.8;uniforms['sunPosition'].value.copy(sunLight.position);const sunGeo=new THREE.SphereGeometry(80,32,32);const sunMat=new THREE.MeshBasicMaterial({color:0xff5500,fog:false});const sunSphere=new THREE.Mesh(sunGeo,sunMat);sunSphere.position.copy(sunLight.position).normalize().multiplyScalar(3000);scene.add(sunSphere);}
     function createProceduralTerrain(){const geo=new THREE.PlaneGeometry(3500,3500,isMobile?100:180,isMobile?100:180);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position;const colors=[];const c1=new THREE.Color(0x226622);const c2=new THREE.Color(0x665544);for(let i=0;i<pos.count;i++){const h=getTerrainHeight(pos.getX(i),pos.getZ(i));pos.setY(i,h);const b=smoothstep(-12,8,h);const c=c1.clone().lerp(c2,b);colors.push(c.r,c.g,c.b);}geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.9,metalness:0.1,flatShading:true});const mesh=new THREE.Mesh(geo,mat);mesh.receiveShadow=true;scene.add(mesh);}
     function createVegetation(){const grp=new THREE.Group();const lMat=new THREE.MeshStandardMaterial({color:0x1a3d1a,roughness:0.9,flatShading:true});const tMat=new THREE.MeshStandardMaterial({color:0x3d2817,roughness:1.0});const lGeo=new THREE.DodecahedronGeometry(4,0);const tGeo=new THREE.CylinderGeometry(0.7,1.0,6,6);tGeo.translate(0,3,0);for(let i=0;i<CONFIG.treeCount;i++){const a=Math.random()*Math.PI*2;const r=70+Math.random()*380;const x=Math.cos(a)*r;const z=Math.sin(a)*r;const h=getTerrainHeight(x,z);const tr=new THREE.Group();const t=new THREE.Mesh(tGeo,tMat);t.castShadow=true;tr.add(t);for(let j=0;j<3;j++){const l=new THREE.Mesh(lGeo,lMat);l.position.set((Math.random()-0.5)*5,5.5+Math.random()*3.5,(Math.random()-0.5)*5);l.scale.setScalar(0.8+Math.random()*0.4);l.castShadow=true;tr.add(l);}tr.position.set(x,h,z);tr.scale.setScalar(0.9+Math.random()*0.6);grp.add(tr);}scene.add(grp);const bGeo=new THREE.PlaneGeometry(0.3,1.5);bGeo.translate(0,0.75,0);grassMat=new THREE.MeshStandardMaterial({color:0x226622,side:THREE.DoubleSide});grassMat.onBeforeCompile=s=>{s.uniforms.time={value:0};s.vertexShader=`uniform float time;\n`+s.vertexShader;s.vertexShader=s.vertexShader.replace(`#include <begin_vertex>`,`vec3 transformed=vec3(position);float w=sin(time*1.5+position.x*0.5)*0.2*position.y;transformed.x+=w;#include <begin_vertex>`);grassMat.userData.shader=s;};const iG=new THREE.InstancedMesh(bGeo,grassMat,CONFIG.grassCount);const d=new THREE.Object3D();let c=0;for(let i=0;i<100000;i++){if(c>=CONFIG.grassCount)break;const r=Math.random()*420;const a=Math.random()*Math.PI*2;const x=Math.cos(a)*r;const z=Math.sin(a)*r;const h=getTerrainHeight(x,z);if(h<-8){d.position.set(x,h,z);d.rotation.y=Math.random()*Math.PI;d.scale.setScalar(0.7+Math.random()*0.6);d.updateMatrix();iG.setMatrixAt(c++,d.matrix);}}iG.receiveShadow=true;scene.add(iG);}
     function createHighAltitudeClouds(){const cv=document.createElement('canvas');cv.width=128;cv.height=128;const cx=cv.getContext('2d'),g=cx.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,180,120,0.5)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,128,128);const mat=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});const gp=new THREE.Group();const cc=isMobile?25:45;for(let i=0;i<cc;i++){const cl=new THREE.Group();for(let j=0;j<15;j++){const p=new THREE.Sprite(mat);p.position.set((Math.random()-0.5)*50,(Math.random()-0.5)*20,(Math.random()-0.5)*50);p.scale.setScalar(40+Math.random()*40);cl.add(p);}cl.position.set((Math.random()-0.5)*3200,250+Math.random()*150,(Math.random()-0.5)*3200);gp.add(cl);cloudParticles.push(cl);}scene.add(gp);}
     function createFloatingBoard(){const g=new THREE.TorusGeometry(8,0.3,16,32);const m=new THREE.MeshBasicMaterial({color:0xffaa00});const r=new THREE.Mesh(g,m);r.rotation.x=Math.PI/2;r.position.y=BOARD_HEIGHT-3;scene.add(r);const b=new THREE.Mesh(new THREE.BoxGeometry(9,0.5,9),new THREE.MeshStandardMaterial({color:0x221111,roughness:0.5}));b.position.y=BOARD_HEIGHT-0.25;b.receiveShadow=true;scene.add(b);for(let r=0;r<8;r++)for(let c=0;c<8;c++){const n=String.fromCharCode(97+c)+(r+1),w=(r+c)%2!==0;const t=new THREE.Mesh(new THREE.BoxGeometry(1,0.2,1),new THREE.MeshStandardMaterial({color:w?0xffddbb:0x443333,roughness:0.2,metalness:0.3}));t.position.set(c-3.5,BOARD_HEIGHT,3.5-r);t.userData={square:n,isTile:true};t.receiveShadow=true;t.castShadow=true;scene.add(t);tilesMap[n]=t;}}
     function createSolidPiece(t,c){const g=new THREE.Group(),mat=c==='w'?new THREE.MeshStandardMaterial({color:0xeeeeff,roughness:0.2,metalness:0.5}):new THREE.MeshStandardMaterial({color:0x222222,roughness:0.3,metalness:0.8}),glow=c==='w'?new THREE.MeshStandardMaterial({color:0x00e5ff,emissive:0x00e5ff,emissiveIntensity:2}):new THREE.MeshStandardMaterial({color:0xff0055,emissive:0xff0055,emissiveIntensity:2});const b=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.45,0.2,32),mat);b.position.y=0.1;b.castShadow=true;g.add(b);if(t==='p'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,0.6,16),mat);by.position.y=0.5;by.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32),mat);h.position.y=0.95;h.castShadow=true;g.add(by,h);}else if(t==='r'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.8,32),mat);by.position.y=0.6;by.castShadow=true;const tp=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.3,32),mat);tp.position.y=1.1;tp.castShadow=true;const rg=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.05,16,32),glow);rg.position.y=1.25;rg.rotation.x=Math.PI/2;g.add(by,tp,rg);}else if(t==='b'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,1.0,16),mat);by.position.y=0.7;by.castShadow=true;const h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.25,0.5,16),mat);h.position.y=1.4;h.castShadow=true;const tp=new THREE.Mesh(new THREE.SphereGeometry(0.08),glow);tp.position.y=1.7;g.add(by,h,tp);}else if(t==='n'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,0.6,16),mat);by.position.y=0.5;by.castShadow=true;const h=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.6,0.2),mat);h.position.set(0,1.0,0.1);h.rotation.x=-Math.PI/6;h.castShadow=true;const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.05),glow);m.position.set(0,1.1,-0.15);m.rotation.x=-Math.PI/6;g.add(by,h,m);if(c==='b')g.rotation.y=Math.PI;}else if(t==='q'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.4,1.4,32),mat);by.position.y=0.9;by.castShadow=true;const t=new THREE.Mesh(new THREE.SphereGeometry(0.15),glow);t.position.y=1.7;g.add(by,t);}else if(t==='k'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.45,1.6,32),mat);by.position.y=1.0;by.castShadow=true;const c=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.4,0.1),glow);c.position.y=1.95;g.add(by,c);}return g;}
-    function syncPieces(){for(let s in piecesMap)scene.remove(piecesMap[s]);piecesMap={};const b=game.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const s=createSolidPiece(p.type,p.color);s.position.set(c-3.5,BOARD_HEIGHT,r-3.5);scene.add(s);piecesMap[String.fromCharCode(97+c)+(8-r)]=s;}}}
+    function syncPieces(){for(let sq in piecesMap)scene.remove(piecesMap[sq]);piecesMap={};const b=game.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const sq=String.fromCharCode(97+c)+(8-r),s=createSolidPiece(p.type,p.color);s.position.set(c-3.5, BOARD_HEIGHT, r-3.5);scene.add(s);piecesMap[sq]=s;}}}
     
     function onTouchStart(e){if(e.touches.length>1)return;e.preventDefault();mouse.x=(e.touches[0].clientX/window.innerWidth)*2-1;mouse.y=-(e.touches[0].clientY/window.innerHeight)*2+1;chk();}
     function onMouseClick(e){if(isProcessing)return;mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;chk();}
