@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：DTZ 完整版</title>
+    <title>霓虹西洋棋：史詩完整版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -10,14 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/objects/Sky.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-
+    
     <script type="importmap">
     {
         "imports": {
@@ -34,6 +27,12 @@
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud { pointer-events: auto; }
 
+        /* 捲軸美化 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00e5ff; }
+
         /* 彈窗 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -44,16 +43,13 @@
         .auth-box {
             background: rgba(20, 20, 30, 0.95); border: 1px solid #00e5ff;
             padding: 25px; border-radius: 15px; width: 320px; text-align: center;
-            box-shadow: 0 0 30px rgba(0, 229, 255, 0.25);
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.25); max-height: 90vh; overflow-y: auto;
         }
-        .auth-input {
-            width: 100%; padding: 10px; margin: 5px 0;
-            background: #111; border: 1px solid #444; color: #fff;
-            border-radius: 5px; box-sizing: border-box;
-        }
+        .auth-box h2 { color: #00e5ff; margin-top: 0; margin-bottom: 10px; }
+        .auth-input { width: 100%; padding: 10px; margin: 5px 0; background: #111; border: 1px solid #444; color: #fff; border-radius: 5px; box-sizing: border-box; }
         
         /* 按鈕 */
-        .btn-base { width: 100%; padding: 10px; margin-top: 5px; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.2s; }
+        .btn-base { width: 100%; padding: 10px; margin-top: 5px; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.2s; font-size: 14px; }
         .auth-btn { background: #00e5ff; color: #000; }
         .guest-btn { background: transparent; color: #aaa; border: 1px solid #444; }
         .game-btn { background: #00e5ff; color: #000; }
@@ -61,38 +57,17 @@
         .ai-btn { background: #9d00ff; color: #fff; }
         .logout-btn { background: #333; color: #aaa; border: 1px solid #444; font-size: 12px; }
 
-        /* 左側分離式介面 */
-        #left-container {
-            position: absolute; top: 20px; left: 20px; width: 240px;
-            display: flex; flex-direction: column; gap: 15px; pointer-events: none;
-        }
-        .hud-box {
-            background: rgba(0,0,0,0.85); border: 1px solid #333; 
-            border-radius: 10px; padding: 15px; pointer-events: auto;
-            backdrop-filter: blur(5px);
-        }
+        /* 左側介面 */
+        #left-container { position: absolute; top: 20px; left: 20px; width: 240px; display: flex; flex-direction: column; gap: 12px; pointer-events: none; }
+        .hud-box { background: rgba(0,0,0,0.85); border: 1px solid #333; border-radius: 10px; padding: 12px; pointer-events: auto; backdrop-filter: blur(5px); }
         .hud-title { color: #aaa; font-size: 11px; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #444; padding-bottom: 4px; }
 
         /* 頭像 */
-        .avatar-container {
-            width: 70px; height: 70px; margin: 5px auto 10px auto;
-            border-radius: 50%; position: relative; cursor: pointer;
-            display: flex; justify-content: center; align-items: center;
-        }
+        .avatar-container { width: 70px; height: 70px; margin: 5px auto 10px auto; border-radius: 50%; position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; }
         .avatar-img { width: 100%; height: 100%; border-radius: 50%; background: #333; object-fit: cover; }
-        .avatar-hint { position: absolute; bottom: -15px; width: 100%; text-align: center; font-size: 10px; color: #00e5ff; }
+        .avatar-hint { position: absolute; bottom: -15px; width: 100%; text-align: center; font-size: 10px; color: #00e5ff; opacity: 0.7; }
 
-        /* 頭像框與造型選項 */
-        .frames-grid, .skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
-        .option-item { 
-            width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; position: relative; 
-            background: #222; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border: 1px solid #444;
-        }
-        .option-item.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
-        .option-item.selected { border: 2px solid #00e5ff; box-shadow: 0 0 8px #00e5ff; }
-
-        /* 頭像框特效 */
+        /* 頭像框 */
         .frame-basic-1 { border: 3px solid #555; }
         .frame-basic-2 { border: 3px solid #888; }
         .frame-basic-3 { border: 3px solid #fff; }
@@ -106,26 +81,26 @@
         @keyframes pulse-b { 50% { box-shadow: 0 0 35px #00e5ff; } }
         @keyframes pulse-r { 50% { box-shadow: 0 0 40px #ff0000; } }
 
-        /* AI 對話氣泡 (防擋) */
-        #ai-chat-bubble {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            width: 300px; background: rgba(0, 0, 0, 0.9); border: 1px solid #9d00ff;
-            border-radius: 20px; padding: 10px 20px; color: #fff; font-size: 14px; text-align: center;
-            display: none; z-index: 2000; pointer-events: none;
-        }
-        
-        /* 狀態面板 */
+        /* 設定網格 */
+        .frames-grid, .skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+        .option-item { width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; position: relative; background: #222; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #444; }
+        .option-item.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
+        .option-item.selected { border: 2px solid #00e5ff; box-shadow: 0 0 8px #00e5ff; }
+
+        /* AI 氣泡 */
+        #ai-chat-bubble { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 300px; background: rgba(0, 0, 0, 0.9); border: 1px solid #9d00ff; border-radius: 20px; padding: 10px 20px; color: #fff; font-size: 14px; text-align: center; display: none; z-index: 2000; pointer-events: none; }
+        .ai-name { color: #9d00ff; font-weight: bold; margin-bottom: 4px; display: block; font-size: 12px; }
+
         #status-panel { top: 20px; right: 20px; text-align: right; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; border: 1px solid #333; }
         
-        /* AI 列表 */
         .ai-card { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 5px; cursor: pointer; display: flex; justify-content: space-between; }
         .ai-card:hover { background: #333; border: 1px solid #00e5ff; }
 
-        /* 教學 */
         #tutorial-btn { position: absolute; bottom: 30px; right: 30px; width: 40px; height: 40px; border-radius: 50%; background: #333; border: 2px solid #ffaa00; color: #ffaa00; display: flex; justify-content: center; align-items: center; cursor: pointer; font-weight: bold; z-index: 2500; pointer-events: auto; }
         #tutorial-content { position: absolute; bottom: 80px; right: 30px; width: 280px; background: rgba(0,0,0,0.95); border: 1px solid #ffaa00; padding: 15px; display: none; border-radius: 10px; z-index: 2500; pointer-events: auto; }
 
-        #loading { position: absolute; top:0; left:0; width:100%; height:100%; background:#000; display:flex; justify-content:center; align-items:center; color:#ffaa00; z-index:4000; }
+        #loading { position: absolute; top:0; left:0; width:100%; height:100%; background:#000; display:flex; justify-content:center; align-items:center; color:#ffaa00; font-size:18px; z-index:4000; }
+        #footer-watermark { position: absolute; bottom: 10px; width: 100%; text-align: center; color: rgba(255,255,255,0.3); font-size: 12px; pointer-events: none; }
         
         @media (max-width: 600px) {
             #left-container { top: 10px; left: 10px; width: calc(100% - 20px); }
@@ -137,7 +112,7 @@
 </head>
 <body>
 
-<div id="loading">正在連線伺服器...</div>
+<div id="loading">初始化 3D 引擎與 Firebase...</div>
 
 <div id="auth-modal" class="modal-overlay" style="display: flex;">
     <div class="auth-box">
@@ -185,7 +160,7 @@
             <div class="skin-grid" id="skins-grid"></div>
         </div>
         
-        <button onclick="document.getElementById('settings-modal').style.display='none'" class="btn-base guest-btn">關閉</button>
+        <button onclick="document.getElementById('settings-modal').style.display='none'" class="btn-base guest-btn" style="margin-top:15px;">關閉</button>
     </div>
 </div>
 
@@ -272,13 +247,13 @@
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-    // --- Global State ---
+    // --- State ---
     let currentUser=null, userElo=0, userSkin='skin_classic', gameId=null, playerColor='w', isOnline=false, isVsAI=false, isRegistering=false, currentAiPersona=null;
     let scene, camera, renderer, controls, raycaster, mouse={x:0,y:0}, clock, game=new Chess();
     let tilesMap={}, piecesMap={}, selectedSquare=null, isProcessing=false, grassMat, cloudParticles=[];
     const BOARD_HEIGHT=15;
 
-    // --- Data ---
+    // --- Data Definitions ---
     const AI_PERSONAS = [
         { name:'波波 (Bob)', rank:'新手', elo:400, color:'#aaa', desc:'經常送頭', prompt:'You are Bob, novice player. Make mistakes. Speak cute.' },
         { name:'愛麗絲 (Alice)', rank:'銅牌', elo:800, color:'#cd7f32', desc:'性格溫和', prompt:'You are Alice, beginner. Polite and encouraging.' },
@@ -335,7 +310,6 @@
         if(n) update(ref(db,'users/'+currentUser.uid), {name:n});
     };
 
-    // 上傳頭像
     document.getElementById('file-input').onchange = function(e) {
         const f = e.target.files[0];
         if(!f) return;
@@ -345,7 +319,7 @@
         r.readAsDataURL(f);
     };
 
-    // --- Auth ---
+    // --- Auth Logic ---
     onAuthStateChanged(auth, (user) => {
         document.getElementById('loading').style.display='none';
         if(user) {
@@ -441,14 +415,9 @@
     function listenGame() {
         onValue(ref(db,'games/'+gameId), (s) => {
             const d = s.val(); if(!d) return;
-            // 監聽對手加入並同步 SKIN
-            if(d.status==='playing' && !d.winner) {
+            if(d.status==='playing' && !d.winner && document.getElementById('turn-txt').innerText.includes("等待")) {
                 const opp = playerColor==='w'?d.black:d.white;
-                if(opp) { 
-                    document.getElementById('opponent-info').innerText = `VS: ${opp.name}`;
-                    // ⭐ 這裡會讀取最新的 Skin 資料
-                    syncPieces(d); 
-                }
+                if(opp) { document.getElementById('opponent-info').innerText = `VS: ${opp.name}`; syncPieces(d); }
             }
             if(d.fen !== game.fen()) { game.load(d.fen); syncPieces(d); updateHUD(); }
             if(d.winner) { isProcessing=true; alert(d.winner===playerColor?"勝利！":"戰敗..."); }
@@ -500,7 +469,7 @@
         document.getElementById('ai-message').innerText = msg;
         document.getElementById('ai-name-label').innerText = currentAiPersona.name.split(' ')[0];
         document.getElementById('ai-name-label').style.color = currentAiPersona.color;
-        b.style.display='block'; setTimeout(()=>b.style.display='none', 5000);
+        b.style.display='block'; setTimeout(()=>b.style.display='none', 6000);
     }
 
     async function makeAiMove() {
@@ -512,15 +481,16 @@
             const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
             });
-            const d = await r.json();
+            const d = await responseSafe(r);
             let txt = d.candidates[0].content.parts[0].text.trim().split('|');
             let move = txt[0].replace(/[\n\r."]/g,'').trim(), msg = txt[1]||"";
             if(msg) aiSpeak(msg);
             if(!game.move(move)) makeRandomAI(); else animateMove(game.history({verbose:true}).pop());
         } catch(e) { console.error(e); aiSpeak("(AI 離線)"); makeRandomAI(); }
     }
+    async function responseSafe(r) { if(!r.ok) throw new Error('API Fail'); return await r.json(); }
 
-    // --- 3D Core ---
+    // --- 3D & Game Core ---
     function init() {
         clock=new THREE.Clock(); scene=new THREE.Scene(); scene.background=new THREE.Color(0x220000); scene.fog=new THREE.FogExp2(0x990044,0.0005);
         camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,6000); camera.position.set(0,60,100);
@@ -532,14 +502,54 @@
         const sun = new THREE.DirectionalLight(0xffaa00, 2); sun.position.set(-100,100,-100); sun.castShadow=true; scene.add(sun);
         const sky = new THREE.Sky(); sky.scale.setScalar(450000); scene.add(sky); sky.material.uniforms.sunPosition.value.copy(sun.position);
         
-        createBoard();
+        createProceduralTerrain(); createVegetation(); createHighAltitudeClouds(); createFloatingBoard();
         window.addEventListener('resize', onResize);
         window.addEventListener('touchstart', onTouch, {passive:false});
         window.addEventListener('click', onClick);
         animate();
     }
 
-    function createBoard() {
+    function createProceduralTerrain(){
+        const g=new THREE.PlaneGeometry(3500,3500,120,120); g.rotateX(-Math.PI/2);
+        const p=g.attributes.position; const c=[]; const c1=new THREE.Color(0x226622); const c2=new THREE.Color(0x665544);
+        for(let i=0;i<p.count;i++){
+            const h=getTerrainHeight(p.getX(i),p.getZ(i)); p.setY(i,h);
+            const b=smoothstep(-12,8,h); const f=c1.clone().lerp(c2,b); c.push(f.r,f.g,f.b);
+        }
+        g.setAttribute('color',new THREE.Float32BufferAttribute(c,3)); g.computeVertexNormals();
+        const m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.9}); 
+        const mesh=new THREE.Mesh(g,m); mesh.receiveShadow=true; scene.add(mesh);
+    }
+    
+    function createVegetation() {
+        const grp=new THREE.Group();
+        const tGeo=new THREE.CylinderGeometry(0.7,1,6,6); tGeo.translate(0,3,0);
+        const lGeo=new THREE.DodecahedronGeometry(4);
+        const tMat=new THREE.MeshStandardMaterial({color:0x3d2817});
+        const lMat=new THREE.MeshStandardMaterial({color:0x1a3d1a});
+        
+        for(let i=0;i<600;i++){
+            const a=Math.random()*Math.PI*2, r=70+Math.random()*400;
+            const x=Math.cos(a)*r, z=Math.sin(a)*r, h=getTerrainHeight(x,z);
+            const t=new THREE.Mesh(tGeo,tMat); const l=new THREE.Mesh(lGeo,lMat);
+            l.position.y=6; t.add(l); t.position.set(x,h,z); t.scale.setScalar(0.8+Math.random()*0.5);
+            grp.add(t);
+        }
+        scene.add(grp);
+    }
+
+    function createHighAltitudeClouds() {
+        const g=new THREE.Group();
+        const m=new THREE.MeshBasicMaterial({color:0xffaa88, transparent:true, opacity:0.3});
+        for(let i=0;i<20;i++){
+            const c=new THREE.Mesh(new THREE.BoxGeometry(400,20,200),m);
+            c.position.set((Math.random()-0.5)*3000, 300+Math.random()*100, (Math.random()-0.5)*3000);
+            g.add(c);
+        }
+        scene.add(g); cloudParticles=g.children;
+    }
+
+    function createFloatingBoard() {
         const boardBox = new THREE.Mesh(new THREE.BoxGeometry(9,0.5,9), new THREE.MeshStandardMaterial({color:0x111111, roughness:0.5}));
         boardBox.position.y = 14.75; boardBox.receiveShadow=true; scene.add(boardBox);
         for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
@@ -551,55 +561,33 @@
         syncPieces();
     }
 
-    // 完整的棋子生成與 Skin 邏輯
     function createPiece(type, color, skin) {
         const grp = new THREE.Group();
-        let mat, glow;
+        let col = color==='w'?0xeeeeee:0x222222, emi = color==='w'?0x00e5ff:0xff0055;
+        
+        if(skin==='skin_gold') { col=0xffd700; emi=0xffaa00; }
+        else if(skin==='skin_silver') { col=0xcccccc; emi=0xffffff; }
+        else if(skin==='skin_bronze') { col=0xcd7f32; emi=0xff4400; }
+        else if(skin==='skin_crystal') { col=color==='w'?0xaaddff:0xaa00ff; emi=col; }
+        else if(skin==='skin_cosmic') { col=0x000000; emi=color==='w'?0x00ffff:0xff00ff; }
 
-        // 材質選擇
-        if (skin === 'skin_bronze') {
-            mat = new THREE.MeshStandardMaterial({ color: color==='w'?0xcd7f32:0x553311, roughness: 0.7, metalness: 0.8 });
-            glow = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff4400, emissiveIntensity: 1 });
-        } else if (skin === 'skin_silver') {
-            mat = new THREE.MeshStandardMaterial({ color: color==='w'?0xeeeeee:0x444444, roughness: 0.2, metalness: 1.0 });
-            glow = new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 2 });
-        } else if (skin === 'skin_gold') {
-            mat = new THREE.MeshStandardMaterial({ color: color==='w'?0xffd700:0x665500, roughness: 0.1, metalness: 1.0 });
-            glow = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xffaa00, emissiveIntensity: 2 });
-        } else if (skin === 'skin_crystal') {
-            mat = new THREE.MeshPhysicalMaterial({ color: color==='w'?0xccffff:0x220044, transmission: 0.9, opacity: 1, roughness: 0, metalness: 0 });
-            glow = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        } else if (skin === 'skin_glitch') {
-            mat = new THREE.MeshStandardMaterial({ color: color==='w'?0x00ff00:0xff00ff, wireframe: true });
-            glow = mat;
-        } else if (skin === 'skin_cosmic') {
-            mat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness:0 });
-            glow = new THREE.MeshBasicMaterial({ color: color==='w'?0x00ffff:0xff00ff });
-        } else {
-            // Classic
-            mat = color==='w' ? new THREE.MeshStandardMaterial({color:0xeeeeff, roughness:0.2, metalness:0.5}) : new THREE.MeshStandardMaterial({color:0x222222, roughness:0.3, metalness:0.8});
-            glow = color==='w' ? new THREE.MeshStandardMaterial({color:0x00e5ff, emissive:0x00e5ff, emissiveIntensity:2}) : new THREE.MeshStandardMaterial({color:0xff0055, emissive:0xff0055, emissiveIntensity:2});
-        }
+        const mat = new THREE.MeshStandardMaterial({color:col, roughness:0.3, metalness:0.8, emissive:emi, emissiveIntensity:0.3});
+        
+        let geo, head;
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.2, 32), mat);
+        base.position.y=0.1; grp.add(base);
 
-        // 形狀
-        let geo;
         if(type==='p') {
             geo = new THREE.CylinderGeometry(0.15, 0.35, 0.6, 16);
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25), mat); head.position.y=0.95; grp.add(head);
+            head = new THREE.Mesh(new THREE.SphereGeometry(0.25), mat); head.position.y=0.95; grp.add(head);
         }
         else if(type==='r') { geo = new THREE.BoxGeometry(0.5, 0.8, 0.5); }
-        else if(type==='n') { geo = new THREE.ConeGeometry(0.3, 0.8, 16); }
-        else if(type==='b') { geo = new THREE.CylinderGeometry(0.1, 0.3, 1.0, 16); }
-        else if(type==='q') { geo = new THREE.CylinderGeometry(0.2, 0.4, 1.4, 32); const c = new THREE.Mesh(new THREE.SphereGeometry(0.2), glow); c.position.y=1.7; grp.add(c); }
-        else { geo = new THREE.CylinderGeometry(0.25, 0.45, 1.6, 32); const c = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.5, 0.15), glow); c.position.y=1.95; grp.add(c); }
+        else if(type==='n') { geo = new THREE.CylinderGeometry(0.25, 0.35, 0.6, 16); head=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.3),mat); head.position.set(0,0.9,0.1); grp.add(head); }
+        else if(type==='b') { geo = new THREE.CylinderGeometry(0.15, 0.3, 0.9, 16); head=new THREE.Mesh(new THREE.SphereGeometry(0.15),mat); head.position.y=1.2; grp.add(head); }
+        else if(type==='q') { geo = new THREE.CylinderGeometry(0.2, 0.35, 1.3, 16); head=new THREE.Mesh(new THREE.SphereGeometry(0.2),mat); head.position.y=1.6; grp.add(head); }
+        else { geo = new THREE.CylinderGeometry(0.25, 0.4, 1.5, 16); head=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.4,0.15),mat); head.position.y=1.8; grp.add(head); }
 
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.y = 0.5; mesh.castShadow=true; grp.add(mesh);
-        
-        // 底座
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.2, 32), mat);
-        base.position.y = 0.1; base.castShadow=true; grp.add(base);
-
+        const body = new THREE.Mesh(geo, mat); body.position.y=0.5; grp.add(body);
         return grp;
     }
 
@@ -607,19 +595,14 @@
         for(let k in piecesMap) scene.remove(piecesMap[k]); piecesMap={};
         const b = game.board();
         let wSkin = userSkin, bSkin = userSkin;
-        
-        // ⭐ 關鍵 PVP 造型同步邏輯
-        if(isOnline && d) {
-            if(d.white && d.white.skin) wSkin = d.white.skin;
-            if(d.black && d.black.skin) bSkin = d.black.skin;
-        }
+        if(isOnline && d) { if(d.white) wSkin=d.white.skin; if(d.black) bSkin=d.black.skin; }
 
         for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
             const p = b[r][c];
             if(p) {
                 const s = createPiece(p.type, p.color, p.color==='w'?wSkin:bSkin);
                 s.position.set(c-3.5, 15, r-3.5); 
-                s.position.set(c-3.5, 15, (r-3.5)); // ThreeJS z logic correction
+                s.position.set(c-3.5, 15, (r-3.5)); 
                 scene.add(s); piecesMap[String.fromCharCode(97+c)+(8-r)] = s;
             }
         }
@@ -676,17 +659,11 @@
         
         new TWEEN.Tween(p.position).to({x:dest.x, z:dest.z}, 300).easing(TWEEN.Easing.Quadratic.Out)
             .onComplete(() => {
-                // 如果是 PVP，這裡需要傳入目前的遊戲資料以保持 Skin 不變
-                if (isOnline) {
-                    get(ref(db, 'games/' + gameId)).then(s => {
-                        syncPieces(s.val());
-                        updateHUD();
-                    });
-                } else {
-                    syncPieces();
-                    updateHUD();
-                }
+                // PVP 狀態下傳遞遊戲資料以保持 Skin
+                if(isOnline) get(ref(db,'games/'+gameId)).then(s=>syncPieces(s.val()));
+                else syncPieces();
                 
+                updateHUD();
                 if(!isOnline && !isVsAI && game.turn()==='b') makeRandomAI(); 
                 else if(!isVsAI) isProcessing=false;
             }).start();
@@ -705,13 +682,15 @@
 
     function moveCam(x,y,z) { new TWEEN.Tween(camera.position).to({x,y,z}, 2000).easing(TWEEN.Easing.Cubic.Out).start(); }
     function onResize() { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); }
-    function animate() { requestAnimationFrame(animate); TWEEN.update(); controls.update(); renderer.render(scene,camera); }
+    function animate() { requestAnimationFrame(animate); TWEEN.update(); controls.update(); 
+        cloudParticles.forEach(c=>c.position.x+=0.1); 
+        renderer.render(scene,camera); 
+    }
+    
+    function getTerrainHeight(x,z){const d=Math.sqrt(x*x+z*z);if(d<400)return-12+Math.sin(x*0.004)*Math.cos(z*0.004)*2.0;const b=smoothstep(400,700,d);let h=b*140;h+=Math.sin(x*0.015)*Math.cos(z*0.015)*25;h+=Math.sin(x*0.03+z*0.02)*10;return h-12;}
+    function smoothstep(min,max,v){var x=Math.max(0,Math.min(1,(v-min)/(max-min)));return x*x*(3-2*x);}
 
-    // Init Scene (Simplified for size but fully functional)
     init();
-    function createProceduralTerrain(){const g=new THREE.PlaneGeometry(3000,3000,80,80);g.rotateX(-Math.PI/2);const m=new THREE.MeshStandardMaterial({color:0x226622, roughness:0.9});const mesh=new THREE.Mesh(g,m);mesh.receiveShadow=true;scene.add(mesh);}
-    function createVegetation(){/* (Visuals kept simple for code length safety, core logic intact) */}
-    function createHighAltitudeClouds(){/* (Visuals kept simple) */}
 </script>
 </body>
 </html>
