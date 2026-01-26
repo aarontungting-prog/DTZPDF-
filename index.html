@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：日落邊境・寫實地形版 (優化修復)</title>
+    <title>霓虹西洋棋：黃金盆地・森境日落版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
@@ -23,15 +23,15 @@
 </head>
 <body>
 
-<div id="loading">正在生成程序化地形與日落光照...</div>
+<div id="loading">正在生成盆地地形與茂密森林...</div>
 
 <div id="ui" style="display:none;">
     <div id="status-panel" class="hud">
-        <h1>SUNSET FRONTIER</h1>
+        <h1>SUNSET BASIN</h1>
         <div id="turn-txt">BLUE'S TURN</div>
     </div>
     <div id="log-panel" class="hud">
-        <div id="move-log">System Online. Time: Sunset.<br>Terrain generated.</div>
+        <div id="move-log">System Online. Location: Green Basin.<br>Vegetation density: High.</div>
     </div>
 </div>
 
@@ -45,21 +45,25 @@ const BOARD_HEIGHT = 15;
 
 const CHESS_NAMES = { k: 'KING', q: 'QUEEN', r: 'ROOK', b: 'BISHOP', n: 'KNIGHT', p: 'PAWN' };
 
-// Terrain height function for consistent placement
+// --- 新的地形高度函數：盆地構造 ---
 function getTerrainHeight(x, z) {
     const dist = Math.sqrt(x*x + z*z);
-    // Flat area under the board
-    if (dist < 50) return -10; 
     
-    // Simplex-like noise approximation
-    let h = Math.sin(x * 0.01) * Math.cos(z * 0.01) * 30;
+    // 1. 中央廣闊平原 (半徑 120 內非常平坦)
+    if (dist < 120) {
+        return -12 + Math.sin(x*0.01)*Math.cos(z*0.01)*1.5; // 微小起伏
+    }
+
+    // 2. 盆地邊緣隆起的山脈
+    // 使用 smoothstep 創造從平原到山脈的過渡
+    const blend = smoothstep(120, 300, dist);
+    let h = blend * 120; // 山脈最大高度約 120 (不會擋住太陽)
+
+    // 添加山脈噪聲細節
+    h += Math.sin(x * 0.015) * Math.cos(z * 0.015) * 25;
     h += Math.sin(x * 0.03 + z * 0.02) * 10;
     
-    // Smooth transition from flat center to rugged terrain
-    const blend = smoothstep(50, 100, dist);
-    h = h * blend + (1 - blend) * -10;
-    
-    return h - 10;
+    return h - 12; // 基礎平面高度
 }
 
 function smoothstep(min, max, value) {
@@ -71,39 +75,38 @@ function init() {
     clock = new THREE.Clock();
     scene = new THREE.Scene();
     
-    // Sunset Atmosphere
-    scene.fog = new THREE.FogExp2(0xff7744, 0.0015); 
+    // 日落氛圍
+    scene.fog = new THREE.FogExp2(0xff8855, 0.0012); // 稍微調整霧氣顏色，適配綠色地面
     scene.background = new THREE.Color(0x331111);
 
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
-    camera.position.set(0, 30, 45);
+    camera.position.set(0, 35, 55); // 視角稍微拉遠一點看盆地全貌
 
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0; // Slightly brighter for gameplay
+    renderer.toneMappingExposure = 1.0; 
     renderer.outputEncoding = THREE.sRGBEncoding;
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.maxPolarAngle = Math.PI / 2.1;
-    controls.minDistance = 10; controls.maxDistance = 200;
+    controls.minDistance = 10; controls.maxDistance = 250;
     controls.target.set(0, BOARD_HEIGHT, 0);
 
     setupSunsetLighting();
     
-    // Delayed loading to prevent UI freeze
+    // 延遲加載
     setTimeout(() => {
         createProceduralTerrain();
-        createVegetation();
+        createVegetation(); // 更新後的植被生成
         createSunsetClouds();
         createFloatingBoard();
         syncPieces();
         
-        // Hide loading screen
         const loader = document.getElementById('loading');
         loader.style.opacity = 0;
         setTimeout(() => loader.style.display = 'none', 500);
@@ -119,15 +122,16 @@ function init() {
 }
 
 function setupSunsetLighting() {
-    const ambient = new THREE.AmbientLight(0xffccaa, 0.6); // Brighter ambient
+    const ambient = new THREE.AmbientLight(0xffccaa, 0.6);
     scene.add(ambient);
 
-    const sunLight = new THREE.DirectionalLight(0xff8800, 2.5);
-    sunLight.position.set(-150, 40, -150);
+    const sunLight = new THREE.DirectionalLight(0xff8800, 2.8);
+    // 太陽位置：保證比遠山高
+    sunLight.position.set(-180, 60, -180); 
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
-    const d = 300;
+    const d = 350;
     sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
     sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
     scene.add(sunLight);
@@ -161,8 +165,9 @@ function createProceduralTerrain() {
     }
     terrainGeo.computeVertexNormals();
 
+    // 地面材質改成深綠褐色，更像盆地土壤
     const terrainMat = new THREE.MeshStandardMaterial({ 
-        color: 0x5a4d3e, 
+        color: 0x3a4d28, 
         roughness: 0.9,
         metalness: 0.1,
         flatShading: true 
@@ -173,76 +178,90 @@ function createProceduralTerrain() {
     scene.add(terrain);
 }
 
+// --- 更新：植被生成 (高樹、多樹、遠山無樹) ---
 function createVegetation() {
-    // 1. Trees with trunks grounded
+    // 1. 樹木
     const treeGroup = new THREE.Group();
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e2f16, roughness: 0.9, flatShading: true });
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 1.0 });
-    const leafGeo = new THREE.DodecahedronGeometry(3.5, 0);
-    const trunkGeo = new THREE.CylinderGeometry(0.6, 0.9, 4, 6);
-    trunkGeo.translate(0, 2, 0); // Pivot at bottom
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e3f16, roughness: 0.9, flatShading: true }); // 更綠的葉子
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4d3827, roughness: 1.0 }); // 深棕色樹幹
+    const leafGeo = new THREE.DodecahedronGeometry(4, 0); // 葉子稍微變大
+    // 樹幹變高變粗：高度從 4 改為 6，半徑稍微增加
+    const trunkGeo = new THREE.CylinderGeometry(0.7, 1.0, 6, 7);
+    trunkGeo.translate(0, 3, 0); // 調整中心點以適應新高度
 
-    for (let i = 0; i < 200; i++) {
+    // 增加樹木數量到 450
+    for (let i = 0; i < 450; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const r = 70 + Math.random() * 300; // Outside board area
+        // 分佈範圍擴大到盆地邊緣
+        const r = 60 + Math.random() * 220; 
         const x = Math.cos(angle) * r;
         const z = Math.sin(angle) * r;
         const h = getTerrainHeight(x, z);
+
+        // 【重要】高度限制：如果高度超過 35（開始進入遠山區域），就不種樹
+        if (h > 35) continue;
 
         const tree = new THREE.Group();
         const trunk = new THREE.Mesh(trunkGeo, trunkMat); 
         trunk.castShadow = true; tree.add(trunk);
         
+        // 葉子位置隨樹幹高度調整
         for(let j=0; j<5; j++){
             const leaf = new THREE.Mesh(leafGeo, leafMat);
-            leaf.position.set((Math.random()-0.5)*4, 4+Math.random()*3, (Math.random()-0.5)*4);
-            leaf.scale.setScalar(0.8+Math.random()); leaf.castShadow = true; tree.add(leaf);
+            leaf.position.set((Math.random()-0.5)*5, 5.5+Math.random()*3.5, (Math.random()-0.5)*5);
+            leaf.scale.setScalar(0.8+Math.random()*0.4); leaf.castShadow = true; tree.add(leaf);
         }
         tree.position.set(x, h, z); 
+        // 隨機縮放，讓有些樹特別高大
+        tree.scale.setScalar(0.9 + Math.random()*0.6);
         treeGroup.add(tree);
     }
     scene.add(treeGroup);
     
-    // 2. Central Grass
-    const bladeGeo = new THREE.PlaneGeometry(0.2, 1.0); bladeGeo.translate(0, 0.5, 0);
-    grassMat = new THREE.MeshStandardMaterial({ color: 0x556622, side: THREE.DoubleSide });
+    // 2. 中央綠地平原 (高密度草地)
+    const bladeGeo = new THREE.PlaneGeometry(0.25, 1.2); bladeGeo.translate(0, 0.6, 0);
+    // 草地顏色更鮮綠，對比日落
+    grassMat = new THREE.MeshStandardMaterial({ color: 0x668833, side: THREE.DoubleSide });
     grassMat.onBeforeCompile = s => {
         s.uniforms.time={value:0}; s.vertexShader=`uniform float time;\n`+s.vertexShader;
         s.vertexShader=s.vertexShader.replace(`#include <begin_vertex>`, `vec3 transformed=vec3(position); float w=sin(time*1.5+position.x*0.5)*0.2*position.y; transformed.x+=w; #include <begin_vertex>`);
         grassMat.userData.shader=s;
     };
     
-    const iGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 15000);
+    // 增加草地數量到 25000，覆蓋整個平原
+    const iGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 25000);
     const dum = new THREE.Object3D();
-    for(let i=0; i<15000; i++){
-        const r = Math.random() * 60; // Grass closer to center
+    let grassCount = 0;
+    for(let i=0; i<35000; i++){ // 嘗試更多次以填滿空間
+        if(grassCount >= 25000) break;
+        const r = Math.random() * 140; // 覆蓋盆地平坦區域
         const a = Math.random() * Math.PI * 2;
         const x = Math.cos(a)*r; const z = Math.sin(a)*r;
         const h = getTerrainHeight(x, z);
         
-        dum.position.set(x, h, z);
-        dum.rotation.y = Math.random() * Math.PI;
-        dum.scale.setScalar(0.7 + Math.random()*0.5);
-        dum.updateMatrix();
-        iGrass.setMatrixAt(i, dum.matrix);
+        // 只在平坦低地種草
+        if(h < 0) {
+            dum.position.set(x, h, z);
+            dum.rotation.y = Math.random() * Math.PI;
+            dum.scale.setScalar(0.7 + Math.random()*0.6);
+            dum.updateMatrix();
+            iGrass.setMatrixAt(grassCount++, dum.matrix);
+        }
     }
     iGrass.receiveShadow = true; 
     scene.add(iGrass);
 }
 
 function createFloatingBoard() {
-    // Floating Ring
     const ringGeo = new THREE.TorusGeometry(8, 0.3, 16, 64);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = Math.PI / 2; ring.position.y = BOARD_HEIGHT - 3;
     scene.add(ring);
 
-    // Board Base (No dirt block)
     const boardBox = new THREE.Mesh(new THREE.BoxGeometry(9, 0.5, 9), new THREE.MeshStandardMaterial({color: 0x221111, roughness: 0.5}));
     boardBox.position.y = BOARD_HEIGHT - 0.25; boardBox.receiveShadow = true; scene.add(boardBox);
 
-    // Tiles
     for(let r=0;r<8;r++)for(let c=0;c<8;c++){
         const n=String.fromCharCode(97+c)+(r+1), isW=(r+c)%2!==0;
         const t=new THREE.Mesh(new THREE.BoxGeometry(1,0.2,1), new THREE.MeshStandardMaterial({
@@ -257,28 +276,27 @@ function createFloatingBoard() {
 function createSunsetClouds() {
     const cv=document.createElement('canvas'); cv.width=128; cv.height=128;
     const cx=cv.getContext('2d'), g=cx.createRadialGradient(64,64,0,64,64,64);
-    g.addColorStop(0, 'rgba(255, 160, 100, 0.5)'); 
+    g.addColorStop(0, 'rgba(255, 170, 110, 0.5)'); 
     g.addColorStop(1, 'rgba(0,0,0,0)');
     cx.fillStyle=g; cx.fillRect(0,0,128,128);
     
     const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     const cGrp = new THREE.Group();
     
-    for(let i=0; i<20; i++) {
+    for(let i=0; i<25; i++) { // 稍微增加雲量
         const cl = new THREE.Group();
-        for(let j=0; j<15; j++) {
+        for(let j=0; j<18; j++) {
             const p = new THREE.Sprite(mat); 
-            p.position.set((Math.random()-0.5)*40, (Math.random()-0.5)*15, (Math.random()-0.5)*40); 
-            p.scale.setScalar(20+Math.random()*30); cl.add(p);
+            p.position.set((Math.random()-0.5)*45, (Math.random()-0.5)*18, (Math.random()-0.5)*45); 
+            p.scale.setScalar(25+Math.random()*35); cl.add(p);
         }
-        // High clouds to avoid blocking view
-        cl.position.set((Math.random()-0.5)*800, 120+Math.random()*80, (Math.random()-0.5)*800); 
+        // 雲的高度設置在山峰之上，太陽之下
+        cl.position.set((Math.random()-0.5)*900, 130+Math.random()*60, (Math.random()-0.5)*900); 
         cGrp.add(cl); cloudParticles.push(cl);
     }
     scene.add(cGrp);
 }
 
-// Solid 3D Pieces (Reinstated)
 function createSolidPiece(t,c){
     const g=new THREE.Group();
     const mat=c==='w'?new THREE.MeshStandardMaterial({color:0xeeeeff,roughness:0.2,metalness:0.5}):new THREE.MeshStandardMaterial({color:0x222222,roughness:0.3,metalness:0.8});
@@ -329,7 +347,6 @@ function syncPieces(){
     }
 }
 
-// Interaction
 function onMouseClick(e){
     if(isProcessing)return;
     mouse.x=(e.clientX/window.innerWidth)*2-1; mouse.y=-(e.clientY/window.innerHeight)*2+1;
