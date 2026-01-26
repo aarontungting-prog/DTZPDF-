@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>霓虹西洋棋：DTZ 最終完全版</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -34,36 +34,42 @@
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud { position: absolute; pointer-events: auto; }
         
-        /* --- 登入視窗 --- */
+        /* --- 修改 2: 優化登入視窗在手機上的體驗 --- */
         #auth-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 2000; display: flex;
-            justify-content: center; align-items: center; pointer-events: auto;
+            justify-content: center; 
+            align-items: center; /* 改為 center，配合 interactive-widget */
+            pointer-events: auto;
             backdrop-filter: blur(10px);
+            overflow-y: auto; /* 允許內容過長時滾動 */
         }
+        
         .auth-box {
             background: rgba(20, 20, 30, 0.95); border: 1px solid #00e5ff;
-            padding: 40px 30px; border-radius: 15px; width: 320px; text-align: center;
+            padding: 30px 25px; border-radius: 15px; width: 90%; max-width: 320px; 
+            text-align: center;
             box-shadow: 0 0 40px rgba(0, 229, 255, 0.2); transition: all 0.3s ease;
+            position: relative;
         }
+
         .auth-box h2 { color: #00e5ff; margin-top: 0; letter-spacing: 2px; font-size: 24px; margin-bottom: 10px; }
-        .auth-hint { color: #888; font-size: 13px; margin-bottom: 15px; min-height: 1.5em; }
         
+        /* 修改 3: 輸入框字體改為 16px，防止 iPhone 自動縮放 */
         .auth-input {
             width: 100%; padding: 12px; margin: 8px 0;
             background: #111; border: 1px solid #444; color: #fff;
-            border-radius: 6px; box-sizing: border-box; font-size: 14px;
+            border-radius: 6px; box-sizing: border-box; font-size: 16px; 
+            -webkit-appearance: none; /* 移除 iOS 預設樣式 */
         }
         .auth-input:focus { border-color: #00e5ff; outline: none; }
         
-        /* 暱稱欄位 (預設隱藏) */
         #nickname-container { display: none; animation: slideDown 0.3s ease-out; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 忘記密碼連結 (置中) */
         .forgot-link {
             display: block; text-align: center; font-size: 12px; color: #aaa;
-            margin: 15px 0; cursor: pointer; text-decoration: none;
+            margin: 15px 0; cursor: pointer; text-decoration: none; padding: 10px; /* 增加點擊範圍 */
         }
         .forgot-link:hover { color: #00e5ff; text-decoration: underline; }
 
@@ -78,6 +84,7 @@
             width: 100%; padding: 10px; margin-top: 5px;
             background: transparent; color: #aaa; border: 1px solid #444; 
             font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.3s;
+            font-size: 14px;
         }
         .guest-btn:hover { border-color: #fff; color: #fff; }
 
@@ -97,7 +104,6 @@
             border-radius: 8px; border: 1px solid #333; width: 240px;
         }
         
-        /* --- 新手教學面板 (右下角) --- */
         #tutorial-btn {
             position: absolute; bottom: 20px; right: 20px;
             width: 40px; height: 40px; border-radius: 50%;
@@ -113,7 +119,7 @@
             background: rgba(0, 0, 0, 0.95); border: 1px solid #ffaa00;
             border-radius: 8px; padding: 15px; display: none;
             box-shadow: 0 0 20px rgba(255, 170, 0, 0.2); z-index: 110;
-            max-height: 70vh; overflow-y: auto; /* 防止內容太長 */
+            max-height: 70vh; overflow-y: auto; 
         }
         #tutorial-content h3 { color: #ffaa00; margin: 0 0 10px 0; border-bottom: 1px solid #555; padding-bottom: 5px; font-size: 16px; }
         #tutorial-content h4 { color: #ddd; margin: 10px 0 5px 0; font-size: 14px; text-decoration: underline; }
@@ -121,7 +127,6 @@
         #tutorial-content li { margin-bottom: 4px; }
         .key-highlight { color: #00e5ff; font-weight: bold; }
 
-        /* --- 用戶資訊卡 --- */
         .user-card { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #444; }
         .rank-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; font-weight: bold; vertical-align: middle; }
         .rank-bronze { background: #cd7f32; color: #000; }
@@ -147,6 +152,9 @@
             #menu-panel { top: 20px; left: 20px; right: 20px; width: auto; }
             #tutorial-btn { bottom: 20px; right: 20px; }
             #tutorial-content { bottom: 70px; right: 20px; left: 20px; width: auto; }
+            
+            /* 手機版登入框優化 */
+            .auth-box { width: 85%; padding: 25px 20px; }
         }
     </style>
 </head>
@@ -199,14 +207,12 @@
     <div id="tutorial-btn" onclick="toggleTutorial()">?</div>
     <div id="tutorial-content" class="hud">
         <h3>新手指南 & 規則</h3>
-        
         <h4>🎮 基礎操作</h4>
         <ul>
             <li><span class="key-highlight">移動:</span> 點選棋子 -> 點選目標格子</li>
             <li><span class="key-highlight">視角:</span> 左鍵拖曳 (電腦) / 單指滑動 (手機)</li>
             <li><span class="key-highlight">縮放:</span> 滾輪 (電腦) / 雙指縮放 (手機)</li>
         </ul>
-
         <h4>♟️ 西洋棋規則摘要</h4>
         <ul>
             <li><span class="key-highlight">兵 (Pawn):</span> 直走斜吃，第一步可走兩格。</li>
@@ -216,7 +222,6 @@
             <li><span class="key-highlight">后 (Queen):</span> 直線與斜線皆可，最強棋子。</li>
             <li><span class="key-highlight">王 (King):</span> 任何方向僅走一格。被吃掉即輸。</li>
         </ul>
-
         <h4>⚔️ 線上對戰</h4>
         <ul>
             <li>1. 點擊「創建房間」產生號碼。</li>
@@ -247,9 +252,6 @@
         pixelRatio: isMobile ? Math.min(window.devicePixelRatio, 2) : window.devicePixelRatio
     };
 
-    // ==========================================
-    // ⭐⭐ FIREBASE CONFIG (chess-1885a) ⭐⭐
-    // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyCxPppnUG864v3E2j1OzykzFmhLpsEJCSE",
         authDomain: "chess-1885a.firebaseapp.com",
@@ -272,7 +274,7 @@
     let gameId = null;
     let playerColor = 'w';
     let isOnline = false;
-    let isRegistering = false; // 標記是否進入註冊模式
+    let isRegistering = false; 
 
     let scene, camera, renderer, controls, raycaster, mouse, clock;
     let game = new Chess();
@@ -281,16 +283,11 @@
     let grassMat, cloudParticles = [];
     const BOARD_HEIGHT = 15;
 
-    // --- 教學面板開關 ---
     window.toggleTutorial = function() {
         const p = document.getElementById('tutorial-content');
         p.style.display = p.style.display === 'none' ? 'block' : 'none';
     }
 
-    // ==========================================
-    // 🔐 認證系統 (智慧版)
-    // ==========================================
-    
     const authModal = document.getElementById('auth-modal');
     const authActionBtn = document.getElementById('auth-action-btn');
     const forgotPwLink = document.getElementById('forgot-pw');
@@ -313,7 +310,6 @@
             currentUser = null;
             authModal.style.display = 'flex';
             document.getElementById('ui').style.display = 'none';
-            // 重置表單狀態
             resetAuthForm();
         }
     });
@@ -329,7 +325,6 @@
         const userRef = ref(db, 'users/' + user.uid);
         get(userRef).then((snapshot) => {
             if (!snapshot.exists()) {
-                // 如果沒有資料，嘗試從剛才的輸入框拿暱稱，或者用預設
                 const inputName = nicknameInput.value.trim();
                 const name = inputName || (user.isAnonymous ? `訪客_${user.uid.substring(0,4)}` : user.email.split('@')[0]);
                 
@@ -369,16 +364,13 @@
         else { badge.innerText = "霓虹宗師"; badge.classList.add('rank-master'); }
     }
 
-    // ⭐ 智慧登入/註冊按鈕邏輯
     authActionBtn.addEventListener('click', async () => {
         const email = emailInput.value.trim();
         const password = passInput.value.trim();
         
         if(!email || !password) { errorMsg.innerText = "請輸入帳號密碼"; return; }
-        // 增加範例提示
         if(!email.includes('@')) { errorMsg.innerText = "Email 格式不正確 (範例: user@gmail.com)"; return; }
 
-        // 如果已經進入註冊模式 (也就是之前嘗試登入失敗，現在顯示了暱稱框)
         if (isRegistering) {
             const nickname = nicknameInput.value.trim();
             if(!nickname) { errorMsg.innerText = "請輸入您的暱稱"; return; }
@@ -386,27 +378,22 @@
             errorMsg.innerText = "註冊中...";
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
-                // checkAndCreateUserProfile 會自動被 onAuthStateChanged 觸發並處理暱稱
             } catch (error) {
                 handleAuthError(error);
             }
             return;
         }
 
-        // 一般登入模式
         errorMsg.innerText = "登入中...";
         try {
             await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
-            // 如果錯誤是「使用者不存在」，自動切換到註冊介面
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                // 這裡我們做一個假設：如果是 invalid-credential 但我們想讓使用者註冊
-                // 我們切換 UI
                 isRegistering = true;
-                nicknameContainer.style.display = 'block'; // 顯示暱稱欄位
-                authActionBtn.innerText = "確認註冊"; // 改變按鈕文字
+                nicknameContainer.style.display = 'block'; 
+                authActionBtn.innerText = "確認註冊"; 
                 errorMsg.innerText = "初次見面！請輸入暱稱來完成註冊。";
-                errorMsg.style.color = "#00ff00"; // 換成綠色提示
+                errorMsg.style.color = "#00ff00"; 
             } else {
                 handleAuthError(error);
             }
@@ -423,7 +410,6 @@
         errorMsg.innerText = msg;
     }
 
-    // ⭐ 忘記密碼邏輯
     forgotPwLink.addEventListener('click', async () => {
         const email = emailInput.value.trim();
         if(!email || !email.includes('@')) {
@@ -448,10 +434,6 @@
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-
-    // ==========================================
-    // ⚔️ PVP 邏輯
-    // ==========================================
 
     window.createGameRoom = function() {
         gameId = Math.floor(1000 + Math.random() * 9000).toString();
@@ -584,7 +566,6 @@
     document.getElementById('btn-create').addEventListener('click', window.createGameRoom);
     document.getElementById('btn-join').addEventListener('click', window.joinGameRoom);
 
-    // --- 3D 邏輯 ---
     function getTerrainHeight(x, z) {
         const dist = Math.sqrt(x*x + z*z);
         if (dist < 400) return -12 + Math.sin(x*0.004)*Math.cos(z*0.004)*2.0;
@@ -636,6 +617,7 @@
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
         
+        // --- 修改 4: 更新觸控與點擊事件邏輯 ---
         window.addEventListener('touchstart', onTouchStart, {passive: false});
         window.addEventListener('click', onMouseClick);
         window.addEventListener('resize', onResize);
@@ -651,8 +633,30 @@
     function createSolidPiece(t,c){const g=new THREE.Group(),mat=c==='w'?new THREE.MeshStandardMaterial({color:0xeeeeff,roughness:0.2,metalness:0.5}):new THREE.MeshStandardMaterial({color:0x222222,roughness:0.3,metalness:0.8}),glow=c==='w'?new THREE.MeshStandardMaterial({color:0x00e5ff,emissive:0x00e5ff,emissiveIntensity:2}):new THREE.MeshStandardMaterial({color:0xff0055,emissive:0xff0055,emissiveIntensity:2});const b=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.45,0.2,32),mat);b.position.y=0.1;b.castShadow=true;g.add(b);if(t==='p'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,0.6,16),mat);by.position.y=0.5;by.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32),mat);h.position.y=0.95;h.castShadow=true;g.add(by,h);}else if(t==='r'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.8,32),mat);by.position.y=0.6;by.castShadow=true;const tp=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.3,32),mat);tp.position.y=1.1;tp.castShadow=true;const rg=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.05,16,32),glow);rg.position.y=1.25;rg.rotation.x=Math.PI/2;g.add(by,tp,rg);}else if(t==='b'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,1.0,16),mat);by.position.y=0.7;by.castShadow=true;const h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.25,0.5,16),mat);h.position.y=1.4;h.castShadow=true;const tp=new THREE.Mesh(new THREE.SphereGeometry(0.08),glow);tp.position.y=1.7;g.add(by,h,tp);}else if(t==='n'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,0.6,16),mat);by.position.y=0.5;by.castShadow=true;const h=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.6,0.2),mat);h.position.set(0,1.0,0.1);h.rotation.x=-Math.PI/6;h.castShadow=true;const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.05),glow);m.position.set(0,1.1,-0.15);m.rotation.x=-Math.PI/6;g.add(by,h,m);if(c==='b')g.rotation.y=Math.PI;}else if(t==='q'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.4,1.4,32),mat);by.position.y=0.9;by.castShadow=true;const t=new THREE.Mesh(new THREE.SphereGeometry(0.15),glow);t.position.y=1.7;g.add(by,t);}else if(t==='k'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.45,1.6,32),mat);by.position.y=1.0;by.castShadow=true;const c=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.4,0.1),glow);c.position.y=1.95;g.add(by,c);}return g;}
     function syncPieces(){for(let sq in piecesMap)scene.remove(piecesMap[sq]);piecesMap={};const b=game.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const sq=String.fromCharCode(97+c)+(8-r),s=createSolidPiece(p.type,p.color);s.position.set(c-3.5, BOARD_HEIGHT, r-3.5);scene.add(s);piecesMap[sq]=s;}}}
     
-    function onTouchStart(e){if(e.touches.length>1)return;e.preventDefault();mouse.x=(e.touches[0].clientX/window.innerWidth)*2-1;mouse.y=-(e.touches[0].clientY/window.innerHeight)*2+1;chk();}
-    function onMouseClick(e){if(isProcessing)return;mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;chk();}
+    // ⭐ 關鍵修正：確保手機觸控時不會阻擋 UI 點擊
+    function onTouchStart(e){
+        // 如果點擊的是 UI 介面（登入框、按鈕、輸入框等），不要阻止預設行為
+        if (e.target.closest('.auth-box') || e.target.closest('.hud') || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+            return;
+        }
+
+        if(e.touches.length > 1) return;
+        e.preventDefault(); // 只有點擊 3D 場景時才阻止預設行為
+        mouse.x=(e.touches[0].clientX/window.innerWidth)*2-1;
+        mouse.y=-(e.touches[0].clientY/window.innerHeight)*2+1;
+        chk();
+    }
+
+    function onMouseClick(e){
+        if(isProcessing)return;
+        // 同樣邏輯，點擊 UI 不觸發 3D 檢測
+        if (e.target.closest('.auth-box') || e.target.closest('.hud')) return;
+
+        mouse.x=(e.clientX/window.innerWidth)*2-1;
+        mouse.y=-(e.clientY/window.innerHeight)*2+1;
+        chk();
+    }
+
     function chk(){raycaster.setFromCamera(mouse,camera);const i=raycaster.intersectObjects(Object.values(tilesMap));if(i.length>0)hdl(i[0].object.userData.square);}
     function hdl(sq){
         if(isOnline&&game.turn()!==playerColor)return;
@@ -676,8 +680,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-幫我優化成手機也可以玩的
