@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：DTZ 最終智慧版</title>
+    <title>霓虹西洋棋：DTZ 最終完全版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -44,7 +44,7 @@
         .auth-box {
             background: rgba(20, 20, 30, 0.95); border: 1px solid #00e5ff;
             padding: 40px 30px; border-radius: 15px; width: 320px; text-align: center;
-            box-shadow: 0 0 40px rgba(0, 229, 255, 0.2);
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.2); transition: all 0.3s ease;
         }
         .auth-box h2 { color: #00e5ff; margin-top: 0; letter-spacing: 2px; font-size: 24px; margin-bottom: 10px; }
         .auth-hint { color: #888; font-size: 13px; margin-bottom: 15px; min-height: 1.5em; }
@@ -56,10 +56,14 @@
         }
         .auth-input:focus { border-color: #00e5ff; outline: none; }
         
-        /* 忘記密碼連結 */
+        /* 暱稱欄位 (預設隱藏) */
+        #nickname-container { display: none; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 忘記密碼連結 (置中) */
         .forgot-link {
-            display: block; text-align: right; font-size: 12px; color: #aaa;
-            margin-bottom: 15px; cursor: pointer; text-decoration: none;
+            display: block; text-align: center; font-size: 12px; color: #aaa;
+            margin: 15px 0; cursor: pointer; text-decoration: none;
         }
         .forgot-link:hover { color: #00e5ff; text-decoration: underline; }
 
@@ -71,7 +75,7 @@
         .auth-btn:hover { background: #fff; box-shadow: 0 0 15px #00e5ff; }
         
         .guest-btn {
-            width: 100%; padding: 10px; margin-top: 15px;
+            width: 100%; padding: 10px; margin-top: 5px;
             background: transparent; color: #aaa; border: 1px solid #444; 
             font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.3s;
         }
@@ -79,7 +83,7 @@
 
         /* --- 遊戲內介面 --- */
         #status-panel { 
-            top: 20px; right: 80px;
+            top: 20px; right: 20px;
             text-align: right; 
             background: linear-gradient(to left, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)); 
             padding: 15px; border-right: 3px solid #00e5ff; 
@@ -93,26 +97,28 @@
             border-radius: 8px; border: 1px solid #333; width: 240px;
         }
         
-        /* --- 新手教學面板 --- */
+        /* --- 新手教學面板 (右下角) --- */
         #tutorial-btn {
-            position: absolute; top: 20px; right: 20px;
+            position: absolute; bottom: 20px; right: 20px;
             width: 40px; height: 40px; border-radius: 50%;
             background: rgba(0,0,0,0.7); border: 2px solid #ffaa00;
             color: #ffaa00; font-weight: bold; font-size: 20px;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: 0.3s; pointer-events: auto;
+            cursor: pointer; transition: 0.3s; pointer-events: auto; z-index: 110;
         }
         #tutorial-btn:hover { background: #ffaa00; color: #000; }
 
         #tutorial-content {
-            position: absolute; top: 70px; right: 20px; width: 250px;
-            background: rgba(0, 0, 0, 0.9); border: 1px solid #ffaa00;
+            position: absolute; bottom: 70px; right: 20px; width: 280px;
+            background: rgba(0, 0, 0, 0.95); border: 1px solid #ffaa00;
             border-radius: 8px; padding: 15px; display: none;
-            box-shadow: 0 0 20px rgba(255, 170, 0, 0.2);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.2); z-index: 110;
+            max-height: 70vh; overflow-y: auto; /* 防止內容太長 */
         }
         #tutorial-content h3 { color: #ffaa00; margin: 0 0 10px 0; border-bottom: 1px solid #555; padding-bottom: 5px; font-size: 16px; }
-        #tutorial-content ul { padding-left: 20px; margin: 0; font-size: 13px; color: #ddd; line-height: 1.6; }
-        #tutorial-content li { margin-bottom: 5px; }
+        #tutorial-content h4 { color: #ddd; margin: 10px 0 5px 0; font-size: 14px; text-decoration: underline; }
+        #tutorial-content ul { padding-left: 20px; margin: 0; font-size: 13px; color: #ccc; line-height: 1.5; }
+        #tutorial-content li { margin-bottom: 4px; }
         .key-highlight { color: #00e5ff; font-weight: bold; }
 
         /* --- 用戶資訊卡 --- */
@@ -139,8 +145,8 @@
         @media (max-width: 600px) {
             #status-panel { top: auto; bottom: 40px; right: 20px; left: 20px; text-align: center; border-right: none; border-top: 3px solid #00e5ff; background: rgba(0,0,0,0.8); }
             #menu-panel { top: 20px; left: 20px; right: 20px; width: auto; }
-            #tutorial-btn { top: 20px; right: 20px; }
-            #tutorial-content { top: 70px; right: 20px; left: 20px; width: auto; }
+            #tutorial-btn { bottom: 20px; right: 20px; }
+            #tutorial-content { bottom: 70px; right: 20px; left: 20px; width: auto; }
         }
     </style>
 </head>
@@ -157,9 +163,13 @@
             <input type="email" id="email" class="auth-input" placeholder="電子信箱 (Email)">
             <input type="password" id="password" class="auth-input" placeholder="密碼 (Password)">
             
-            <div class="forgot-link" id="forgot-pw">忘記密碼？</div>
+            <div id="nickname-container">
+                <input type="text" id="nickname" class="auth-input" placeholder="請輸入您的遊戲暱稱" style="border-color:#00ff00;">
+            </div>
 
-            <button id="auth-action-btn" class="auth-btn">開始遊玩 (登入/註冊)</button>
+            <button id="auth-action-btn" class="auth-btn">開始遊玩 (Start)</button>
+            
+            <div class="forgot-link" id="forgot-pw">忘記密碼？</div>
         </div>
 
         <button id="guest-btn" class="guest-btn">訪客試玩 (Guest Login)</button>
@@ -188,19 +198,30 @@
 
     <div id="tutorial-btn" onclick="toggleTutorial()">?</div>
     <div id="tutorial-content" class="hud">
-        <h3>新手指南</h3>
+        <h3>新手指南 & 規則</h3>
+        
+        <h4>🎮 基礎操作</h4>
         <ul>
-            <li><span class="key-highlight">移動棋子:</span> 點選棋子 -> 點選目標格子。</li>
-            <li><span class="key-highlight">旋轉視角:</span> 
-                <br>電腦: 左鍵拖曳
-                <br>手機: 單指滑動</li>
-            <li><span class="key-highlight">縮放畫面:</span> 
-                <br>電腦: 滑鼠滾輪
-                <br>手機: 雙指縮放</li>
-            <li><span class="key-highlight">線上對戰:</span> 
-                <br>1. 點擊「創建房間」
-                <br>2. 複製號碼給朋友
-                <br>3. 朋友點擊「加入房間」輸入號碼</li>
+            <li><span class="key-highlight">移動:</span> 點選棋子 -> 點選目標格子</li>
+            <li><span class="key-highlight">視角:</span> 左鍵拖曳 (電腦) / 單指滑動 (手機)</li>
+            <li><span class="key-highlight">縮放:</span> 滾輪 (電腦) / 雙指縮放 (手機)</li>
+        </ul>
+
+        <h4>♟️ 西洋棋規則摘要</h4>
+        <ul>
+            <li><span class="key-highlight">兵 (Pawn):</span> 直走斜吃，第一步可走兩格。</li>
+            <li><span class="key-highlight">車 (Rook):</span> 直線無限距離。</li>
+            <li><span class="key-highlight">馬 (Knight):</span> 走「L」字形，可跳過棋子。</li>
+            <li><span class="key-highlight">象 (Bishop):</span> 斜線無限距離。</li>
+            <li><span class="key-highlight">后 (Queen):</span> 直線與斜線皆可，最強棋子。</li>
+            <li><span class="key-highlight">王 (King):</span> 任何方向僅走一格。被吃掉即輸。</li>
+        </ul>
+
+        <h4>⚔️ 線上對戰</h4>
+        <ul>
+            <li>1. 點擊「創建房間」產生號碼。</li>
+            <li>2. 將號碼傳給朋友。</li>
+            <li>3. 朋友點擊「加入房間」輸入號碼。</li>
         </ul>
     </div>
 
@@ -227,7 +248,7 @@
     };
 
     // ==========================================
-    // ⭐⭐ 你的 CONFIG (已填入) ⭐⭐
+    // ⭐⭐ FIREBASE CONFIG (chess-1885a) ⭐⭐
     // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyCxPppnUG864v3E2j1OzykzFmhLpsEJCSE",
@@ -251,6 +272,7 @@
     let gameId = null;
     let playerColor = 'w';
     let isOnline = false;
+    let isRegistering = false; // 標記是否進入註冊模式
 
     let scene, camera, renderer, controls, raycaster, mouse, clock;
     let game = new Chess();
@@ -275,6 +297,8 @@
     const guestBtn = document.getElementById('guest-btn');
     const emailInput = document.getElementById('email');
     const passInput = document.getElementById('password');
+    const nicknameInput = document.getElementById('nickname');
+    const nicknameContainer = document.getElementById('nickname-container');
     const errorMsg = document.getElementById('auth-error');
     const loadingScreen = document.getElementById('loading');
 
@@ -289,14 +313,26 @@
             currentUser = null;
             authModal.style.display = 'flex';
             document.getElementById('ui').style.display = 'none';
+            // 重置表單狀態
+            resetAuthForm();
         }
     });
+
+    function resetAuthForm() {
+        isRegistering = false;
+        nicknameContainer.style.display = 'none';
+        authActionBtn.innerText = "開始遊玩 (Start)";
+        errorMsg.innerText = "";
+    }
 
     function checkAndCreateUserProfile(user) {
         const userRef = ref(db, 'users/' + user.uid);
         get(userRef).then((snapshot) => {
             if (!snapshot.exists()) {
-                const name = user.isAnonymous ? `訪客_${user.uid.substring(0,4)}` : user.email.split('@')[0];
+                // 如果沒有資料，嘗試從剛才的輸入框拿暱稱，或者用預設
+                const inputName = nicknameInput.value.trim();
+                const name = inputName || (user.isAnonymous ? `訪客_${user.uid.substring(0,4)}` : user.email.split('@')[0]);
+                
                 set(userRef, {
                     name: name,
                     email: user.email || "guest",
@@ -339,54 +375,38 @@
         const password = passInput.value.trim();
         
         if(!email || !password) { errorMsg.innerText = "請輸入帳號密碼"; return; }
-        if(!email.includes('@')) { errorMsg.innerText = "Email 格式不正確"; return; }
+        // 增加範例提示
+        if(!email.includes('@')) { errorMsg.innerText = "Email 格式不正確 (範例: user@gmail.com)"; return; }
 
-        errorMsg.innerText = "處理中...";
-        
+        // 如果已經進入註冊模式 (也就是之前嘗試登入失敗，現在顯示了暱稱框)
+        if (isRegistering) {
+            const nickname = nicknameInput.value.trim();
+            if(!nickname) { errorMsg.innerText = "請輸入您的暱稱"; return; }
+            
+            errorMsg.innerText = "註冊中...";
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                // checkAndCreateUserProfile 會自動被 onAuthStateChanged 觸發並處理暱稱
+            } catch (error) {
+                handleAuthError(error);
+            }
+            return;
+        }
+
+        // 一般登入模式
+        errorMsg.innerText = "登入中...";
         try {
-            // 1. 嘗試登入
             await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
-            // 2. 如果錯誤是「使用者不存在」，詢問是否註冊
+            // 如果錯誤是「使用者不存在」，自動切換到註冊介面
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                // 注意：新版 Firebase 為了安全，user-not-found 可能會顯示為 invalid-credential
-                // 我們這裡做一個簡單的假設：如果登入失敗，嘗試詢問註冊
-                
-                // 這裡我們用一個更友善的方式：如果登入失敗，我們嘗試註冊
-                // 但為了怕是密碼打錯，我們需要小心
-                
-                // 如果是明確的 user-not-found
-                if(error.code === 'auth/user-not-found') {
-                    if(confirm("此帳號尚未註冊，是否立即建立新帳號？")) {
-                        try {
-                            await createUserWithEmailAndPassword(auth, email, password);
-                        } catch (createErr) {
-                            handleAuthError(createErr);
-                        }
-                    } else {
-                        errorMsg.innerText = "請檢查您的 Email";
-                    }
-                } else {
-                    // 其他錯誤 (包含密碼錯誤 或 invalid-credential)
-                    // 這裡我們可以做一個 trick: 嘗試註冊看看
-                    // 如果註冊失敗說是 email-already-in-use，那就是密碼錯
-                    // 如果註冊成功，那就是原本沒帳號
-                    
-                    if(confirm("登入失敗 (可能是密碼錯誤或帳號不存在)。\n\n如果您是新玩家，按「確定」立即註冊。\n如果您是老玩家，請按「取消」並檢查密碼。")) {
-                         try {
-                            await createUserWithEmailAndPassword(auth, email, password);
-                        } catch (createErr) {
-                            // 如果註冊失敗，代表帳號其實存在，只是剛剛登入密碼錯了
-                            if(createErr.code === 'auth/email-already-in-use') {
-                                errorMsg.innerText = "帳號已存在，但密碼錯誤";
-                            } else {
-                                handleAuthError(createErr);
-                            }
-                        }
-                    } else {
-                        errorMsg.innerText = "請重試密碼";
-                    }
-                }
+                // 這裡我們做一個假設：如果是 invalid-credential 但我們想讓使用者註冊
+                // 我們切換 UI
+                isRegistering = true;
+                nicknameContainer.style.display = 'block'; // 顯示暱稱欄位
+                authActionBtn.innerText = "確認註冊"; // 改變按鈕文字
+                errorMsg.innerText = "初次見面！請輸入暱稱來完成註冊。";
+                errorMsg.style.color = "#00ff00"; // 換成綠色提示
             } else {
                 handleAuthError(error);
             }
@@ -394,11 +414,12 @@
     });
 
     function handleAuthError(error) {
+        errorMsg.style.color = "#ff0055";
         let msg = error.message;
         if(msg.includes("weak-password")) msg = "密碼太弱 (至少6位)";
-        if(msg.includes("email-already-in-use")) msg = "此信箱已被註冊";
+        if(msg.includes("email-already-in-use")) msg = "此信箱已被註冊，請檢查密碼";
         if(msg.includes("wrong-password")) msg = "密碼錯誤";
-        if(msg.includes("invalid-credential")) msg = "帳號或密碼錯誤";
+        if(msg.includes("invalid-credential")) msg = "帳號或密碼錯誤 (若是新用戶請輸入暱稱)";
         errorMsg.innerText = msg;
     }
 
@@ -406,14 +427,14 @@
     forgotPwLink.addEventListener('click', async () => {
         const email = emailInput.value.trim();
         if(!email || !email.includes('@')) {
-            alert("請先在輸入框填寫您的 Email，再點擊忘記密碼。");
+            errorMsg.innerText = "請先在上方輸入 Email，再點擊忘記密碼";
             return;
         }
         try {
             await sendPasswordResetEmail(auth, email);
             alert(`密碼重設信已發送至 ${email}，請查收信件。`);
         } catch (error) {
-            alert("發送失敗：" + error.message);
+            errorMsg.innerText = "發送失敗：" + error.message;
         }
     });
 
