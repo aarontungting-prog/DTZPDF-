@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：DTZ 最終完全版</title>
+    <title>霓虹西洋棋：排位與角色版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -34,19 +34,19 @@
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud { position: absolute; pointer-events: auto; }
         
-        /* --- 登入視窗 --- */
-        #auth-modal {
+        /* 通用彈窗樣式 */
+        .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 2000; display: flex;
+            background: rgba(0,0,0,0.85); z-index: 2000; display: none;
             justify-content: center; align-items: center; pointer-events: auto;
             backdrop-filter: blur(10px);
         }
         .auth-box {
             background: rgba(20, 20, 30, 0.95); border: 1px solid #00e5ff;
-            padding: 40px 30px; border-radius: 15px; width: 320px; text-align: center;
-            box-shadow: 0 0 40px rgba(0, 229, 255, 0.2); transition: all 0.3s ease;
+            padding: 30px; border-radius: 15px; width: 320px; text-align: center;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.2); max-height: 90vh; overflow-y: auto;
         }
-        .auth-box h2 { color: #00e5ff; margin-top: 0; letter-spacing: 2px; font-size: 24px; margin-bottom: 10px; }
+        .auth-box h2 { color: #00e5ff; margin-top: 0; margin-bottom: 15px; letter-spacing: 2px; }
         .auth-hint { color: #888; font-size: 13px; margin-bottom: 15px; min-height: 1.5em; }
         
         .auth-input {
@@ -56,48 +56,88 @@
         }
         .auth-input:focus { border-color: #00e5ff; outline: none; }
         
-        /* 暱稱欄位 (預設隱藏) */
-        #nickname-container { display: none; animation: slideDown 0.3s ease-out; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 忘記密碼連結 (置中) */
-        .forgot-link {
-            display: block; text-align: center; font-size: 12px; color: #aaa;
-            margin: 15px 0; cursor: pointer; text-decoration: none;
+        .btn-base {
+            width: 100%; padding: 12px; margin-top: 10px;
+            border: none; font-weight: bold; cursor: pointer; 
+            border-radius: 6px; transition: 0.3s; font-size: 16px;
         }
-        .forgot-link:hover { color: #00e5ff; text-decoration: underline; }
-
-        .auth-btn {
-            width: 100%; padding: 12px; margin-top: 5px;
-            background: #00e5ff; color: #000; border: none; font-weight: bold;
-            cursor: pointer; border-radius: 6px; transition: 0.3s; font-size: 16px;
-        }
+        .auth-btn { background: #00e5ff; color: #000; }
         .auth-btn:hover { background: #fff; box-shadow: 0 0 15px #00e5ff; }
-        
-        .guest-btn {
-            width: 100%; padding: 10px; margin-top: 5px;
-            background: transparent; color: #aaa; border: 1px solid #444; 
-            font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.3s;
-        }
+        .guest-btn { background: transparent; color: #aaa; border: 1px solid #444; }
         .guest-btn:hover { border-color: #fff; color: #fff; }
+        .game-btn { background: #00e5ff; color: #000; padding: 10px; font-size: 14px; margin-top: 8px; }
+        .game-btn:hover { background: #fff; }
+        button.join-btn { background: #ff0055; color: #fff; }
+        button.ai-btn { background: #9d00ff; color: #fff; } 
+        button.settings-btn { background: #333; color: #ccc; border: 1px solid #555; }
+        button.settings-btn:hover { background: #555; color: #fff; }
 
-        /* --- 遊戲內介面 --- */
-        #status-panel { 
-            top: 20px; right: 80px;
-            text-align: right; 
-            background: linear-gradient(to left, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)); 
-            padding: 15px; border-right: 3px solid #00e5ff; 
+        /* 頭像框樣式 */
+        .avatar-container {
+            width: 80px; height: 80px; margin: 0 auto 15px auto;
+            border-radius: 50%; position: relative;
+            display: flex; justify-content: center; align-items: center;
         }
-        h1 { margin: 0; font-size: 1.2rem; letter-spacing: 2px; color: #00e5ff; margin-bottom: 5px; text-transform: uppercase; }
-        #turn-txt { font-size: 1.5rem; font-weight: 900; color: #fff; }
+        .avatar-img { width: 100%; height: 100%; border-radius: 50%; background: #333; object-fit: cover; }
+        
+        /* 基礎框 */
+        .frame-basic-1 { border: 3px solid #555; }
+        .frame-basic-2 { border: 3px solid #888; }
+        .frame-basic-3 { border: 3px solid #fff; }
+        .frame-basic-4 { border: 3px dashed #00e5ff; }
+        .frame-basic-5 { border: 3px double #ff0055; }
+
+        /* 排位特效框 */
+        .frame-bronze { border: 4px solid #cd7f32; box-shadow: 0 0 10px #cd7f32; }
+        .frame-silver { border: 4px solid #c0c0c0; box-shadow: 0 0 15px #c0c0c0; }
+        .frame-gold { border: 4px solid #ffd700; box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700; }
+        .frame-diamond { 
+            border: 4px solid #b9f2ff; 
+            box-shadow: 0 0 20px #b9f2ff, 0 0 40px #00e5ff; 
+            animation: pulse-blue 2s infinite; 
+        }
+        .frame-master { 
+            border: 4px solid #ff0055; 
+            box-shadow: 0 0 25px #ff0055, 0 0 50px #ff0000;
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-blue { 0% { box-shadow: 0 0 15px #b9f2ff; } 50% { box-shadow: 0 0 30px #00e5ff; } 100% { box-shadow: 0 0 15px #b9f2ff; } }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 20px #ff0055; transform: scale(1); } 50% { box-shadow: 0 0 40px #ff0000; transform: scale(1.05); } 100% { box-shadow: 0 0 20px #ff0055; transform: scale(1); } }
+
+        /* 設定頁面網格 */
+        .frames-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+        .frame-option { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; position: relative; }
+        .frame-option.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        .frame-option.locked::after { content: '🔒'; position: absolute; top: 12px; left: 15px; font-size: 20px; }
+        .frame-option.selected { transform: scale(1.2); z-index: 10; border: 2px solid #fff; }
+
+        /* AI 選擇卡片 */
+        .ai-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; }
+        .ai-card {
+            background: #222; padding: 10px; border-radius: 8px; border: 1px solid #444;
+            text-align: left; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center;
+        }
+        .ai-card:hover { background: #333; border-color: #00e5ff; }
+        .ai-card div { display: flex; flex-direction: column; }
+        .ai-name-txt { font-weight: bold; color: #fff; }
+        .ai-desc-txt { font-size: 11px; color: #aaa; }
+        .ai-rank-txt { font-size: 12px; font-weight: bold; }
+
+        /* 遊戲內介面 */
+        #status-panel { top: 20px; right: 80px; text-align: right; background: linear-gradient(to left, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)); padding: 15px; border-right: 3px solid #00e5ff; }
         #menu-panel { top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 8px; border: 1px solid #333; width: 240px; }
         
-        /* --- AI 思考中特效 --- */
+        #ai-chat-bubble {
+            position: absolute; top: 120px; right: 20px; width: 220px;
+            background: rgba(0, 0, 0, 0.8); border: 1px solid #9d00ff;
+            border-radius: 10px; padding: 15px; color: #fff; font-size: 13px;
+            display: none; box-shadow: 0 0 15px rgba(157, 0, 255, 0.3);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
         .ai-thinking { color: #ff00ff; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        /* --- 用戶資訊卡 --- */
-        .user-card { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #444; }
+        /* 排位徽章 */
         .rank-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; font-weight: bold; vertical-align: middle; }
         .rank-bronze { background: #cd7f32; color: #000; }
         .rank-silver { background: #c0c0c0; color: #000; }
@@ -105,29 +145,23 @@
         .rank-diamond { background: #b9f2ff; color: #000; box-shadow: 0 0 5px #b9f2ff; }
         .rank-master { background: #ff0055; color: #fff; box-shadow: 0 0 10px #ff0055; }
 
-        button.game-btn { background: #00e5ff; color: #000; border: none; padding: 10px; margin-top: 8px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.3s; border-radius: 4px; }
-        button.game-btn:hover { background: #fff; }
-        button.join-btn { background: #ff0055; color: #fff; }
-        button.ai-btn { background: #9d00ff; color: #fff; } /* AI 按鈕紫色 */
-        button.ai-btn:hover { background: #d000ff; box-shadow: 0 0 10px #9d00ff; }
-
-        /* --- 新手教學 --- */
-        #tutorial-btn { position: absolute; bottom: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,0.7); border: 2px solid #ffaa00; color: #ffaa00; font-weight: bold; font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; pointer-events: auto; z-index: 110; }
-        #tutorial-btn:hover { background: #ffaa00; color: #000; }
-        #tutorial-content { position: absolute; bottom: 70px; right: 20px; width: 280px; background: rgba(0, 0, 0, 0.95); border: 1px solid #ffaa00; border-radius: 8px; padding: 15px; display: none; box-shadow: 0 0 20px rgba(255, 170, 0, 0.2); z-index: 110; max-height: 70vh; overflow-y: auto; }
-        #tutorial-content h3 { color: #ffaa00; margin: 0 0 10px 0; border-bottom: 1px solid #555; padding-bottom: 5px; font-size: 16px; }
-        #tutorial-content h4 { color: #ddd; margin: 10px 0 5px 0; font-size: 14px; text-decoration: underline; }
-        #tutorial-content ul { padding-left: 20px; margin: 0; font-size: 13px; color: #ccc; line-height: 1.5; }
+        #tutorial-btn { position: absolute; bottom: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,0.7); border: 2px solid #ffaa00; color: #ffaa00; font-weight: bold; font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 110; }
+        #tutorial-content { position: absolute; bottom: 70px; right: 20px; width: 280px; background: rgba(0, 0, 0, 0.95); border: 1px solid #ffaa00; border-radius: 8px; padding: 15px; display: none; z-index: 110; max-height: 70vh; overflow-y: auto; }
         .key-highlight { color: #00e5ff; font-weight: bold; }
+        
+        table.rank-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        table.rank-table th, table.rank-table td { border: 1px solid #444; padding: 5px; text-align: left; color: #ccc; }
+        table.rank-table th { color: #ffaa00; }
 
-        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; color: #ffaa00; font-size: 18px; font-weight: bold; z-index: 1500; text-shadow: 0 0 10px #ffaa00; transition: opacity 0.5s; }
+        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; color: #ffaa00; font-size: 18px; font-weight: bold; z-index: 1500; transition: opacity 0.5s; }
         #footer-watermark { position: absolute; bottom: 10px; width: 100%; text-align: center; color: rgba(255,255,255,0.3); font-size: 12px; pointer-events: none; }
         
         @media (max-width: 600px) {
             #status-panel { top: auto; bottom: 40px; right: 20px; left: 20px; text-align: center; border-right: none; border-top: 3px solid #00e5ff; background: rgba(0,0,0,0.8); }
             #menu-panel { top: 20px; left: 20px; right: 20px; width: auto; }
-            #tutorial-btn { bottom: 20px; right: 20px; }
-            #tutorial-content { bottom: 70px; right: 20px; left: 20px; width: auto; }
+            #tutorial-btn { bottom: 130px; right: 20px; }
+            #tutorial-content { bottom: 180px; right: 20px; left: 20px; width: auto; }
+            #ai-chat-bubble { top: auto; bottom: 150px; right: 20px; left: 20px; width: auto; }
         }
     </style>
 </head>
@@ -135,72 +169,100 @@
 
 <div id="loading">正在連線伺服器...</div>
 
-<div id="auth-modal">
+<div id="auth-modal" class="modal-overlay" style="display: flex;">
     <div class="auth-box">
         <h2>DTZ CHESS</h2>
-        <div id="auth-hint" class="auth-hint">請輸入您的帳號密碼以登入</div>
         <div id="auth-error" style="color:#ff0055; font-size:12px; margin-bottom:10px;"></div>
-        
-        <div id="email-login-form">
-            <input type="email" id="email" class="auth-input" placeholder="電子信箱 (例如 user@gmail.com)">
-            <input type="password" id="password" class="auth-input" placeholder="密碼">
-            
-            <div id="nickname-container">
-                <input type="text" id="nickname" class="auth-input" placeholder="請輸入您的遊戲暱稱" style="border-color:#00ff00;">
-            </div>
-
-            <button id="auth-action-btn" class="auth-btn">開始遊玩 (Start)</button>
-            <div class="forgot-link" id="forgot-pw">忘記密碼？</div>
+        <input type="email" id="email" class="auth-input" placeholder="Email (例如 user@gmail.com)">
+        <input type="password" id="password" class="auth-input" placeholder="密碼">
+        <div id="nickname-container" style="display:none; animation: slideDown 0.3s;">
+            <input type="text" id="nickname" class="auth-input" placeholder="請輸入您的遊戲暱稱" style="border-color:#00ff00;">
         </div>
+        <button id="auth-action-btn" class="btn-base auth-btn">開始遊玩</button>
+        <div id="forgot-pw" style="margin-top:10px; font-size:12px; color:#aaa; cursor:pointer; text-decoration:underline;">忘記密碼？</div>
+        <button id="guest-btn" class="btn-base guest-btn">訪客試玩</button>
+    </div>
+</div>
 
-        <button id="guest-btn" class="guest-btn">訪客試玩 (Guest Login)</button>
+<div id="ai-modal" class="modal-overlay">
+    <div class="auth-box">
+        <h2>選擇 AI 對手</h2>
+        <p style="color:#ccc; font-size:12px; margin-bottom:15px;">不同排位的 AI 擁有不同的個性和實力</p>
+        <div class="ai-list" id="ai-list-container">
+            </div>
+        <button onclick="closeAIModal()" class="btn-base guest-btn" style="margin-top:15px;">取消</button>
+    </div>
+</div>
+
+<div id="settings-modal" class="modal-overlay">
+    <div class="auth-box" style="width: 350px;">
+        <h2>個人設定</h2>
+        <div style="margin-bottom: 15px;">
+            <label style="color:#aaa; font-size:12px;">更改暱稱:</label>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="setting-name" class="auth-input" style="margin:0;">
+                <button onclick="saveName()" class="btn-base auth-btn" style="width:60px; margin:0;">儲存</button>
+            </div>
+        </div>
+        
+        <div style="text-align:left;">
+            <label style="color:#aaa; font-size:12px;">選擇頭像框 (排位解鎖):</label>
+            <div class="frames-grid" id="frames-grid">
+                </div>
+        </div>
+        
+        <button onclick="closeSettingsModal()" class="btn-base guest-btn" style="margin-top:20px;">關閉</button>
     </div>
 </div>
 
 <div id="ui" style="display:none;">
     <div id="menu-panel" class="hud">
         <div class="user-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span id="user-name" style="font-weight:bold; font-size:16px; color:#fff;">Player</span>
-                <span id="user-rank" class="rank-badge rank-bronze">銅牌</span>
+            <div class="avatar-container">
+                <div id="user-frame" class="frame-basic-1" style="width:100%; height:100%; border-radius:50%; position:absolute; pointer-events:none;"></div>
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=dtz" class="avatar-img" id="user-avatar-img">
             </div>
-            <div style="font-size:12px; color:#aaa; margin-top:5px;">
-                戰力積分 (ELO): <span id="user-elo" style="color:#00e5ff; font-weight:bold;">0</span>
+            <div style="text-align:center; margin-bottom:5px;">
+                <span id="user-name" style="font-weight:bold; font-size:16px; color:#fff;">Player</span>
+            </div>
+            <div style="text-align:center; font-size:12px; color:#aaa;">
+                <span id="user-rank" class="rank-badge rank-bronze">銅牌</span> 
+                ELO: <span id="user-elo" style="color:#00e5ff;">0</span>
             </div>
         </div>
 
-        <div style="color:#aaa; font-weight:bold; margin-bottom:5px; font-size:12px; letter-spacing: 1px;">對戰模式</div>
-        <div id="room-display" style="font-size:12px; color:#0f0; margin-bottom:10px;">狀態：大廳閒置</div>
-        
-        <button id="btn-create" class="game-btn">創建房間 (PVP 房主)</button>
-        <button id="btn-join" class="game-btn join-btn">加入房間 (PVP 挑戰)</button>
-        <button id="btn-ai" class="game-btn ai-btn">挑戰 Gemini AI (PVE)</button>
-        
-        <button id="btn-logout" class="game-btn" style="background:#333; color:#aaa; margin-top:15px;">登出</button>
+        <button id="btn-create" class="btn-base game-btn">創建房間 (PVP)</button>
+        <button id="btn-join" class="btn-base game-btn join-btn">加入房間 (PVP)</button>
+        <button id="btn-ai" class="btn-base game-btn ai-btn">挑戰 AI 對手</button>
+        <button id="btn-settings" class="btn-base game-btn settings-btn">個人設定</button>
+        <button id="btn-logout" class="btn-base game-btn" style="background:#333; color:#aaa;">登出</button>
+    </div>
+
+    <div id="ai-chat-bubble" class="hud">
+        <span class="ai-name" id="ai-name-label">GEMINI:</span>
+        <span id="ai-message">...</span>
     </div>
 
     <div id="tutorial-btn" onclick="toggleTutorial()">?</div>
     <div id="tutorial-content" class="hud">
-        <h3>新手指南 & 規則</h3>
-        <h4>🎮 基礎操作</h4>
-        <ul>
-            <li><span class="key-highlight">移動:</span> 點選棋子 -> 點選目標格子</li>
-            <li><span class="key-highlight">視角:</span> 左鍵拖曳 (電腦) / 單指滑動 (手機)</li>
-            <li><span class="key-highlight">縮放:</span> 滾輪 (電腦) / 雙指縮放 (手機)</li>
-        </ul>
-        <h4>♟️ 西洋棋規則摘要</h4>
-        <ul>
-            <li><span class="key-highlight">兵 (Pawn):</span> 直走斜吃，第一步可走兩格。</li>
-            <li><span class="key-highlight">車 (Rook):</span> 直線無限距離。</li>
-            <li><span class="key-highlight">馬 (Knight):</span> 走「L」字形，可跳過棋子。</li>
-            <li><span class="key-highlight">象 (Bishop):</span> 斜線無限距離。</li>
-            <li><span class="key-highlight">后 (Queen):</span> 直線與斜線皆可，最強棋子。</li>
-            <li><span class="key-highlight">王 (King):</span> 任何方向僅走一格。被吃掉即輸。</li>
-        </ul>
-        <h4>⚔️ 對戰模式</h4>
-        <ul>
-            <li><span class="key-highlight">PVP:</span> 創建房間 -> 複製號碼給朋友。</li>
-            <li><span class="key-highlight">PVE:</span> 點擊「挑戰 Gemini AI」直接開打。</li>
+        <h3>🏆 排位系統</h3>
+        <table class="rank-table">
+            <tr><th>排位</th><th>積分 (ELO)</th><th>獎勵</th></tr>
+            <tr><td style="color:#aaa">新手</td><td>0 - 499</td><td>基礎框</td></tr>
+            <tr><td style="color:#cd7f32">銅牌</td><td>500 - 999</td><td>銅色框</td></tr>
+            <tr><td style="color:#c0c0c0">銀牌</td><td>1000 - 1499</td><td>銀色框</td></tr>
+            <tr><td style="color:#ffd700">金牌</td><td>1500 - 1999</td><td>金色光效框</td></tr>
+            <tr><td style="color:#00e5ff">鑽石</td><td>2000 - 2499</td><td>藍鑽呼吸框</td></tr>
+            <tr><td style="color:#ff0055">宗師</td><td>2500+</td><td>紅焰特效框</td></tr>
+        </table>
+        
+        <h4 style="margin-top:15px; color:#ddd; border-bottom:1px solid #555;">操作與規則</h4>
+        <ul style="font-size:12px; color:#aaa;">
+            <li><span class="key-highlight">移動:</span> 點選棋子 -> 點選格子</li>
+            <li><span class="key-highlight">視角:</span> 電腦拖曳 / 手機單指滑動</li>
+            <li><span class="key-highlight">兵:</span> 直走斜吃, 首步可走2</li>
+            <li><span class="key-highlight">馬:</span> L形, 唯一可越子</li>
+            <li><span class="key-highlight">王:</span> 走一格, 被吃即輸</li>
         </ul>
     </div>
 
@@ -226,9 +288,6 @@
         pixelRatio: isMobile ? Math.min(window.devicePixelRatio, 2) : window.devicePixelRatio
     };
 
-    // ==========================================
-    // ⭐⭐ FIREBASE CONFIG (chess-1885a) - 已填入 ⭐⭐
-    // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyCxPppnUG864v3E2j1OzykzFmhLpsEJCSE",
         authDomain: "chess-1885a.firebaseapp.com",
@@ -239,10 +298,6 @@
         appId: "1:824383572856:web:7c663d6bf0f970f6acd68d",
         measurementId: "G-0EMJ4W2KLS"
     };
-
-    // ==========================================
-    // ⭐⭐ GEMINI API KEY (已填入) ⭐⭐
-    // ==========================================
     const GEMINI_API_KEY = "AIzaSyBEueRZXZUidaSKfyl8dKoCJF4ha1Y1TcY";
 
     let app, db, auth;
@@ -253,11 +308,13 @@
     } catch(e) { console.error("Firebase Config Error:", e); }
 
     let currentUser = null;
+    let userElo = 0; // 當前用戶分數
     let gameId = null;
     let playerColor = 'w';
     let isOnline = false;
     let isVsAI = false; 
     let isRegistering = false; 
+    let currentAiPersona = null;
 
     let scene, camera, renderer, controls, raycaster, mouse, clock;
     let game = new Chess();
@@ -272,15 +329,92 @@
     }
 
     // ==========================================
-    // 🤖 Gemini AI 邏輯
+    // 🎭 AI 角色設定
     // ==========================================
+    const AI_PERSONAS = [
+        { id: 'bot_novice', name: '波波 (Bob)', rank: '新手 (Novice)', elo: 400, color: '#aaa', desc: '剛學會下棋，經常送頭，講話很呆。', prompt: 'You are Bob, a novice chess player. You make silly mistakes. You speak in a short, confused, and cute way. ELO 400.' },
+        { id: 'bot_bronze', name: '愛麗絲 (Alice)', rank: '銅牌 (Bronze)', elo: 800, color: '#cd7f32', desc: '很努力想贏，但實力普通，性格溫和。', prompt: 'You are Alice, a beginner player. You try your best but miss tactics. You are polite and encouraging. ELO 800.' },
+        { id: 'bot_silver', name: '毒蛇 (Viper)', rank: '銀牌 (Silver)', elo: 1200, color: '#c0c0c0', desc: '喜歡嘲諷對手，攻擊性強，輸了會找藉口。', prompt: 'You are Viper, a toxic chess player. You trash talk the opponent aggressively. You are arrogant but make mistakes. ELO 1200.' },
+        { id: 'bot_gold', name: '策士 (Strategos)', rank: '金牌 (Gold)', elo: 1600, color: '#ffd700', desc: '冷靜分析，話不多，只說戰術相關的話。', prompt: 'You are Strategos, a serious tactical player. You speak briefly and logically. No emotion. ELO 1600.' },
+        { id: 'bot_diamond', name: '諾娃 (Nova)', rank: '鑽石 (Diamond)', elo: 2000, color: '#00e5ff', desc: '天才少女，棋風華麗，喜歡炫耀。', prompt: 'You are Nova, a flashy genius player. You are confident and playful. You like to show off. ELO 2000.' },
+        { id: 'bot_master', name: '奧米加 (Omega)', rank: '霓虹宗師', elo: 2800, color: '#ff0055', desc: '超越人類的存在，講話像神諭，極度高深。', prompt: 'You are Omega, a god-like chess AI. You play perfect moves. You speak in philosophical, cryptic riddles about destiny. ELO 2800.' }
+    ];
+
+    // ==========================================
+    // 🖼️ 頭像框設定
+    // ==========================================
+    const AVATAR_FRAMES = [
+        { id: 'frame-basic-1', name: '簡約黑', req: 0, class: 'frame-basic-1' },
+        { id: 'frame-basic-2', name: '經典灰', req: 0, class: 'frame-basic-2' },
+        { id: 'frame-basic-3', name: '純白框', req: 0, class: 'frame-basic-3' },
+        { id: 'frame-basic-4', name: '虛線藍', req: 0, class: 'frame-basic-4' },
+        { id: 'frame-basic-5', name: '雙線紅', req: 0, class: 'frame-basic-5' },
+        { id: 'frame-bronze', name: '銅牌框', req: 500, class: 'frame-bronze' },
+        { id: 'frame-silver', name: '銀牌框', req: 1000, class: 'frame-silver' },
+        { id: 'frame-gold', name: '金牌光效', req: 1500, class: 'frame-gold' },
+        { id: 'frame-diamond', name: '鑽石呼吸', req: 2000, class: 'frame-diamond' },
+        { id: 'frame-master', name: '宗師烈焰', req: 2500, class: 'frame-master' }
+    ];
+
+    // ==========================================
+    // 🤖 AI 邏輯
+    // ==========================================
+    
+    document.getElementById('btn-ai').addEventListener('click', () => {
+        const list = document.getElementById('ai-list-container');
+        list.innerHTML = '';
+        AI_PERSONAS.forEach((ai, index) => {
+            const div = document.createElement('div');
+            div.className = 'ai-card';
+            div.innerHTML = `
+                <div>
+                    <span class="ai-name-txt" style="color:${ai.color}">${ai.name}</span>
+                    <span class="ai-desc-txt">${ai.desc}</span>
+                </div>
+                <span class="ai-rank-txt" style="color:${ai.color}">${ai.rank}</span>
+            `;
+            div.onclick = () => startAI(index);
+            list.appendChild(div);
+        });
+        document.getElementById('ai-modal').style.display = 'flex';
+    });
+    
+    window.closeAIModal = function() { document.getElementById('ai-modal').style.display = 'none'; }
+
+    window.startAI = function(index) {
+        closeAIModal();
+        const ai = AI_PERSONAS[index];
+        currentAiPersona = ai;
+        
+        gameId = "vs-gemini"; isOnline = false; isVsAI = true; playerColor = 'w';
+        game.reset(); syncPieces();
+        
+        new TWEEN.Tween(camera.position).to({x: 0, y: 60, z: 100}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
+        controls.target.set(0, BOARD_HEIGHT, 0);
+        
+        document.getElementById('room-display').innerText = "模式：PVE";
+        document.getElementById('room-display').style.color = "#9d00ff";
+        document.getElementById('opponent-info').innerText = `對手: ${ai.name}`;
+        updateStatusHUD();
+        
+        document.getElementById('ai-name-label').innerText = ai.name.split(' ')[0] + ":";
+        document.getElementById('ai-name-label').style.color = ai.color;
+        showAiMessage("... (連線中)");
+    };
+
+    function showAiMessage(msg) {
+        const bubble = document.getElementById('ai-chat-bubble');
+        document.getElementById('ai-message').innerText = msg;
+        bubble.style.display = 'block';
+        setTimeout(() => { bubble.style.display = 'none'; }, 6000);
+    }
     
     async function makeGeminiMove() {
         if (game.game_over()) return;
         
         isProcessing = true;
         const turnTxt = document.getElementById('turn-txt');
-        turnTxt.innerText = "GEMINI 思考中...";
+        turnTxt.innerText = "思考中...";
         turnTxt.classList.add('ai-thinking');
 
         const fen = game.fen();
@@ -288,11 +422,13 @@
         const moveStrings = moves.map(m => m.san).join(', ');
         
         const prompt = `
-            You are a chess grandmaster playing as Black. 
-            The current FEN string is: "${fen}".
-            The valid legal moves for you are: [${moveStrings}].
-            Task: Analyze the board and choose the absolute best move from the list of valid moves provided above.
-            Output Requirement: Output ONLY the move string exactly as it appears in the list (e.g., "Nf3" or "O-O"). Do not output any explanation or extra text.
+            ${currentAiPersona.prompt}
+            You are playing as Black. Current FEN: "${fen}".
+            Valid moves: [${moveStrings}].
+            Task: Pick a move.
+            Output format: MOVE|MESSAGE
+            Example: "e5|Nice try."
+            Move must be exact SAN string. Message max 15 words.
         `;
 
         try {
@@ -304,18 +440,25 @@
 
             const data = await response.json();
             if(data.error) throw new Error(data.error.message);
-            let aiMoveSan = data.candidates[0].content.parts[0].text.trim().replace(/[\n\r."]/g, '');
-            console.log("Gemini chose:", aiMoveSan);
+            
+            let rawText = data.candidates[0].content.parts[0].text.trim();
+            let parts = rawText.split('|');
+            let aiMoveSan = parts[0].trim().replace(/[\n\r."]/g, '');
+            let aiMsg = parts.length > 1 ? parts[1].trim() : "";
+
+            console.log("Gemini:", aiMoveSan, aiMsg);
+            if(aiMsg) showAiMessage(aiMsg);
 
             const move = game.move(aiMoveSan); 
             if (move) {
                 animateMove(move);
             } else {
-                console.warn("Gemini output invalid move, using fallback.");
+                console.warn("Fallback move");
                 makeRandomAI();
             }
         } catch (error) {
-            console.error("Gemini API Error:", error);
+            console.error("Gemini Error:", error);
+            showAiMessage("(AI 離線，隨機代管)");
             makeRandomAI(); 
         } finally {
             turnTxt.classList.remove('ai-thinking');
@@ -323,15 +466,69 @@
     }
 
     // ==========================================
-    // 🔐 認證系統 (智慧版)
+    // ⚙️ 使用者設定與頭像框
+    // ==========================================
+    
+    document.getElementById('btn-settings').addEventListener('click', openSettings);
+    
+    function openSettings() {
+        const modal = document.getElementById('settings-modal');
+        const grid = document.getElementById('frames-grid');
+        grid.innerHTML = '';
+        
+        // 載入當前名稱
+        const currentName = document.getElementById('user-name').innerText;
+        document.getElementById('setting-name').value = currentName;
+
+        // 取得當前使用的框
+        let currentFrameClass = 'frame-basic-1';
+        const frameDiv = document.getElementById('user-frame');
+        if(frameDiv.className) currentFrameClass = frameDiv.className;
+
+        AVATAR_FRAMES.forEach(f => {
+            const div = document.createElement('div');
+            div.className = `frame-option ${f.class}`;
+            div.style.background = '#222';
+            
+            // 鎖定邏輯
+            if (userElo < f.req) {
+                div.classList.add('locked');
+                div.title = `需要 ELO ${f.req} 解鎖`;
+            } else {
+                div.onclick = () => selectFrame(f.class);
+                if (f.class === currentFrameClass) div.classList.add('selected');
+            }
+            grid.appendChild(div);
+        });
+        
+        modal.style.display = 'flex';
+    }
+
+    window.closeSettingsModal = function() { document.getElementById('settings-modal').style.display = 'none'; }
+
+    window.saveName = function() {
+        const newName = document.getElementById('setting-name').value.trim();
+        if(!newName) return alert("名稱不能為空");
+        update(ref(db, 'users/' + currentUser.uid), { name: newName });
+        alert("名稱已更新！");
+    }
+
+    function selectFrame(frameClass) {
+        // 更新資料庫
+        update(ref(db, 'users/' + currentUser.uid), { selectedFrame: frameClass });
+        
+        // 更新 UI
+        document.querySelectorAll('.frame-option').forEach(el => el.classList.remove('selected'));
+        // 這裡只是視覺更新，實際由 loadUserProfile 監聽更新
+        closeSettingsModal();
+    }
+
+    // ==========================================
+    // 🔐 認證系統
     // ==========================================
     
     const authModal = document.getElementById('auth-modal');
     const authActionBtn = document.getElementById('auth-action-btn');
-    const forgotPwLink = document.getElementById('forgot-pw');
-    const guestBtn = document.getElementById('guest-btn');
-    const emailInput = document.getElementById('email');
-    const passInput = document.getElementById('password');
     const nicknameInput = document.getElementById('nickname');
     const nicknameContainer = document.getElementById('nickname-container');
     const errorMsg = document.getElementById('auth-error');
@@ -355,7 +552,7 @@
     function resetAuthForm() {
         isRegistering = false;
         nicknameContainer.style.display = 'none';
-        authActionBtn.innerText = "開始遊玩 (Start)";
+        authActionBtn.innerText = "開始遊玩";
         errorMsg.innerText = "";
     }
 
@@ -365,7 +562,7 @@
             if (!snapshot.exists()) {
                 const inputName = nicknameInput.value.trim();
                 const name = inputName || (user.isAnonymous ? `訪客_${user.uid.substring(0,4)}` : user.email.split('@')[0]);
-                set(userRef, { name: name, email: user.email || "guest", elo: 0, wins: 0, losses: 0 }).then(loadUserProfile);
+                set(userRef, { name: name, email: user.email || "guest", elo: 0, wins: 0, losses: 0, selectedFrame: 'frame-basic-1' }).then(loadUserProfile);
             } else { loadUserProfile(); }
         });
     }
@@ -375,8 +572,15 @@
         onValue(ref(db, 'users/' + currentUser.uid), (snapshot) => {
             const data = snapshot.val();
             if (data) {
+                userElo = data.elo;
                 document.getElementById('user-name').innerText = data.name;
                 document.getElementById('user-elo').innerText = data.elo;
+                document.getElementById('user-avatar-img').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${data.name}`;
+                
+                // 套用頭像框
+                const frameDiv = document.getElementById('user-frame');
+                frameDiv.className = data.selectedFrame || 'frame-basic-1';
+                
                 updateRankBadge(data.elo);
             }
         });
@@ -385,30 +589,28 @@
     function updateRankBadge(elo) {
         const badge = document.getElementById('user-rank');
         badge.className = 'rank-badge';
-        if (elo < 200) { badge.innerText = "新手 NOVICE"; badge.classList.add('rank-bronze'); }
-        else if (elo < 500) { badge.innerText = "銅牌 BRONZE"; badge.classList.add('rank-bronze'); }
-        else if (elo < 1000) { badge.innerText = "銀牌 SILVER"; badge.classList.add('rank-silver'); }
-        else if (elo < 1500) { badge.innerText = "金牌 GOLD"; badge.classList.add('rank-gold'); }
-        else if (elo < 2000) { badge.innerText = "鑽石 DIAMOND"; badge.classList.add('rank-diamond'); }
+        if (elo < 500) { badge.innerText = "新手 NOVICE"; badge.classList.add('rank-bronze'); }
+        else if (elo < 1000) { badge.innerText = "銅牌 BRONZE"; badge.classList.add('rank-bronze'); }
+        else if (elo < 1500) { badge.innerText = "銀牌 SILVER"; badge.classList.add('rank-silver'); }
+        else if (elo < 2000) { badge.innerText = "金牌 GOLD"; badge.classList.add('rank-gold'); }
+        else if (elo < 2500) { badge.innerText = "鑽石 DIAMOND"; badge.classList.add('rank-diamond'); }
         else { badge.innerText = "霓虹宗師"; badge.classList.add('rank-master'); }
     }
 
     authActionBtn.addEventListener('click', async () => {
-        const email = emailInput.value.trim();
-        const password = passInput.value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
         
         if(!email || !password) { errorMsg.innerText = "請輸入帳號密碼"; return; }
-        if(!email.includes('@')) { errorMsg.innerText = "Email 格式不正確 (範例: user@gmail.com)"; return; }
+        if(!email.includes('@')) { errorMsg.innerText = "Email 格式錯誤"; return; }
 
         if (isRegistering) {
             const nickname = nicknameInput.value.trim();
             if(!nickname) { errorMsg.innerText = "請輸入您的暱稱"; return; }
-            errorMsg.innerText = "註冊中...";
-            try { await createUserWithEmailAndPassword(auth, email, password); } catch (error) { handleAuthError(error); }
+            try { await createUserWithEmailAndPassword(auth, email, password); } catch (e) { handleAuthError(e); }
             return;
         }
 
-        errorMsg.innerText = "登入中...";
         try {
             await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
@@ -425,41 +627,29 @@
     function handleAuthError(error) {
         errorMsg.style.color = "#ff0055";
         let msg = error.message;
-        if(msg.includes("weak-password")) msg = "密碼太弱 (至少6位)";
-        if(msg.includes("email-already-in-use")) msg = "此信箱已被註冊，請檢查密碼";
+        if(msg.includes("email-already-in-use")) msg = "信箱已被使用";
         if(msg.includes("wrong-password")) msg = "密碼錯誤";
-        if(msg.includes("invalid-credential")) msg = "帳號或密碼錯誤 (若是新用戶請輸入暱稱)";
         errorMsg.innerText = msg;
     }
 
-    forgotPwLink.addEventListener('click', async () => {
-        const email = emailInput.value.trim();
-        if(!email || !email.includes('@')) { errorMsg.innerText = "請先在輸入框填寫 Email"; return; }
-        try { await sendPasswordResetEmail(auth, email); alert(`密碼重設信已發送至 ${email}`); } catch (error) { errorMsg.innerText = "發送失敗：" + error.message; }
+    document.getElementById('guest-btn').addEventListener('click', async () => {
+        try { await signInAnonymously(auth); } catch (e) { errorMsg.innerText = "訪客登入失敗"; }
     });
-
-    guestBtn.addEventListener('click', async () => {
-        errorMsg.innerText = "訪客登入中...";
-        try { await signInAnonymously(auth); } catch (error) { errorMsg.innerText = "訪客登入失敗"; }
+    
+    document.getElementById('forgot-pw').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
+        if(!email) return alert("請先輸入 Email");
+        try { await sendPasswordResetEmail(auth, email); alert("重設信已發送"); } catch(e) { alert("發送失敗"); }
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
     // ==========================================
-    // ⚔️ 遊戲模式邏輯
+    // ⚔️ PVP 邏輯
     // ==========================================
 
-    document.getElementById('btn-ai').addEventListener('click', () => {
-        gameId = "vs-gemini"; isOnline = false; isVsAI = true; playerColor = 'w';
-        game.reset(); syncPieces();
-        new TWEEN.Tween(camera.position).to({x: 0, y: 60, z: 100}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
-        controls.target.set(0, BOARD_HEIGHT, 0);
-        document.getElementById('room-display').innerText = "模式：單人挑戰 AI";
-        document.getElementById('room-display').style.color = "#9d00ff";
-        document.getElementById('opponent-info').innerText = "對手: Gemini Pro (Grandmaster)";
-        updateStatusHUD();
-        alert("對戰開始！你執白棋，Gemini 執黑棋。");
-    });
+    document.getElementById('btn-create').addEventListener('click', window.createGameRoom);
+    document.getElementById('btn-join').addEventListener('click', window.joinGameRoom);
 
     window.createGameRoom = function() {
         isVsAI = false;
@@ -470,7 +660,7 @@
                 fen: game.fen(), turn: 'w', white: { uid: currentUser.uid, elo: userData.elo, name: userData.name }, black: null, status: 'waiting'
             }).then(() => {
                 playerColor = 'w'; isOnline = true;
-                document.getElementById('room-display').innerText = `房間號：${gameId} (等待加入)`;
+                document.getElementById('room-display').innerText = `房間號：${gameId} (等待)`;
                 document.getElementById('room-display').style.color = "#00ff00";
                 document.getElementById('opponent-info').innerText = "等待對手...";
                 new TWEEN.Tween(camera.position).to({x: 0, y: 60, z: 100}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
@@ -482,7 +672,7 @@
                         if (data.black) {
                             document.getElementById('opponent-info').innerText = `VS: ${data.black.name} (${data.black.elo})`;
                             document.getElementById('room-display').innerText = `房間號：${gameId} (對戰中)`;
-                            alert(`對手 ${data.black.name} 已加入！遊戲開始！`);
+                            alert(`對手 ${data.black.name} 已加入！`);
                             updateStatusHUD();
                         }
                     }
@@ -501,7 +691,7 @@
         get(ref(db, 'games/' + gameId)).then((snapshot) => {
             if (snapshot.exists()) {
                 const gameData = snapshot.val();
-                if(gameData.status !== 'waiting') { alert("房間已滿或遊戲已結束"); return; }
+                if(gameData.status !== 'waiting') { alert("房間已滿或已結束"); return; }
                 get(ref(db, 'users/' + currentUser.uid)).then(snap => {
                     const userData = snap.val();
                     update(ref(db, 'games/' + gameId), { black: { uid: currentUser.uid, elo: userData.elo, name: userData.name }, status: 'playing' });
@@ -553,17 +743,14 @@
     function handleGameOver(winnerColor) {
         isProcessing = true; 
         let msg = "";
-        if (isVsAI) { msg = winnerColor === 'w' ? "恭喜！你擊敗了 Gemini！" : "可惜！Gemini 獲勝！"; }
+        if (isVsAI) { msg = winnerColor === 'w' ? `恭喜！你擊敗了 ${currentAiPersona.name}！` : `${currentAiPersona.name} 獲勝！`; }
         else { if (winnerColor === playerColor) msg = "勝利！積分提升！"; else msg = "戰敗... 積分下降"; }
         alert(msg);
         document.getElementById('turn-txt').innerText = winnerColor === 'w' ? "白方勝利" : "黑方勝利";
         document.getElementById('turn-txt').style.color = "#ffff00";
     }
 
-    document.getElementById('btn-create').addEventListener('click', window.createGameRoom);
-    document.getElementById('btn-join').addEventListener('click', window.joinGameRoom);
-
-    // --- 3D 邏輯 ---
+    // --- 3D 邏輯 (保留原樣) ---
     function getTerrainHeight(x,z){const d=Math.sqrt(x*x+z*z);if(d<400)return-12+Math.sin(x*0.004)*Math.cos(z*0.004)*2.0;const b=smoothstep(400,700,d);let h=b*140;h+=Math.sin(x*0.015)*Math.cos(z*0.015)*25;h+=Math.sin(x*0.03+z*0.02)*10;return h-12;}
     function smoothstep(min,max,v){var x=Math.max(0,Math.min(1,(v-min)/(max-min)));return x*x*(3-2*x);}
     function init(){clock=new THREE.Clock();scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0xff9966,0.0008);scene.background=new THREE.Color(0x331111);camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,6000);camera.position.set(0,60,100);renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(CONFIG.pixelRatio);renderer.setSize(window.innerWidth,window.innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;document.body.appendChild(renderer.domElement);controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.maxPolarAngle=Math.PI/2.05;controls.minDistance=10;controls.maxDistance=450;controls.target.set(0,BOARD_HEIGHT,0);setupSunsetLighting();setTimeout(()=>{createProceduralTerrain();createVegetation();createHighAltitudeClouds();createFloatingBoard();syncPieces();},100);raycaster=new THREE.Raycaster();mouse=new THREE.Vector2();window.addEventListener('touchstart',onTouchStart,{passive:false});window.addEventListener('click',onMouseClick);window.addEventListener('resize',onResize);animate();}
@@ -574,7 +761,16 @@
     function createFloatingBoard(){const g=new THREE.TorusGeometry(8,0.3,16,32);const m=new THREE.MeshBasicMaterial({color:0xffaa00});const r=new THREE.Mesh(g,m);r.rotation.x=Math.PI/2;r.position.y=BOARD_HEIGHT-3;scene.add(r);const b=new THREE.Mesh(new THREE.BoxGeometry(9,0.5,9),new THREE.MeshStandardMaterial({color:0x221111,roughness:0.5}));b.position.y=BOARD_HEIGHT-0.25;b.receiveShadow=true;scene.add(b);for(let r=0;r<8;r++)for(let c=0;c<8;c++){const n=String.fromCharCode(97+c)+(r+1),w=(r+c)%2!==0;const t=new THREE.Mesh(new THREE.BoxGeometry(1,0.2,1),new THREE.MeshStandardMaterial({color:w?0xffddbb:0x443333,roughness:0.2,metalness:0.3}));t.position.set(c-3.5,BOARD_HEIGHT,3.5-r);t.userData={square:n,isTile:true};t.receiveShadow=true;t.castShadow=true;scene.add(t);tilesMap[n]=t;}}
     function createSolidPiece(t,c){const g=new THREE.Group(),mat=c==='w'?new THREE.MeshStandardMaterial({color:0xeeeeff,roughness:0.2,metalness:0.5}):new THREE.MeshStandardMaterial({color:0x222222,roughness:0.3,metalness:0.8}),glow=c==='w'?new THREE.MeshStandardMaterial({color:0x00e5ff,emissive:0x00e5ff,emissiveIntensity:2}):new THREE.MeshStandardMaterial({color:0xff0055,emissive:0xff0055,emissiveIntensity:2});const b=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.45,0.2,32),mat);b.position.y=0.1;b.castShadow=true;g.add(b);if(t==='p'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,0.6,16),mat);by.position.y=0.5;by.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32),mat);h.position.y=0.95;h.castShadow=true;g.add(by,h);}else if(t==='r'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.8,32),mat);by.position.y=0.6;by.castShadow=true;const tp=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.3,32),mat);tp.position.y=1.1;tp.castShadow=true;const rg=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.05,16,32),glow);rg.position.y=1.25;rg.rotation.x=Math.PI/2;g.add(by,tp,rg);}else if(t==='b'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,1.0,16),mat);by.position.y=0.7;by.castShadow=true;const h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.25,0.5,16),mat);h.position.y=1.4;h.castShadow=true;const tp=new THREE.Mesh(new THREE.SphereGeometry(0.08),glow);tp.position.y=1.7;g.add(by,h,tp);}else if(t==='n'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,0.6,16),mat);by.position.y=0.5;by.castShadow=true;const h=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.6,0.2),mat);h.position.set(0,1.0,0.1);h.rotation.x=-Math.PI/6;h.castShadow=true;const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.05),glow);m.position.set(0,1.1,-0.15);m.rotation.x=-Math.PI/6;g.add(by,h,m);if(c==='b')g.rotation.y=Math.PI;}else if(t==='q'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.4,1.4,32),mat);by.position.y=0.9;by.castShadow=true;const t=new THREE.Mesh(new THREE.SphereGeometry(0.15),glow);t.position.y=1.7;g.add(by,t);}else if(t==='k'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.45,1.6,32),mat);by.position.y=1.0;by.castShadow=true;const c=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.4,0.1),glow);c.position.y=1.95;g.add(by,c);}return g;}
     function syncPieces(){for(let sq in piecesMap)scene.remove(piecesMap[sq]);piecesMap={};const b=game.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const sq=String.fromCharCode(97+c)+(8-r),s=createSolidPiece(p.type,p.color);s.position.set(c-3.5, BOARD_HEIGHT, r-3.5);scene.add(s);piecesMap[sq]=s;}}}
-    function onTouchStart(e){if(e.touches.length>1)return;e.preventDefault();mouse.x=(e.touches[0].clientX/window.innerWidth)*2-1;mouse.y=-(e.touches[0].clientY/window.innerHeight)*2+1;chk();}
+    
+    function onTouchStart(e){
+        if(e.target.closest('.modal-overlay') || e.target.closest('.hud') || e.target.closest('.auth-box') || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+        if(e.touches.length > 1) return;
+        e.preventDefault();
+        mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+        chk();
+    }
+    
     function onMouseClick(e){if(isProcessing)return;mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;chk();}
     function chk(){raycaster.setFromCamera(mouse,camera);const i=raycaster.intersectObjects(Object.values(tilesMap));if(i.length>0)hdl(i[0].object.userData.square);}
     function hdl(sq){
