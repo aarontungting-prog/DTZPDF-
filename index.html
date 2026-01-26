@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：造型進化版</title>
+    <title>霓虹西洋棋：DTZ 完美版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -34,13 +34,13 @@
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud { position: absolute; pointer-events: auto; }
         
-        /* 自訂捲軸樣式 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; border: 1px solid #444; }
+        /* 捲軸美化 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #00e5ff; }
 
-        /* 通用彈窗樣式 */
+        /* 彈窗 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 3000; display: none;
@@ -49,47 +49,52 @@
         }
         .auth-box {
             background: rgba(20, 20, 30, 0.95); border: 1px solid #00e5ff;
-            padding: 30px; border-radius: 15px; width: 320px; text-align: center;
-            box-shadow: 0 0 40px rgba(0, 229, 255, 0.3); max-height: 90vh; overflow-y: auto;
+            padding: 25px; border-radius: 15px; width: 300px; text-align: center;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.25); max-height: 90vh; overflow-y: auto;
         }
-        .auth-box h2 { color: #00e5ff; margin-top: 0; margin-bottom: 15px; letter-spacing: 2px; }
+        .auth-box h2 { color: #00e5ff; margin-top: 0; margin-bottom: 10px; }
         
         .auth-input {
-            width: 100%; padding: 12px; margin: 8px 0;
+            width: 100%; padding: 10px; margin: 5px 0;
             background: #111; border: 1px solid #444; color: #fff;
-            border-radius: 6px; box-sizing: border-box; font-size: 14px;
+            border-radius: 5px; box-sizing: border-box;
         }
         
+        /* 按鈕樣式 */
         .btn-base {
-            width: 100%; padding: 12px; margin-top: 10px;
+            width: 100%; padding: 10px; margin-top: 5px;
             border: none; font-weight: bold; cursor: pointer; 
-            border-radius: 6px; transition: 0.3s; font-size: 16px;
+            border-radius: 5px; transition: 0.2s; font-size: 14px;
         }
         .auth-btn { background: #00e5ff; color: #000; }
-        .auth-btn:hover { background: #fff; box-shadow: 0 0 15px #00e5ff; }
         .guest-btn { background: transparent; color: #aaa; border: 1px solid #444; }
-        .game-btn { background: #00e5ff; color: #000; padding: 10px; font-size: 14px; margin-top: 8px; }
-        button.join-btn { background: #ff0055; color: #fff; }
-        button.ai-btn { background: #9d00ff; color: #fff; } 
-        button.settings-btn { background: #333; color: #ccc; border: 1px solid #555; width: auto; padding: 5px 10px; font-size: 12px; position: absolute; top: 10px; right: 10px;}
-        button.logout-btn { background: #333; color: #aaa; border: 1px solid #444; margin-top:5px; font-size: 12px; padding: 8px;}
+        .game-btn { background: #00e5ff; color: #000; }
+        .join-btn { background: #ff0055; color: #fff; }
+        .ai-btn { background: #9d00ff; color: #fff; } 
+        .logout-btn { background: #333; color: #aaa; border: 1px solid #444; font-size: 12px; }
 
-        /* 頭像框與圖片 */
+        /* 左側分離式介面 */
+        #left-container {
+            position: absolute; top: 20px; left: 20px; width: 240px;
+            display: flex; flex-direction: column; gap: 12px; pointer-events: none;
+        }
+        .hud-box {
+            background: rgba(0,0,0,0.85); border: 1px solid #333; 
+            border-radius: 10px; padding: 12px; pointer-events: auto;
+            backdrop-filter: blur(5px); transition: 0.3s;
+        }
+        .hud-title { color: #aaa; font-size: 11px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 4px; }
+
+        /* 頭像與框 */
         .avatar-container {
-            width: 80px; height: 80px; margin: 20px auto 15px auto;
+            width: 70px; height: 70px; margin: 5px auto 10px auto;
             border-radius: 50%; position: relative; cursor: pointer;
-            display: flex; justify-content: center; align-items: center; transition: 0.3s;
+            display: flex; justify-content: center; align-items: center;
         }
-        .avatar-container:hover { opacity: 0.8; transform: scale(1.05); }
-        .avatar-overlay-hint {
-            position: absolute; width: 100%; height: 100%; border-radius: 50%;
-            background: rgba(0,0,0,0.5); color: #fff; display: flex; 
-            justify-content: center; align-items: center; font-size: 10px; opacity: 0;
-        }
-        .avatar-container:hover .avatar-overlay-hint { opacity: 1; }
         .avatar-img { width: 100%; height: 100%; border-radius: 50%; background: #333; object-fit: cover; }
-        
-        /* 基礎框與排位框 (維持原樣) */
+        .avatar-hint { position: absolute; bottom: -15px; width: 100%; text-align: center; font-size: 10px; color: #00e5ff; opacity: 0.7; }
+
+        /* 框特效 */
         .frame-basic-1 { border: 3px solid #555; }
         .frame-basic-2 { border: 3px solid #888; }
         .frame-basic-3 { border: 3px solid #fff; }
@@ -98,63 +103,64 @@
         .frame-bronze { border: 4px solid #cd7f32; box-shadow: 0 0 10px #cd7f32; }
         .frame-silver { border: 4px solid #c0c0c0; box-shadow: 0 0 15px #c0c0c0; }
         .frame-gold { border: 4px solid #ffd700; box-shadow: 0 0 20px #ffd700; }
-        .frame-diamond { border: 4px solid #b9f2ff; box-shadow: 0 0 20px #b9f2ff; animation: pulse-blue 2s infinite; }
-        .frame-master { border: 4px solid #ff0055; box-shadow: 0 0 25px #ff0055; animation: pulse-red 1.5s infinite; }
-        @keyframes pulse-blue { 0% { box-shadow: 0 0 15px #b9f2ff; } 50% { box-shadow: 0 0 30px #00e5ff; } 100% { box-shadow: 0 0 15px #b9f2ff; } }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 20px #ff0055; } 50% { box-shadow: 0 0 40px #ff0000; } 100% { box-shadow: 0 0 20px #ff0055; } }
+        .frame-diamond { border: 4px solid #b9f2ff; box-shadow: 0 0 20px #b9f2ff; animation: pulse-b 2s infinite; }
+        .frame-master { border: 4px solid #ff0055; box-shadow: 0 0 25px #ff0055; animation: pulse-r 1.5s infinite; }
+        @keyframes pulse-b { 50% { box-shadow: 0 0 35px #00e5ff; } }
+        @keyframes pulse-r { 50% { box-shadow: 0 0 40px #ff0000; } }
 
-        /* 設定頁面網格 */
-        .frames-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 5px; margin-bottom: 15px; }
-        .skin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 5px; }
-        
+        /* 設定網格 */
+        .frames-grid, .skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
         .option-item { 
             width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; position: relative; 
             background: #222; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border: 1px solid #444; transition: 0.2s;
+            border: 1px solid #444;
         }
-        .option-item.locked { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
-        .option-item.locked::after { content: '🔒'; position: absolute; font-size: 16px; }
-        .option-item.selected { border: 2px solid #00e5ff; box-shadow: 0 0 10px #00e5ff; background: #333; }
-        .option-label { font-size: 10px; margin-top: 5px; color: #aaa; text-align: center; }
+        .option-item.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
+        .option-item.selected { border: 2px solid #00e5ff; box-shadow: 0 0 8px #00e5ff; }
 
-        /* AI 選擇卡片 (自訂捲軸) */
-        .ai-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 5px; }
-        .ai-card {
-            background: #222; padding: 10px; border-radius: 8px; border: 1px solid #444;
-            text-align: left; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center;
+        /* AI 氣泡 (正上方防擋) */
+        #ai-chat-bubble {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            width: 80%; max-width: 400px;
+            background: rgba(0, 0, 0, 0.9); border: 1px solid #9d00ff;
+            border-radius: 20px; padding: 12px 20px; color: #fff; font-size: 14px; text-align: center;
+            display: none; box-shadow: 0 0 20px rgba(157, 0, 255, 0.5); z-index: 2000;
+            pointer-events: none;
         }
-        .ai-card:hover { background: #333; border-color: #00e5ff; }
-        .ai-name-txt { font-weight: bold; color: #fff; }
-        .ai-desc-txt { font-size: 11px; color: #aaa; display:block; margin-top:2px;}
-        .ai-rank-txt { font-size: 12px; font-weight: bold; }
+        .ai-name { color: #9d00ff; font-weight: bold; margin-bottom: 4px; display: block; font-size: 12px; }
 
-        /* UI 元件 */
-        .hud-box { background: rgba(0,0,0,0.8); border: 1px solid #333; border-radius: 12px; padding: 15px; pointer-events: auto; backdrop-filter: blur(5px); }
-        .hud-title { color: #aaa; font-size: 12px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
-        #status-panel { top: 20px; right: 20px; text-align: right; background: linear-gradient(to left, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)); padding: 15px; border-right: 3px solid #00e5ff; }
-        #ai-chat-bubble { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); width: 300px; background: rgba(0, 0, 0, 0.85); border: 1px solid #9d00ff; border-radius: 20px; padding: 15px; color: #fff; font-size: 14px; text-align: center; display: none; box-shadow: 0 0 20px rgba(157, 0, 255, 0.4); z-index: 2000; animation: popIn 0.3s; }
-        @keyframes popIn { from { opacity: 0; transform: translateX(-50%) scale(0.8); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
-        .ai-thinking { color: #ff00ff; animation: pulse 1s infinite; }
-        .rank-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; font-weight: bold; vertical-align: middle; }
-        .rank-bronze { background: #cd7f32; color: #000; }
-        
-        #tutorial-btn { position: absolute; bottom: 30px; right: 30px; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid #ffaa00; color: #ffaa00; font-weight: bold; font-size: 22px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 2500; pointer-events: auto; }
-        #tutorial-content { position: absolute; bottom: 85px; right: 30px; width: 300px; background: rgba(0, 0, 0, 0.95); border: 1px solid #ffaa00; border-radius: 12px; padding: 20px; display: none; z-index: 2500; max-height: 70vh; overflow-y: auto; pointer-events: auto; }
-        .key-highlight { color: #00e5ff; font-weight: bold; }
-        table.rank-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        table.rank-table th, table.rank-table td { border: 1px solid #444; padding: 5px; text-align: left; color: #ccc; }
-        table.rank-table th { color: #ffaa00; }
+        /* 狀態列 */
+        #status-panel { 
+            top: 20px; right: 20px; text-align: right; 
+            background: linear-gradient(to left, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)); 
+            padding: 15px; border-right: 3px solid #00e5ff; 
+        }
+        h1 { margin: 0; font-size: 1.2rem; color: #00e5ff; margin-bottom: 5px; }
+        #turn-txt { font-size: 1.5rem; font-weight: 900; }
 
-        #left-container { position: absolute; top: 20px; left: 20px; width: 260px; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
-        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; color: #ffaa00; font-size: 18px; font-weight: bold; z-index: 1500; transition: opacity 0.5s; }
+        /* 教學按鈕 */
+        #tutorial-btn {
+            position: absolute; bottom: 30px; right: 30px; width: 40px; height: 40px;
+            border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid #ffaa00;
+            color: #ffaa00; font-weight: bold; font-size: 20px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 2500; pointer-events: auto;
+        }
+        #tutorial-content {
+            position: absolute; bottom: 85px; right: 30px; width: 280px;
+            background: rgba(0,0,0,0.95); border: 1px solid #ffaa00; border-radius: 10px;
+            padding: 15px; display: none; z-index: 2500; max-height: 60vh; overflow-y: auto; pointer-events: auto;
+        }
+
+        #loading { position: absolute; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; color: #ffaa00; font-size: 18px; z-index: 4000; }
         #footer-watermark { position: absolute; bottom: 10px; width: 100%; text-align: center; color: rgba(255,255,255,0.3); font-size: 12px; pointer-events: none; }
-        
+
         @media (max-width: 600px) {
-            #status-panel { top: auto; bottom: 40px; right: 20px; left: 20px; text-align: center; border-right: none; border-top: 3px solid #00e5ff; background: rgba(0,0,0,0.8); }
+            #status-panel { top: auto; bottom: 20px; right: 20px; left: 20px; text-align: center; border-right: none; border-top: 3px solid #00e5ff; background: rgba(0,0,0,0.8); }
             #left-container { top: 10px; left: 10px; width: calc(100% - 20px); }
-            #tutorial-btn { bottom: 130px; right: 20px; }
-            #tutorial-content { bottom: 180px; right: 20px; left: 20px; width: auto; }
-            #ai-chat-bubble { width: 90%; top: 100px; }
+            #tutorial-btn { bottom: 100px; right: 20px; }
+            #tutorial-content { bottom: 150px; right: 20px; left: 20px; width: auto; }
+            #ai-chat-bubble { top: 100px; width: 90%; }
         }
     </style>
 </head>
@@ -169,7 +175,7 @@
         <input type="email" id="email" class="auth-input" placeholder="Email (例如 user@gmail.com)">
         <input type="password" id="password" class="auth-input" placeholder="密碼">
         <div id="nickname-container" style="display:none; animation: slideDown 0.3s;">
-            <input type="text" id="nickname" class="auth-input" placeholder="請輸入您的遊戲暱稱" style="border-color:#00ff00;">
+            <input type="text" id="nickname" class="auth-input" placeholder="初次見面，請輸入暱稱" style="border-color:#00ff00;">
         </div>
         <button id="auth-action-btn" class="btn-base auth-btn">登入 / 註冊</button>
         <div id="forgot-pw" style="margin-top:10px; font-size:12px; color:#aaa; cursor:pointer; text-decoration:underline;">忘記密碼？</div>
@@ -180,124 +186,109 @@
 <div id="ai-modal" class="modal-overlay">
     <div class="auth-box">
         <h2>選擇 AI 對手</h2>
-        <p style="color:#ccc; font-size:12px; margin-bottom:15px;">不同排位的 AI 擁有不同的個性和實力</p>
-        <div class="ai-list" id="ai-list-container">
-            </div>
-        <button onclick="closeAIModal()" class="btn-base guest-btn" style="margin-top:15px;">取消</button>
+        <div id="ai-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <button onclick="document.getElementById('ai-modal').style.display='none'" class="btn-base guest-btn">取消</button>
     </div>
 </div>
 
 <div id="settings-modal" class="modal-overlay">
-    <div class="auth-box" style="width: 350px;">
+    <div class="auth-box" style="width: 320px;">
         <h2>個人設定</h2>
         
-        <div style="margin-bottom: 15px; text-align: left;">
-            <label style="color:#aaa; font-size:12px;">更改暱稱:</label>
+        <div style="margin-bottom:15px; text-align:left;">
+            <label style="color:#aaa; font-size:12px;">修改暱稱:</label>
             <div style="display:flex; gap:5px;">
                 <input type="text" id="setting-name" class="auth-input" style="margin:0;">
-                <button onclick="saveName()" class="btn-base auth-btn" style="width:60px; margin:0; padding:0;">儲存</button>
+                <button onclick="saveName()" class="btn-base auth-btn" style="width:60px; margin:0;">儲存</button>
             </div>
         </div>
 
         <input type="file" id="file-input" accept="image/*" style="display:none;">
 
-        <div style="text-align:left; margin-bottom:15px;">
-            <label style="color:#aaa; font-size:12px;">選擇頭像框 (排位解鎖):</label>
-            <div class="frames-grid" id="frames-grid">
-                </div>
+        <div style="text-align:left; margin-bottom:10px;">
+            <label style="color:#aaa; font-size:12px;">頭像框 (排位解鎖):</label>
+            <div class="frames-grid" id="frames-grid"></div>
         </div>
 
         <div style="text-align:left;">
-            <label style="color:#aaa; font-size:12px;">選擇棋子造型 (排位解鎖):</label>
-            <div class="skin-grid" id="skins-grid">
-                </div>
+            <label style="color:#aaa; font-size:12px;">棋子造型 (排位解鎖):</label>
+            <div class="skin-grid" id="skins-grid"></div>
         </div>
         
-        <button onclick="closeSettingsModal()" class="btn-base guest-btn" style="margin-top:20px;">關閉</button>
+        <button onclick="document.getElementById('settings-modal').style.display='none'" class="btn-base guest-btn" style="margin-top:15px;">關閉</button>
     </div>
 </div>
 
 <div id="ui" style="display:none;">
+    
     <div id="left-container">
         
-        <div class="hud-box" id="profile-card">
-            <button id="btn-settings" class="settings-btn">⚙️ 設定</button>
-            <div class="avatar-container" onclick="triggerFileUpload()">
+        <div class="hud-box">
+            <button onclick="openSettings()" style="position:absolute; top:10px; right:10px; background:none; border:none; color:#aaa; cursor:pointer;">⚙️</button>
+            <div class="avatar-container" onclick="document.getElementById('file-input').click()">
                 <div id="user-frame" class="frame-basic-1" style="width:100%; height:100%; border-radius:50%; position:absolute; pointer-events:none;"></div>
                 <img src="" class="avatar-img" id="user-avatar-img">
-                <div class="avatar-overlay-hint">更換圖片</div>
+                <div class="avatar-hint">點擊換圖</div>
             </div>
-            <div style="text-align:center; margin-bottom:5px;">
-                <span id="user-name" style="font-weight:bold; font-size:16px; color:#fff;">Player</span>
+            <div style="text-align:center;">
+                <div id="user-name" style="font-weight:bold;">Player</div>
+                <div style="font-size:12px; color:#aaa; margin-top:2px;">
+                    <span id="user-rank" style="color:#cd7f32;">銅牌</span> | ELO: <span id="user-elo">0</span>
+                </div>
             </div>
-            <div style="text-align:center; font-size:12px; color:#aaa;">
-                <span id="user-rank" class="rank-badge rank-bronze">銅牌</span> 
-                ELO: <span id="user-elo" style="color:#00e5ff;">0</span>
-            </div>
-            <button id="btn-logout" class="btn-base logout-btn" style="width:100%;">登出</button>
+            <button id="btn-logout" class="btn-base logout-btn">登出</button>
         </div>
 
         <div class="hud-box">
             <div class="hud-title">連線對戰 (PVP)</div>
-            <div id="room-display" style="font-size:12px; color:#0f0; margin-bottom:5px;">狀態：閒置</div>
-            <button id="btn-create" class="btn-base game-btn">創建房間</button>
-            <button id="btn-join" class="btn-base game-btn join-btn">加入房間</button>
+            <div id="room-display" style="font-size:11px; color:#0f0; margin-bottom:5px;">狀態: 閒置</div>
+            <div style="display:flex; gap:5px;">
+                <button id="btn-create" class="btn-base game-btn" style="margin:0;">創建</button>
+                <button id="btn-join" class="btn-base join-btn" style="margin:0;">加入</button>
+            </div>
         </div>
 
         <div class="hud-box">
             <div class="hud-title">單人挑戰 (PVE)</div>
-            <button id="btn-ai" class="btn-base game-btn ai-btn">挑戰 AI 對手</button>
+            <button id="btn-ai" class="btn-base ai-btn" style="margin:0;">挑戰 AI 對手</button>
         </div>
+
     </div>
 
-    <div id="ai-chat-bubble" class="hud">
-        <span class="ai-name" id="ai-name-label" style="display:block; font-weight:bold; margin-bottom:5px; color:#9d00ff;">GEMINI:</span>
+    <div id="ai-chat-bubble">
+        <span class="ai-name" id="ai-name-label">GEMINI</span>
         <span id="ai-message">...</span>
-    </div>
-
-    <div id="tutorial-btn">?</div>
-    <div id="tutorial-content" class="hud">
-        <h3>🏆 排位與獎勵</h3>
-        <table class="rank-table">
-            <tr><th>排位</th><th>積分</th><th>解鎖獎勵</th></tr>
-            <tr><td style="color:#aaa">新手</td><td>0+</td><td>基礎框 / 經典棋</td></tr>
-            <tr><td style="color:#cd7f32">銅牌</td><td>500+</td><td>銅色框 / 青銅棋</td></tr>
-            <tr><td style="color:#c0c0c0">銀牌</td><td>1000+</td><td>銀色框 / 科技棋</td></tr>
-            <tr><td style="color:#ffd700">金牌</td><td>1500+</td><td>金光框 / 奢華棋</td></tr>
-            <tr><td style="color:#00e5ff">鑽石</td><td>2000+</td><td>呼吸框 / 水晶棋</td></tr>
-            <tr><td style="color:#ff0055">宗師</td><td>2500+</td><td>烈焰框 / 宇宙棋</td></tr>
-        </table>
-        
-        <h4 style="margin-top:15px; color:#ddd; border-bottom:1px solid #555;">操作與規則</h4>
-        <ul style="font-size:12px; color:#aaa;">
-            <li><span class="key-highlight">移動:</span> 點選棋子 -> 點選格子</li>
-            <li><span class="key-highlight">視角:</span> 電腦拖曳 / 手機單指滑動</li>
-            <li><span class="key-highlight">上傳頭像:</span> 點擊左上角頭像圖片</li>
-        </ul>
     </div>
 
     <div id="status-panel" class="hud">
         <h1>NEON CHESS</h1>
         <div id="turn-txt">等待對戰</div>
-        <div id="opponent-info" style="font-size: 12px; color: #aaa; margin-top:5px;">對手: ---</div>
+        <div id="opponent-info" style="font-size:12px; color:#aaa;">對手: ---</div>
     </div>
-    
+
+    <div id="tutorial-btn">?</div>
+    <div id="tutorial-content">
+        <h3 style="color:#ffaa00; margin-top:0;">排位與獎勵</h3>
+        <table class="rank-table" style="width:100%; color:#ccc; font-size:12px; text-align:left;">
+            <tr><th>排位</th><th>積分</th><th>解鎖</th></tr>
+            <tr><td>新手</td><td>0</td><td>基礎</td></tr>
+            <tr><td style="color:#cd7f32">銅牌</td><td>500</td><td>銅框/棋</td></tr>
+            <tr><td style="color:#c0c0c0">銀牌</td><td>1000</td><td>銀框/棋</td></tr>
+            <tr><td style="color:#ffd700">金牌</td><td>1500</td><td>金框/棋</td></tr>
+            <tr><td style="color:#00e5ff">鑽石</td><td>2000</td><td>鑽石棋</td></tr>
+            <tr><td style="color:#ff0055">宗師</td><td>2500</td><td>宇宙棋</td></tr>
+        </table>
+    </div>
+
     <div id="footer-watermark">Made by DTZ with Gemini Pro</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "firebase/app";
-    import { getDatabase, ref, set, get, update, onValue, child } from "firebase/database";
+    import { getDatabase, ref, set, get, update, onValue } from "firebase/database";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
 
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const CONFIG = {
-        grassCount: isMobile ? 20000 : 80000,
-        treeCount: isMobile ? 300 : 850,
-        shadowSize: isMobile ? 1024 : 2048,
-        pixelRatio: isMobile ? Math.min(window.devicePixelRatio, 2) : window.devicePixelRatio
-    };
-
+    // --- Config ---
     const firebaseConfig = {
         apiKey: "AIzaSyCxPppnUG864v3E2j1OzykzFmhLpsEJCSE",
         authDomain: "chess-1885a.firebaseapp.com",
@@ -310,524 +301,414 @@
     };
     const GEMINI_API_KEY = "AIzaSyBEueRZXZUidaSKfyl8dKoCJF4ha1Y1TcY";
 
-    let app, db, auth;
-    try { app = initializeApp(firebaseConfig); db = getDatabase(app); auth = getAuth(app); } catch(e) { console.error(e); }
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
 
-    let currentUser = null;
-    let userElo = 0; 
-    let userSkin = 'skin_classic';
-    let gameId = null;
-    let playerColor = 'w';
-    let isOnline = false;
-    let isVsAI = false; 
-    let isRegistering = false; 
-    let currentAiPersona = null;
+    // --- State ---
+    let currentUser=null, userElo=0, userSkin='skin_classic', gameId=null, playerColor='w', isOnline=false, isVsAI=false, isRegistering=false, currentAiPersona=null;
+    let scene, camera, renderer, controls, raycaster, mouse={x:0,y:0}, clock, game=new Chess();
+    let tilesMap={}, piecesMap={}, selectedSquare=null, isProcessing=false, grassMat, cloudParticles=[];
+    const BOARD_HEIGHT=15;
 
-    let scene, camera, renderer, controls, raycaster, mouse, clock;
-    let game = new Chess();
-    let tilesMap = {}, piecesMap = {};
-    let selectedSquare = null, isProcessing = false;
-    let grassMat, cloudParticles = [];
-    const BOARD_HEIGHT = 15;
-
-    // --- 教學面板 (修復) ---
-    document.getElementById('tutorial-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const p = document.getElementById('tutorial-content');
-        p.style.display = p.style.display === 'none' ? 'block' : 'none';
-    });
-
-    // ==========================================
-    // 🎭 AI & 造型資料
-    // ==========================================
+    // --- Data Definitions ---
     const AI_PERSONAS = [
-        { id: 'bot_novice', name: '波波 (Bob)', rank: '新手', elo: 400, color: '#aaa', desc: '剛學會下棋，經常送頭。', prompt: 'You are Bob, a novice chess player. You make silly mistakes. You speak in a short, confused, and cute way. ELO 400.' },
-        { id: 'bot_bronze', name: '愛麗絲 (Alice)', rank: '銅牌', elo: 800, color: '#cd7f32', desc: '努力想贏，性格溫和。', prompt: 'You are Alice, a beginner player. You try your best but miss tactics. You are polite and encouraging. ELO 800.' },
-        { id: 'bot_silver', name: '毒蛇 (Viper)', rank: '銀牌', elo: 1200, color: '#c0c0c0', desc: '喜歡嘲諷，攻擊性強。', prompt: 'You are Viper, a toxic chess player. You trash talk the opponent aggressively. You are arrogant but make mistakes. ELO 1200.' },
-        { id: 'bot_gold', name: '策士 (Strategos)', rank: '金牌', elo: 1600, color: '#ffd700', desc: '冷靜分析，只說戰術。', prompt: 'You are Strategos, a serious tactical player. You speak briefly and logically. No emotion. ELO 1600.' },
-        { id: 'bot_diamond', name: '諾娃 (Nova)', rank: '鑽石', elo: 2000, color: '#00e5ff', desc: '天才少女，喜歡炫耀。', prompt: 'You are Nova, a flashy genius player. You are confident and playful. You like to show off. ELO 2000.' },
-        { id: 'bot_master', name: '奧米加 (Omega)', rank: '霓虹宗師', elo: 2800, color: '#ff0055', desc: '超越人類，講話像神諭。', prompt: 'You are Omega, a god-like chess AI. You play perfect moves. You speak in philosophical, cryptic riddles about destiny. ELO 2800.' }
+        { name:'波波 (Bob)', rank:'新手', elo:400, color:'#aaa', desc:'經常送頭', prompt:'You are Bob, novice player. Make mistakes. Speak cute.' },
+        { name:'愛麗絲 (Alice)', rank:'銅牌', elo:800, color:'#cd7f32', desc:'性格溫和', prompt:'You are Alice, beginner. Polite and encouraging.' },
+        { name:'毒蛇 (Viper)', rank:'銀牌', elo:1200, color:'#c0c0c0', desc:'喜歡嘲諷', prompt:'You are Viper, toxic player. Trash talk aggressively.' },
+        { name:'策士 (Strategos)', rank:'金牌', elo:1600, color:'#ffd700', desc:'冷靜分析', prompt:'You are Strategos. Speak logically. No emotion.' },
+        { name:'諾娃 (Nova)', rank:'鑽石', elo:2000, color:'#00e5ff', desc:'天才少女', prompt:'You are Nova, flashy genius. Confident and playful.' },
+        { name:'奧米加 (Omega)', rank:'宗師', elo:2800, color:'#ff0055', desc:'神諭', prompt:'You are Omega, god-like AI. Speak in cryptic riddles.' }
+    ];
+    const FRAMES = [
+        {id:'frame-basic-1', req:0}, {id:'frame-basic-2', req:0}, {id:'frame-basic-3', req:0},
+        {id:'frame-bronze', req:500}, {id:'frame-silver', req:1000}, {id:'frame-gold', req:1500},
+        {id:'frame-diamond', req:2000}, {id:'frame-master', req:2500}
+    ];
+    const SKINS = [
+        {id:'skin_classic', name:'經典霓虹', req:0}, {id:'skin_bronze', name:'青銅時代', req:500},
+        {id:'skin_silver', name:'白銀科技', req:1000}, {id:'skin_gold', name:'黃金奢華', req:1500},
+        {id:'skin_crystal', name:'水晶稜鏡', req:2000}, {id:'skin_cosmic', name:'宇宙核心', req:2500}
     ];
 
-    const AVATAR_FRAMES = [
-        { id: 'frame-basic-1', name: '簡約黑', req: 0, class: 'frame-basic-1' },
-        { id: 'frame-basic-2', name: '經典灰', req: 0, class: 'frame-basic-2' },
-        { id: 'frame-basic-3', name: '純白框', req: 0, class: 'frame-basic-3' },
-        { id: 'frame-basic-4', name: '虛線藍', req: 0, class: 'frame-basic-4' },
-        { id: 'frame-basic-5', name: '雙線紅', req: 0, class: 'frame-basic-5' },
-        { id: 'frame-bronze', name: '銅牌框', req: 500, class: 'frame-bronze' },
-        { id: 'frame-silver', name: '銀牌框', req: 1000, class: 'frame-silver' },
-        { id: 'frame-gold', name: '金牌光效', req: 1500, class: 'frame-gold' },
-        { id: 'frame-diamond', name: '鑽石呼吸', req: 2000, class: 'frame-diamond' },
-        { id: 'frame-master', name: '宗師烈焰', req: 2500, class: 'frame-master' }
-    ];
-
-    const PIECE_SKINS = [
-        { id: 'skin_classic', name: '經典霓虹', req: 0 },
-        { id: 'skin_bronze', name: '青銅時代', req: 0 }, // 設為0讓新手有選擇
-        { id: 'skin_silver', name: '白銀科技', req: 500 },
-        { id: 'skin_gold', name: '黃金奢華', req: 1500 },
-        { id: 'skin_crystal', name: '水晶稜鏡', req: 2000 },
-        { id: 'skin_glitch', name: '虛空故障', req: 2500 },
-        { id: 'skin_cosmic', name: '宇宙核心', req: 2800 }
-    ];
-
-    // ==========================================
-    // ⚙️ 設定邏輯 (頭像上傳、造型)
-    // ==========================================
-    
-    document.getElementById('btn-settings').addEventListener('click', openSettings);
-    
-    function openSettings() {
-        const modal = document.getElementById('settings-modal');
-        document.getElementById('setting-name').value = document.getElementById('user-name').innerText;
-        
-        // 渲染頭像框
-        const fGrid = document.getElementById('frames-grid');
-        fGrid.innerHTML = '';
-        let currentFrame = document.getElementById('user-frame').className;
-        AVATAR_FRAMES.forEach(f => {
-            const div = document.createElement('div');
-            div.className = `option-item ${f.class}`;
-            if (userElo < f.req) div.classList.add('locked');
-            else {
-                div.onclick = () => selectFrame(f.class);
-                if (f.class === currentFrame) div.classList.add('selected');
-            }
-            // 預覽
-            const preview = document.createElement('div');
-            preview.style.width = '30px'; preview.style.height = '30px'; preview.style.borderRadius = '50%';
-            preview.className = f.class;
-            div.appendChild(preview);
-            div.innerHTML += `<div class="option-label">${f.name}</div>`;
-            fGrid.appendChild(div);
-        });
-
-        // 渲染棋子造型
-        const sGrid = document.getElementById('skins-grid');
-        sGrid.innerHTML = '';
-        PIECE_SKINS.forEach(s => {
-            const div = document.createElement('div');
-            div.className = 'option-item';
-            if (userElo < s.req) div.classList.add('locked');
-            else {
-                div.onclick = () => selectSkin(s.id);
-                if (s.id === userSkin) div.classList.add('selected');
-            }
-            div.innerHTML = `<div style="font-size:20px;">♟️</div><div class="option-label">${s.name}</div>`;
-            sGrid.appendChild(div);
-        });
-        
-        modal.style.display = 'flex';
-    }
-
-    window.closeSettingsModal = function() { document.getElementById('settings-modal').style.display = 'none'; }
-    window.saveName = function() {
-        const newName = document.getElementById('setting-name').value.trim();
-        if(newName) update(ref(db, 'users/' + currentUser.uid), { name: newName });
-    }
-
-    function selectFrame(c) { update(ref(db, 'users/' + currentUser.uid), { selectedFrame: c }); closeSettingsModal(); }
-    function selectSkin(s) { 
-        update(ref(db, 'users/' + currentUser.uid), { selectedSkin: s }); 
-        userSkin = s;
-        // 如果是 PVE，立即刷新棋盤
-        if(!isOnline) syncPieces(); 
-        closeSettingsModal(); 
-    }
-
-    // 頭像上傳邏輯
-    window.triggerFileUpload = function() { document.getElementById('file-input').click(); }
-    
-    document.getElementById('file-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        // 限制大小 1MB
-        if (file.size > 1024 * 1024) { alert("圖片太大，請小於 1MB"); return; }
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const base64String = event.target.result;
-            // 更新資料庫
-            update(ref(db, 'users/' + currentUser.uid), { avatarUrl: base64String });
-        };
-        reader.readAsDataURL(file);
-    });
-
-    // ==========================================
-    // 🤖 AI 邏輯
-    // ==========================================
-    document.getElementById('btn-ai').addEventListener('click', () => {
-        const list = document.getElementById('ai-list-container');
-        list.innerHTML = '';
-        AI_PERSONAS.forEach((ai, index) => {
-            const div = document.createElement('div');
-            div.className = 'ai-card';
-            div.innerHTML = `<div><span class="ai-name-txt" style="color:${ai.color}">${ai.name}</span><span class="ai-desc-txt">${ai.desc}</span></div><span class="ai-rank-txt" style="color:${ai.color}">${ai.rank}</span>`;
-            div.onclick = () => startAI(index);
-            list.appendChild(div);
-        });
-        document.getElementById('ai-modal').style.display = 'flex';
-    });
-    window.closeAIModal = function() { document.getElementById('ai-modal').style.display = 'none'; }
-
-    window.startAI = function(index) {
-        closeAIModal();
-        const ai = AI_PERSONAS[index];
-        currentAiPersona = ai;
-        gameId = "vs-gemini"; isOnline = false; isVsAI = true; playerColor = 'w';
-        game.reset(); syncPieces();
-        new TWEEN.Tween(camera.position).to({x: 0, y: 60, z: 100}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
-        controls.target.set(0, BOARD_HEIGHT, 0);
-        document.getElementById('room-display').innerText = "模式：PVE";
-        document.getElementById('room-display').style.color = "#9d00ff";
-        document.getElementById('opponent-info').innerText = `對手: ${ai.name}`;
-        updateStatusHUD();
-        document.getElementById('ai-name-label').innerText = ai.name.split(' ')[0] + ":";
-        document.getElementById('ai-name-label').style.color = ai.color;
-        showAiMessage("... (連線中)");
+    // --- UI Logic ---
+    document.getElementById('tutorial-btn').onclick = (e) => {
+        e.stopPropagation();
+        const el = document.getElementById('tutorial-content');
+        el.style.display = el.style.display==='none'?'block':'none';
     };
 
-    function showAiMessage(msg) {
-        const bubble = document.getElementById('ai-chat-bubble');
-        document.getElementById('ai-message').innerText = msg;
-        bubble.style.display = 'block';
-        setTimeout(() => { bubble.style.display = 'none'; }, 6000);
-    }
-    
-    async function makeGeminiMove() {
-        if (game.game_over()) return;
-        isProcessing = true;
-        const turnTxt = document.getElementById('turn-txt');
-        turnTxt.innerText = "思考中...";
-        turnTxt.classList.add('ai-thinking');
-        const fen = game.fen();
-        const moves = game.moves({ verbose: true });
-        const moveStrings = moves.map(m => m.san).join(', ');
-        const prompt = `${currentAiPersona.prompt} Black. FEN:"${fen}". Valid:[${moveStrings}]. Pick move. Output: MOVE|MESSAGE. Ex: "e5|Nice." SAN string only. Msg max 15 words.`;
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            const data = await response.json();
-            if(data.error) throw new Error(data.error.message);
-            let rawText = data.candidates[0].content.parts[0].text.trim();
-            let parts = rawText.split('|');
-            let aiMoveSan = parts[0].trim().replace(/[\n\r."]/g, '');
-            let aiMsg = parts.length > 1 ? parts[1].trim() : "";
-            if(aiMsg) showAiMessage(aiMsg);
-            const move = game.move(aiMoveSan); 
-            if (move) animateMove(move); else makeRandomAI();
-        } catch (error) { showAiMessage("(AI 離線)"); makeRandomAI(); } finally { turnTxt.classList.remove('ai-thinking'); }
-    }
+    window.openSettings = function() {
+        document.getElementById('settings-modal').style.display='flex';
+        document.getElementById('setting-name').value = document.getElementById('user-name').innerText;
+        
+        const fGrid = document.getElementById('frames-grid'); fGrid.innerHTML='';
+        const currFrame = document.getElementById('user-frame').className;
+        FRAMES.forEach(f => {
+            const d = document.createElement('div'); d.className = `option-item ${f.id}`;
+            if(userElo < f.req) d.classList.add('locked');
+            else { d.onclick=()=>setFrame(f.id); if(f.id===currFrame) d.classList.add('selected'); }
+            fGrid.appendChild(d);
+        });
 
-    // ==========================================
-    // 🔐 認證
-    // ==========================================
-    const authModal=document.getElementById('auth-modal'), authActionBtn=document.getElementById('auth-action-btn'), nicknameContainer=document.getElementById('nickname-container'), errorMsg=document.getElementById('auth-error'), loadingScreen=document.getElementById('loading');
+        const sGrid = document.getElementById('skins-grid'); sGrid.innerHTML='';
+        SKINS.forEach(s => {
+            const d = document.createElement('div'); d.className = 'option-item';
+            d.innerHTML = `<div style="font-size:20px;">♟️</div><div style="font-size:10px;margin-top:2px;">${s.name}</div>`;
+            if(userElo < s.req) d.classList.add('locked');
+            else { d.onclick=()=>setSkin(s.id); if(s.id===userSkin) d.classList.add('selected'); }
+            sGrid.appendChild(d);
+        });
+    };
 
+    function setFrame(id) { update(ref(db,'users/'+currentUser.uid), {selectedFrame:id}); document.getElementById('settings-modal').style.display='none'; }
+    function setSkin(id) { 
+        update(ref(db,'users/'+currentUser.uid), {selectedSkin:id}); 
+        userSkin=id; 
+        if(!isOnline) syncPieces(); 
+        document.getElementById('settings-modal').style.display='none'; 
+    }
+    window.saveName = function() {
+        const n = document.getElementById('setting-name').value.trim();
+        if(n) update(ref(db,'users/'+currentUser.uid), {name:n});
+    };
+
+    // 檔案上傳
+    document.getElementById('file-input').onchange = function(e) {
+        const f = e.target.files[0];
+        if(!f) return;
+        if(f.size > 1024*1024) return alert("圖片需小於 1MB");
+        const r = new FileReader();
+        r.onload = (ev) => update(ref(db,'users/'+currentUser.uid), {avatarUrl:ev.target.result});
+        r.readAsDataURL(f);
+    };
+
+    // --- Auth Logic ---
     onAuthStateChanged(auth, (user) => {
-        loadingScreen.style.display = 'none';
-        if (user) {
+        document.getElementById('loading').style.display='none';
+        if(user) {
             currentUser = user;
-            authModal.style.display = 'none';
-            document.getElementById('ui').style.display = 'block';
-            checkAndCreateUserProfile(user);
+            document.getElementById('auth-modal').style.display='none';
+            document.getElementById('ui').style.display='block';
+            checkUser(user);
         } else {
             currentUser = null;
-            authModal.style.display = 'flex';
-            document.getElementById('ui').style.display = 'none';
-            isRegistering = false; nicknameContainer.style.display = 'none'; authActionBtn.innerText = "登入 / 註冊"; errorMsg.innerText = "";
+            document.getElementById('auth-modal').style.display='flex';
+            document.getElementById('ui').style.display='none';
+            resetAuth();
         }
     });
 
-    function checkAndCreateUserProfile(user) {
-        const userRef = ref(db, 'users/' + user.uid);
-        get(userRef).then((snapshot) => {
-            if (!snapshot.exists()) {
-                const inputName = document.getElementById('nickname').value.trim();
-                const name = inputName || (user.isAnonymous ? `訪客_${user.uid.substring(0,4)}` : user.email.split('@')[0]);
-                set(userRef, { name: name, email: user.email || "guest", elo: 0, wins: 0, losses: 0, selectedFrame: 'frame-basic-1', selectedSkin: 'skin_classic' }).then(loadUserProfile);
-            } else { loadUserProfile(); }
+    function resetAuth() { isRegistering=false; document.getElementById('nickname-container').style.display='none'; document.getElementById('auth-action-btn').innerText="登入 / 註冊"; document.getElementById('auth-error').innerText=""; }
+    function checkUser(u) {
+        const r = ref(db,'users/'+u.uid);
+        get(r).then(s => {
+            if(!s.exists()) {
+                const nick = document.getElementById('nickname').value.trim() || (u.isAnonymous?`Guest_${u.uid.substr(0,4)}`:u.email.split('@')[0]);
+                set(r, {name:nick, email:u.email||"guest", elo:0, selectedFrame:'frame-basic-1', selectedSkin:'skin_classic'}).then(loadUser);
+            } else loadUser();
         });
     }
-
-    function loadUserProfile() {
-        if (!currentUser) return;
-        onValue(ref(db, 'users/' + currentUser.uid), (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                userElo = data.elo;
-                userSkin = data.selectedSkin || 'skin_classic';
-                document.getElementById('user-name').innerText = data.name;
-                document.getElementById('user-elo').innerText = data.elo;
-                document.getElementById('user-avatar-img').src = data.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${data.name}`;
-                document.getElementById('user-frame').className = data.selectedFrame || 'frame-basic-1';
-                updateRankBadge(data.elo);
-                // 每次載入個人檔案時，如果不在連線遊戲中，刷新一下棋子樣式
-                if(!isOnline) syncPieces();
-            }
+    function loadUser() {
+        onValue(ref(db,'users/'+currentUser.uid), (s) => {
+            const d = s.val(); if(!d) return;
+            userElo = d.elo; userSkin = d.selectedSkin || 'skin_classic';
+            document.getElementById('user-name').innerText = d.name;
+            document.getElementById('user-elo').innerText = d.elo;
+            document.getElementById('user-rank').innerText = getRankName(d.elo);
+            document.getElementById('user-frame').className = d.selectedFrame || 'frame-basic-1';
+            document.getElementById('user-avatar-img').src = d.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${d.name}`;
+            if(!isOnline) syncPieces();
         });
     }
-
-    function updateRankBadge(elo) {
-        const badge = document.getElementById('user-rank');
-        badge.className = 'rank-badge';
-        if (elo < 500) { badge.innerText = "新手 NOVICE"; badge.classList.add('rank-bronze'); }
-        else if (elo < 1000) { badge.innerText = "銅牌 BRONZE"; badge.classList.add('rank-bronze'); }
-        else if (elo < 1500) { badge.innerText = "銀牌 SILVER"; badge.classList.add('rank-silver'); }
-        else if (elo < 2000) { badge.innerText = "金牌 GOLD"; badge.classList.add('rank-gold'); }
-        else if (elo < 2500) { badge.innerText = "鑽石 DIAMOND"; badge.classList.add('rank-diamond'); }
-        else { badge.innerText = "霓虹宗師"; badge.classList.add('rank-master'); }
+    function getRankName(elo) {
+        if(elo<500)return "新手"; if(elo<1000)return "銅牌"; if(elo<1500)return "銀牌";
+        if(elo<2000)return "金牌"; if(elo<2500)return "鑽石"; return "宗師";
     }
 
-    authActionBtn.addEventListener('click', async () => {
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
-        if(!email || !password) { errorMsg.innerText = "請輸入帳密"; return; }
-        if (isRegistering) {
-            if(!document.getElementById('nickname').value.trim()) { errorMsg.innerText = "請輸入暱稱"; return; }
-            try { await createUserWithEmailAndPassword(auth, email, password); } catch (e) { errorMsg.innerText = e.message; }
+    document.getElementById('auth-action-btn').onclick = async () => {
+        const e = document.getElementById('email').value.trim(), p = document.getElementById('password').value.trim();
+        if(!e || !p) return document.getElementById('auth-error').innerText = "請輸入帳密";
+        if(isRegistering) {
+            if(!document.getElementById('nickname').value.trim()) return;
+            try { await createUserWithEmailAndPassword(auth, e, p); } catch(err) { document.getElementById('auth-error').innerText = err.message; }
             return;
         }
-        try { await signInWithEmailAndPassword(auth, email, password); } catch (error) {
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                isRegistering = true; nicknameContainer.style.display = 'block'; authActionBtn.innerText = "確認註冊"; errorMsg.innerText = "初次見面，請輸入暱稱"; errorMsg.style.color = "#00ff00";
-            } else { errorMsg.innerText = error.message; }
+        try { await signInWithEmailAndPassword(auth, e, p); } catch(err) {
+            if(err.code.includes('user-not-found') || err.code.includes('invalid-credential')) {
+                isRegistering=true; document.getElementById('nickname-container').style.display='block';
+                document.getElementById('auth-action-btn').innerText="確認註冊"; document.getElementById('auth-error').innerText="初次見面，請輸入暱稱";
+            } else document.getElementById('auth-error').innerText = err.message;
         }
-    });
+    };
+    document.getElementById('guest-btn').onclick = async () => { try{await signInAnonymously(auth);}catch(e){} };
+    document.getElementById('btn-logout').onclick = () => signOut(auth);
 
-    document.getElementById('guest-btn').addEventListener('click', async () => { try { await signInAnonymously(auth); } catch (e) {} });
-    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-
-    // ==========================================
-    // ⚔️ PVP
-    // ==========================================
-    document.getElementById('btn-create').addEventListener('click', window.createGameRoom);
-    document.getElementById('btn-join').addEventListener('click', window.joinGameRoom);
-
-    window.createGameRoom = function() {
-        isVsAI = false; gameId = Math.floor(1000 + Math.random() * 9000).toString();
-        get(ref(db, 'users/' + currentUser.uid)).then(snap => {
-            const u = snap.val();
-            // 存入房主的 Skin
-            set(ref(db, 'games/' + gameId), {
-                fen: game.fen(), turn: 'w', 
-                white: { uid: currentUser.uid, elo: u.elo, name: u.name, skin: u.selectedSkin || 'skin_classic' }, 
-                black: null, status: 'waiting'
-            }).then(() => {
-                playerColor = 'w'; isOnline = true;
-                document.getElementById('room-display').innerText = `房間號：${gameId} (等待)`;
-                new TWEEN.Tween(camera.position).to({x: 0, y: 60, z: 100}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
-                controls.target.set(0, BOARD_HEIGHT, 0);
-                listenGame(); alert(`房間已建立！號碼：${gameId}`);
+    // --- PVP Logic ---
+    document.getElementById('btn-create').onclick = () => {
+        isVsAI=false; gameId = Math.floor(1000+Math.random()*9000).toString();
+        get(ref(db,'users/'+currentUser.uid)).then(s=>{
+            const u=s.val();
+            set(ref(db,'games/'+gameId), {
+                fen:game.fen(), turn:'w', status:'waiting',
+                white:{uid:currentUser.uid, name:u.name, elo:u.elo, skin:u.selectedSkin||'skin_classic'}
+            }).then(()=>{
+                playerColor='w'; isOnline=true;
+                document.getElementById('room-display').innerText = `房號: ${gameId} (等待)`;
+                moveCam(0,60,100); listenGame(); alert(`房號: ${gameId}`);
             });
         });
-    }
-
-    window.joinGameRoom = function() {
-        isVsAI = false; const id = prompt('輸入房號:'); if(!id) return;
-        gameId = id;
-        get(ref(db, 'games/' + gameId)).then((snapshot) => {
-            if (snapshot.exists()) {
-                if(snapshot.val().status !== 'waiting') return alert("無法加入");
-                get(ref(db, 'users/' + currentUser.uid)).then(snap => {
-                    const u = snap.val();
-                    // 存入挑戰者的 Skin
-                    update(ref(db, 'games/' + gameId), { 
-                        black: { uid: currentUser.uid, elo: u.elo, name: u.name, skin: u.selectedSkin || 'skin_classic' }, 
-                        status: 'playing' 
-                    });
-                    playerColor = 'b'; isOnline = true;
-                    document.getElementById('room-display').innerText = `房間號：${gameId} (對戰)`;
-                    new TWEEN.Tween(camera.position).to({x: 0, y: 60, z: -100}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
-                    controls.target.set(0, BOARD_HEIGHT, 0);
-                    listenGame();
+    };
+    document.getElementById('btn-join').onclick = () => {
+        const id = prompt("輸入房號"); if(!id) return;
+        gameId = id; isVsAI=false;
+        get(ref(db,'games/'+id)).then(s=>{
+            if(!s.exists() || s.val().status!=='waiting') return alert("無法加入");
+            get(ref(db,'users/'+currentUser.uid)).then(us=>{
+                const u=us.val();
+                update(ref(db,'games/'+id), {
+                    status:'playing', black:{uid:currentUser.uid, name:u.name, elo:u.elo, skin:u.selectedSkin||'skin_classic'}
                 });
-            } else { alert("房號錯誤"); }
+                playerColor='b'; isOnline=true;
+                document.getElementById('room-display').innerText = `房號: ${id} (對戰)`;
+                moveCam(0,60,-100); listenGame();
+            });
         });
-    }
+    };
 
     function listenGame() {
-        onValue(ref(db, 'games/' + gameId), (snapshot) => {
-            const data = snapshot.val(); if (!data) return;
-            // 同步對手資訊與 Skin
-            if (data.status === 'playing' && !data.winner && document.getElementById('turn-txt').innerText.includes("等待")) {
-                if (data.black) {
-                    const opp = playerColor === 'w' ? data.black : data.white;
-                    document.getElementById('opponent-info').innerText = `VS: ${opp.name}`;
-                    alert(`對手 ${opp.name} 已加入！`);
-                    // ⭐ 強制刷新棋子，因為現在有了對手的 Skin 資訊
-                    syncPieces(data); 
-                }
+        onValue(ref(db,'games/'+gameId), (s) => {
+            const d = s.val(); if(!d) return;
+            if(d.status==='playing' && !d.winner && document.getElementById('turn-txt').innerText.includes("等待")) {
+                const opp = playerColor==='w'?d.black:d.white;
+                if(opp) { document.getElementById('opponent-info').innerText = `VS: ${opp.name}`; syncPieces(d); }
             }
-            if (data.fen !== game.fen()) { 
-                game.load(data.fen); 
-                syncPieces(data); // 傳入 data 以讀取 skin
-                updateStatusHUD(); 
-            }
-            if (data.winner) handleGameOver(data.winner);
+            if(d.fen !== game.fen()) { game.load(d.fen); syncPieces(d); updateHUD(); }
+            if(d.winner) { isProcessing=true; alert(d.winner===playerColor?"勝利！":"戰敗..."); }
         });
     }
 
-    function sendMove(move) {
-        if (!isOnline) return;
-        let updateData = { fen: game.fen(), turn: game.turn(), lastMove: move };
-        if (game.in_checkmate()) { updateData.winner = game.turn()==='w'?'b':'w'; updateData.status='finished'; calculateELO(updateData.winner); }
-        update(ref(db, 'games/' + gameId), updateData);
+    function sendMove(m) {
+        if(!isOnline) return;
+        let up = {fen:game.fen(), turn:game.turn(), lastMove:m};
+        if(game.in_checkmate()) { up.winner = game.turn()==='w'?'b':'w'; up.status='finished'; calcElo(up.winner); }
+        update(ref(db,'games/'+gameId), up);
     }
 
-    function calculateELO(winner) {
-        get(ref(db, 'games/' + gameId)).then(snap => {
-            const d = snap.val(); if(d.calculated) return; 
-            if(playerColor === 'w') {
-                const K = 32, wElo = d.white.elo, bElo = d.black.elo;
-                const eW = 1/(1+Math.pow(10,(bElo-wElo)/400)), eB = 1/(1+Math.pow(10,(wElo-bElo)/400));
-                update(ref(db, 'users/' + d.white.uid), { elo: Math.round(wElo + K * ((winner==='w'?1:0) - eW)) });
-                update(ref(db, 'users/' + d.black.uid), { elo: Math.round(bElo + K * ((winner==='b'?1:0) - eB)) });
-                update(ref(db, 'games/' + gameId), { calculated: true });
+    function calcElo(win) {
+        get(ref(db,'games/'+gameId)).then(s=>{
+            const d=s.val(); if(d.calculated) return;
+            if(playerColor==='w') {
+                const K=32, wE=d.white.elo, bE=d.black.elo;
+                const eW=1/(1+Math.pow(10,(bE-wE)/400)), eB=1/(1+Math.pow(10,(wE-bE)/400));
+                update(ref(db,'users/'+d.white.uid), {elo:Math.round(wE+K*((win==='w'?1:0)-eW))});
+                update(ref(db,'users/'+d.black.uid), {elo:Math.round(bE+K*((win==='b'?1:0)-eB))});
+                update(ref(db,'games/'+gameId), {calculated:true});
             }
         });
     }
 
-    function handleGameOver(w) {
-        isProcessing = true; let msg = "";
-        if (isVsAI) msg = w === 'w' ? "你贏了 AI！" : "AI 獲勝！";
-        else msg = w === playerColor ? "勝利！積分+" : "戰敗... 積分-";
-        alert(msg);
+    // --- AI Logic ---
+    document.getElementById('btn-ai').onclick = () => {
+        const list = document.getElementById('ai-list-container'); list.innerHTML='';
+        AI_PERSONAS.forEach((ai,i) => {
+            const d=document.createElement('div'); d.className='ai-card';
+            d.innerHTML=`<div><span style="color:${ai.color};font-weight:bold;">${ai.name}</span><span style="display:block;font-size:10px;color:#888;">${ai.desc}</span></div><span style="font-size:12px;color:${ai.color};">${ai.rank}</span>`;
+            d.onclick=()=>startAI(i); list.appendChild(d);
+        });
+        document.getElementById('ai-modal').style.display='flex';
+    };
+
+    function startAI(idx) {
+        document.getElementById('ai-modal').style.display='none';
+        currentAiPersona = AI_PERSONAS[idx];
+        isVsAI=true; isOnline=false; gameId="vs-ai"; playerColor='w';
+        game.reset(); syncPieces(); moveCam(0,60,100);
+        document.getElementById('opponent-info').innerText = `VS: ${currentAiPersona.name}`;
+        updateHUD(); aiSpeak("我是 "+currentAiPersona.name+"，準備好了嗎？");
     }
 
-    // ==========================================
-    // 🌍 3D 棋子與造型生成
-    // ==========================================
-    function createSolidPiece(type, color, skinId) {
-        const group = new THREE.Group();
-        let mat, glow;
-
-        // 1. 材質設定
-        if (skinId === 'skin_bronze') {
-            mat = new THREE.MeshStandardMaterial({ color: color==='w'?0xcd7f32:0x553311, roughness: 0.7, metalness: 0.8 });
-            glow = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff4400, emissiveIntensity: 1 });
-        } else if (skinId === 'skin_silver') {
-            mat = new THREE.MeshStandardMaterial({ color: color==='w'?0xeeeeee:0x444444, roughness: 0.2, metalness: 1.0, wireframe: true });
-            glow = new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 2 });
-        } else if (skinId === 'skin_gold') {
-            mat = new THREE.MeshStandardMaterial({ color: color==='w'?0xffd700:0x665500, roughness: 0.1, metalness: 1.0 });
-            glow = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xffaa00, emissiveIntensity: 2 });
-        } else if (skinId === 'skin_crystal') {
-            mat = new THREE.MeshPhysicalMaterial({ color: color==='w'?0xccffff:0x220044, transmission: 0.9, opacity: 1, roughness: 0, metalness: 0 });
-            glow = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        } else if (skinId === 'skin_glitch') {
-            mat = new THREE.MeshStandardMaterial({ color: color==='w'?0x00ff00:0xff00ff, wireframe: true });
-            glow = mat;
-        } else {
-            // Default Classic
-            mat = color==='w' ? new THREE.MeshStandardMaterial({color:0xeeeeff, roughness:0.2, metalness:0.5}) : new THREE.MeshStandardMaterial({color:0x222222, roughness:0.3, metalness:0.8});
-            glow = color==='w' ? new THREE.MeshStandardMaterial({color:0x00e5ff, emissive:0x00e5ff, emissiveIntensity:2}) : new THREE.MeshStandardMaterial({color:0xff0055, emissive:0xff0055, emissiveIntensity:2});
-        }
-
-        // 2. 形狀設定 (簡化版：用不同幾何體代表造型)
-        const baseGeo = skinId === 'skin_glitch' ? new THREE.BoxGeometry(0.6, 0.2, 0.6) : new THREE.CylinderGeometry(0.4, 0.45, 0.2, 32);
-        const base = new THREE.Mesh(baseGeo, mat);
-        base.position.y = 0.1; base.castShadow = true; group.add(base);
-
-        if (type === 'p') {
-            // 兵
-            const body = new THREE.Mesh(skinId==='skin_crystal'?new THREE.ConeGeometry(0.2, 0.6, 4):new THREE.CylinderGeometry(0.15, 0.35, 0.6, 16), mat);
-            body.position.y = 0.5; group.add(body);
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25), mat);
-            head.position.y = 0.95; group.add(head);
-        } else if (type === 'r') {
-            // 車
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.5), mat);
-            body.position.y = 0.6; group.add(body);
-            const top = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.05, 16, 32), glow);
-            top.rotation.x = Math.PI/2; top.position.y = 1.1; group.add(top);
-        } else if (type === 'n') {
-            // 馬
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 0.6, 16), mat);
-            body.position.y = 0.5; group.add(body);
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.6, 0.2), mat);
-            head.position.set(0, 1.0, 0.1); head.rotation.x = -Math.PI/6; group.add(head);
-            if(color==='b') group.rotation.y = Math.PI;
-        } else if (type === 'b') {
-            // 象
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.35, 1.0, 16), mat);
-            body.position.y = 0.7; group.add(body);
-            const hat = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 16), mat);
-            hat.position.y = 1.4; group.add(hat);
-        } else if (type === 'q') {
-            // 后
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.4, 1.4, 32), mat);
-            body.position.y = 0.9; group.add(body);
-            const crown = new THREE.Mesh(new THREE.SphereGeometry(0.2), glow);
-            crown.position.y = 1.7; group.add(crown);
-        } else if (type === 'k') {
-            // 王
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.45, 1.6, 32), mat);
-            body.position.y = 1.0; group.add(body);
-            const cross = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.5, 0.15), glow);
-            cross.position.y = 1.95; group.add(cross);
-        }
-
-        return group;
+    function aiSpeak(msg) {
+        const b = document.getElementById('ai-chat-bubble');
+        document.getElementById('ai-message').innerText = msg;
+        document.getElementById('ai-name-label').innerText = currentAiPersona.name.split(' ')[0];
+        document.getElementById('ai-name-label').style.color = currentAiPersona.color;
+        b.style.display='block'; setTimeout(()=>b.style.display='none', 5000);
     }
 
-    function syncPieces(gameData = null) {
-        for(let sq in piecesMap) scene.remove(piecesMap[sq]);
-        piecesMap = {};
-        const board = game.board();
+    async function makeAiMove() {
+        if(game.game_over()) return;
+        isProcessing=true; document.getElementById('turn-txt').innerText="思考中...";
+        const fen=game.fen(), moves=game.moves({verbose:true}).map(m=>m.san).join(',');
+        const prompt=`${currentAiPersona.prompt} Black. FEN:"${fen}". Valid:[${moves}]. Pick best move. Output: MOVE|MESSAGE. Ex:"e5|Good." SAN only. Msg max 10 words.`;
+        try {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+            });
+            const d = await responseSafe(r);
+            let txt = d.candidates[0].content.parts[0].text.trim().split('|');
+            let move = txt[0].replace(/[\n\r."]/g,'').trim(), msg = txt[1]||"";
+            if(msg) aiSpeak(msg);
+            if(!game.move(move)) makeRandomAI(); else animateMove(game.history({verbose:true}).pop());
+        } catch(e) { console.error(e); aiSpeak("(AI 離線)"); makeRandomAI(); }
+    }
+    async function responseSafe(r) { if(!r.ok) throw new Error('API Fail'); return await r.json(); }
+
+    // --- 3D & Game Core ---
+    function init() {
+        clock=new THREE.Clock(); scene=new THREE.Scene(); scene.background=new THREE.Color(0x220000); scene.fog=new THREE.FogExp2(0x990044,0.0005);
+        camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,6000); camera.position.set(0,60,100);
+        renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setSize(window.innerWidth,window.innerHeight); renderer.shadowMap.enabled=true;
+        renderer.toneMapping=THREE.ACESFilmicToneMapping; document.body.appendChild(renderer.domElement);
+        controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.target.set(0,15,0);
         
-        // 決定白棋和黑棋的 Skin
-        let whiteSkin = userSkin;
-        let blackSkin = userSkin; // 預設 PVE 統一
+        // Environment
+        const amb = new THREE.AmbientLight(0xffffff, 0.6); scene.add(amb);
+        const sun = new THREE.DirectionalLight(0xffaa00, 2); sun.position.set(-100,100,-100); sun.castShadow=true; scene.add(sun);
+        const sky = new THREE.Sky(); sky.scale.setScalar(450000); scene.add(sky); sky.material.uniforms.sunPosition.value.copy(sun.position);
+        
+        createBoard();
+        window.addEventListener('resize', onResize);
+        window.addEventListener('touchstart', onTouch, {passive:false});
+        window.addEventListener('click', onClick);
+        animate();
+    }
 
-        if (isOnline && gameData && gameData.white && gameData.black) {
-            whiteSkin = gameData.white.skin || 'skin_classic';
-            blackSkin = gameData.black.skin || 'skin_classic';
+    function createBoard() {
+        const boardBox = new THREE.Mesh(new THREE.BoxGeometry(9,0.5,9), new THREE.MeshStandardMaterial({color:0x111111, roughness:0.5}));
+        boardBox.position.y = 14.75; boardBox.receiveShadow=true; scene.add(boardBox);
+        for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+            const isW = (r+c)%2!==0;
+            const tile = new THREE.Mesh(new THREE.BoxGeometry(1,0.2,1), new THREE.MeshStandardMaterial({color:isW?0xeeeeee:0x222222}));
+            tile.position.set(c-3.5, 15, 3.5-r); tile.userData={sq:String.fromCharCode(97+c)+(r+1)};
+            scene.add(tile); tilesMap[tile.userData.sq] = tile;
         }
+        syncPieces();
+    }
 
-        for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
-            const p = board[r][c];
+    function createPiece(type, color, skin) {
+        const grp = new THREE.Group();
+        let col = color==='w'?0xeeeeee:0x222222, emi = color==='w'?0x00e5ff:0xff0055;
+        // Simple Skin Logic
+        if(skin==='skin_gold') { col=0xffd700; emi=0xffaa00; }
+        if(skin==='skin_silver') { col=0xcccccc; emi=0xffffff; }
+        if(skin==='skin_bronze') { col=0xcd7f32; emi=0xff4400; }
+        if(skin==='skin_crystal') { col=color==='w'?0xaaddff:0xaa00ff; emi=col; }
+        if(skin==='skin_cosmic') { col=0x000000; emi=color==='w'?0x00ffff:0xff00ff; }
+
+        const mat = new THREE.MeshStandardMaterial({color:col, roughness:0.3, metalness:0.8, emissive:emi, emissiveIntensity:0.4});
+        
+        // Simplified Geometry based on type
+        let geo;
+        if(type==='p') geo = new THREE.CylinderGeometry(0.2,0.3,0.6,16);
+        else if(type==='r') geo = new THREE.BoxGeometry(0.5,0.8,0.5);
+        else if(type==='n') geo = new THREE.ConeGeometry(0.3,0.8,16); // Knight substitute
+        else if(type==='b') geo = new THREE.CylinderGeometry(0.1,0.3,1.0,16);
+        else if(type==='q') geo = new THREE.CylinderGeometry(0.3,0.3,1.4,16);
+        else geo = new THREE.CylinderGeometry(0.3,0.4,1.6,16); // King
+
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = 0.5; mesh.castShadow=true; grp.add(mesh);
+        return grp;
+    }
+
+    function syncPieces(d) {
+        for(let k in piecesMap) scene.remove(piecesMap[k]); piecesMap={};
+        const b = game.board();
+        let wSkin = userSkin, bSkin = userSkin;
+        if(d && d.white) wSkin = d.white.skin;
+        if(d && d.black) bSkin = d.black.skin;
+
+        for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+            const p = b[r][c];
             if(p) {
-                const sq = String.fromCharCode(97+c)+(8-r);
-                // 根據顏色選擇 Skin
-                const skinToUse = p.color === 'w' ? whiteSkin : blackSkin;
-                const s = createSolidPiece(p.type, p.color, skinToUse);
-                s.position.set(c-3.5, BOARD_HEIGHT, r-3.5);
-                scene.add(s);
-                piecesMap[sq] = s;
+                const s = createPiece(p.type, p.color, p.color==='w'?wSkin:bSkin);
+                s.position.set(c-3.5, 15, r-3.5); // Chess.js board is 0,0 at top-left (a8). ThreeJS z is inverted logic relative to r. 
+                // Fix position: Chess.js row 0 is rank 8. ThreeJS z 3.5 is rank 1.
+                // Actual mapping: r=0 -> rank 8 -> z = -3.5. r=7 -> rank 1 -> z = 3.5.
+                // My createBoard loop: r=0 (rank 1 in my loop) z=3.5. Chess.js logic is inverted.
+                // Let's fix mapping:
+                // Three world: x: -3.5(a) to 3.5(h). z: -3.5(8) to 3.5(1).
+                // Chess.js: b[0][0] is a8.
+                s.position.set(c-3.5, 15, (r-3.5)); 
+                scene.add(s); piecesMap[String.fromCharCode(97+c)+(8-r)] = s;
             }
         }
     }
 
-    // --- 基礎 3D 場景 ---
-    function getTerrainHeight(x,z){const d=Math.sqrt(x*x+z*z);if(d<400)return-12+Math.sin(x*0.004)*Math.cos(z*0.004)*2.0;const b=smoothstep(400,700,d);let h=b*140;h+=Math.sin(x*0.015)*Math.cos(z*0.015)*25;h+=Math.sin(x*0.03+z*0.02)*10;return h-12;}
-    function smoothstep(min,max,v){var x=Math.max(0,Math.min(1,(v-min)/(max-min)));return x*x*(3-2*x);}
-    function init(){clock=new THREE.Clock();scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0xff9966,0.0008);scene.background=new THREE.Color(0x331111);camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,6000);camera.position.set(0,60,100);renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(CONFIG.pixelRatio);renderer.setSize(window.innerWidth,window.innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;document.body.appendChild(renderer.domElement);controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.maxPolarAngle=Math.PI/2.05;controls.minDistance=10;controls.maxDistance=450;controls.target.set(0,BOARD_HEIGHT,0);setupSunsetLighting();setTimeout(()=>{createProceduralTerrain();createVegetation();createHighAltitudeClouds();createFloatingBoard();syncPieces();},100);raycaster=new THREE.Raycaster();mouse=new THREE.Vector2();window.addEventListener('touchstart',onTouchStart,{passive:false});window.addEventListener('click',onMouseClick);window.addEventListener('resize',onResize);animate();}
-    function setupSunsetLighting(){const a=new THREE.AmbientLight(0xffccaa,0.75);scene.add(a);const s=new THREE.DirectionalLight(0xff8800,3.2);s.position.set(-300,100,-300);s.castShadow=true;s.shadow.mapSize.set(CONFIG.shadowSize,CONFIG.shadowSize);const d=700;s.shadow.camera.left=-d;s.shadow.camera.right=d;s.shadow.camera.top=d;s.shadow.camera.bottom=-d;scene.add(s);const sk=new THREE.Sky();sk.scale.setScalar(450000);scene.add(sk);const u=sk.material.uniforms;u['turbidity'].value=10;u['rayleigh'].value=3;u['mieCoefficient'].value=0.005;u['mieDirectionalG'].value=0.8;u['sunPosition'].value.copy(s.position);const g=new THREE.SphereGeometry(80,32,32);const m=new THREE.MeshBasicMaterial({color:0xff5500,fog:false});const sp=new THREE.Mesh(g,m);sp.position.copy(s.position).normalize().multiplyScalar(3000);scene.add(sp);}
-    function createProceduralTerrain(){const g=new THREE.PlaneGeometry(3500,3500,isMobile?100:180,isMobile?100:180);g.rotateX(-Math.PI/2);const p=g.attributes.position;const c=[];const c1=new THREE.Color(0x226622);const c2=new THREE.Color(0x665544);for(let i=0;i<p.count;i++){const h=getTerrainHeight(p.getX(i),p.getZ(i));p.setY(i,h);const b=smoothstep(-12,8,h);const f=c1.clone().lerp(c2,b);c.push(f.r,f.g,f.b);}g.setAttribute('color',new THREE.Float32BufferAttribute(c,3));g.computeVertexNormals();const m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.9,metalness:0.1,flatShading:true});const mesh=new THREE.Mesh(g,m);mesh.receiveShadow=true;scene.add(mesh);}
-    function createVegetation(){const grp=new THREE.Group();const lMat=new THREE.MeshStandardMaterial({color:0x1a3d1a,roughness:0.9,flatShading:true});const tMat=new THREE.MeshStandardMaterial({color:0x3d2817,roughness:1.0});const lGeo=new THREE.DodecahedronGeometry(4,0);const tGeo=new THREE.CylinderGeometry(0.7,1.0,6,6);tGeo.translate(0,3,0);for(let i=0;i<CONFIG.treeCount;i++){const a=Math.random()*Math.PI*2;const r=70+Math.random()*380;const x=Math.cos(a)*r;const z=Math.sin(a)*r;const h=getTerrainHeight(x,z);const tr=new THREE.Group();const t=new THREE.Mesh(tGeo,tMat);t.castShadow=true;tr.add(t);for(let j=0;j<3;j++){const l=new THREE.Mesh(lGeo,lMat);l.position.set((Math.random()-0.5)*5,5.5+Math.random()*3.5,(Math.random()-0.5)*5);l.scale.setScalar(0.8+Math.random()*0.4);l.castShadow=true;tr.add(l);}tr.position.set(x,h,z);tr.scale.setScalar(0.9+Math.random()*0.6);grp.add(tr);}scene.add(grp);const bGeo=new THREE.PlaneGeometry(0.3,1.5);bGeo.translate(0,0.75,0);grassMat=new THREE.MeshStandardMaterial({color:0x226622,side:THREE.DoubleSide});grassMat.onBeforeCompile=s=>{s.uniforms.time={value:0};s.vertexShader=`uniform float time;\n`+s.vertexShader;s.vertexShader=s.vertexShader.replace(`#include <begin_vertex>`,`vec3 transformed=vec3(position);float w=sin(time*1.5+position.x*0.5)*0.2*position.y;transformed.x+=w;#include <begin_vertex>`);grassMat.userData.shader=s;};const iG=new THREE.InstancedMesh(bGeo,grassMat,CONFIG.grassCount);const d=new THREE.Object3D();let c=0;for(let i=0;i<100000;i++){if(c>=CONFIG.grassCount)break;const r=Math.random()*420;const a=Math.random()*Math.PI*2;const x=Math.cos(a)*r;const z=Math.sin(a)*r;const h=getTerrainHeight(x,z);if(h<-8){d.position.set(x,h,z);d.rotation.y=Math.random()*Math.PI;d.scale.setScalar(0.7+Math.random()*0.6);d.updateMatrix();iG.setMatrixAt(c++,d.matrix);}}iG.receiveShadow=true;scene.add(iG);}
-    function createHighAltitudeClouds(){const cv=document.createElement('canvas');cv.width=128;cv.height=128;const cx=cv.getContext('2d'),g=cx.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,180,120,0.5)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,128,128);const mat=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});const gp=new THREE.Group();const cc=isMobile?25:45;for(let i=0;i<cc;i++){const cl=new THREE.Group();for(let j=0;j<15;j++){const p=new THREE.Sprite(mat);p.position.set((Math.random()-0.5)*50,(Math.random()-0.5)*20,(Math.random()-0.5)*50);p.scale.setScalar(40+Math.random()*40);cl.add(p);}cl.position.set((Math.random()-0.5)*3200,250+Math.random()*150,(Math.random()-0.5)*3200);gp.add(cl);cloudParticles.push(cl);}scene.add(gp);}
-    function createFloatingBoard(){const g=new THREE.TorusGeometry(8,0.3,16,32);const m=new THREE.MeshBasicMaterial({color:0xffaa00});const r=new THREE.Mesh(g,m);r.rotation.x=Math.PI/2;r.position.y=BOARD_HEIGHT-3;scene.add(r);const b=new THREE.Mesh(new THREE.BoxGeometry(9,0.5,9),new THREE.MeshStandardMaterial({color:0x221111,roughness:0.5}));b.position.y=BOARD_HEIGHT-0.25;b.receiveShadow=true;scene.add(b);for(let r=0;r<8;r++)for(let c=0;c<8;c++){const n=String.fromCharCode(97+c)+(r+1),w=(r+c)%2!==0;const t=new THREE.Mesh(new THREE.BoxGeometry(1,0.2,1),new THREE.MeshStandardMaterial({color:w?0xffddbb:0x443333,roughness:0.2,metalness:0.3}));t.position.set(c-3.5,BOARD_HEIGHT,3.5-r);t.userData={square:n,isTile:true};t.receiveShadow=true;t.castShadow=true;scene.add(t);tilesMap[n]=t;}}
-    function onTouchStart(e){if(e.target.closest('.modal-overlay')||e.target.closest('.hud')||e.target.tagName==='BUTTON'||e.target.tagName==='INPUT')return;if(e.touches.length>1)return;e.preventDefault();mouse.x=(e.touches[0].clientX/window.innerWidth)*2-1;mouse.y=-(e.touches[0].clientY/window.innerHeight)*2+1;chk();}
-    function onMouseClick(e){if(isProcessing)return;mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;chk();}
-    function chk(){raycaster.setFromCamera(mouse,camera);const i=raycaster.intersectObjects(Object.values(tilesMap));if(i.length>0)hdl(i[0].object.userData.square);}
-    function hdl(sq){
-        if(isVsAI&&game.turn()==='b')return;if(isOnline&&game.turn()!==playerColor)return;
-        const p=game.get(sq);
-        if(!selectedSquare){if(p&&p.color===game.turn())if(!isOnline||(isOnline&&p.color===playerColor))sel(sq);}
-        else{if(p&&p.color===game.turn()){sel(sq);return;}const m=game.move({from:selectedSquare,to:sq,promotion:'q'});if(m){am(m);if(isOnline)sendMove(m);if(isVsAI)setTimeout(makeGeminiMove,500);}else{clr();selectedSquare=null;}}
+    function onTouch(e) {
+        if(e.target.closest('.modal-overlay') || e.target.closest('.hud') || e.target.tagName==='BUTTON' || e.target.tagName==='INPUT') return;
+        if(e.touches.length>1) return;
+        e.preventDefault();
+        mouse.x = (e.touches[0].clientX/window.innerWidth)*2-1;
+        mouse.y = -(e.touches[0].clientY/window.innerHeight)*2+1;
+        checkHit();
     }
-    function sel(sq){clr();selectedSquare=sq;tilesMap[sq].material.emissive.setHex(0xffff00);tilesMap[sq].material.emissiveIntensity=0.8;game.moves({square:sq,verbose:true}).forEach(m=>{tilesMap[m.to].material.emissive.setHex(m.captured?0xff3300:0x00aaff);tilesMap[m.to].material.emissiveIntensity=0.5;});}
-    function clr(){for(let s in tilesMap){tilesMap[s].material.emissive.setHex(0x000000);tilesMap[s].material.emissiveIntensity=0;}}
-    function am(m){isProcessing=true;clr();const s=piecesMap[m.from],e=tilesMap[m.to].position.clone();if(m.captured&&piecesMap[m.to])scene.remove(piecesMap[m.to]);new TWEEN.Tween(s.position).to(e,500).easing(TWEEN.Easing.Quadratic.Out).onComplete(()=>{syncPieces(isOnline?{white:{skin:userSkin},black:{skin:userSkin}}:null);updateStatusHUD();if(!isOnline&&!isVsAI&&game.turn()==='b')setTimeout(makeRandomAI,500);else if(!isVsAI)isProcessing=false;}).start();}
-    function makeRandomAI(){const ms=game.moves();if(ms.length===0)return;game.move(ms[Math.floor(Math.random()*ms.length)]);syncPieces();updateStatusHUD();isProcessing=false;}
-    function updateStatusHUD(){const t=document.getElementById('turn-txt'), turn=game.turn();if(isVsAI){t.innerText=turn==='w'?"你的回合":"Gemini 回合";t.style.color=turn==='w'?"#00e5ff":"#ff00ff";}else if(isOnline){t.innerText=turn==='w'?"白方回合":"黑方回合";t.style.color=turn==='w'?"#00e5ff":"#ff0055";}else{t.innerText=turn==='w'?"藍方回合":"電腦回合";t.style.color=turn==='w'?"#00e5ff":"#ff0055";}}
-    function onResize(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);}
-    function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();TWEEN.update();controls.update();if(grassMat&&grassMat.userData.shader)grassMat.userData.shader.uniforms.time.value=t;cloudParticles.forEach(c=>{c.rotation.y+=0.0003;});renderer.render(scene,camera);}
+    function onClick(e) { if(isProcessing) return; mouse.x=(e.clientX/window.innerWidth)*2-1; mouse.y=-(e.clientY/window.innerHeight)*2+1; checkHit(); }
+    
+    function checkHit() {
+        raycaster.setFromCamera(mouse, camera);
+        const i = raycaster.intersectObjects(scene.children.filter(o=>o.geometry && o.userData.sq));
+        if(i.length>0) handleSq(i[0].object.userData.sq);
+    }
+
+    function handleSq(sq) {
+        if(isVsAI && game.turn()==='b') return;
+        if(isOnline && game.turn()!==playerColor) return;
+        
+        // Move Logic
+        if(selectedSquare) {
+            const m = game.move({from:selectedSquare, to:sq, promotion:'q'});
+            if(m) {
+                animateMove(m);
+                if(isOnline) sendMove(m);
+                if(isVsAI) setTimeout(makeAiMove, 500);
+            }
+            selectedSquare=null; clearHigh();
+        } else {
+            const p = game.get(sq);
+            if(p && p.color === game.turn()) {
+                if(isOnline && p.color!==playerColor) return;
+                selectedSquare=sq; highlight(sq);
+            }
+        }
+    }
+
+    function highlight(sq) {
+        clearHigh(); tilesMap[sq].material.emissive.setHex(0x00ff00);
+        game.moves({square:sq, verbose:true}).forEach(m => tilesMap[m.to].material.emissive.setHex(0x555500));
+    }
+    function clearHigh() { for(let k in tilesMap) tilesMap[k].material.emissive.setHex(0x000000); }
+
+    function animateMove(m) {
+        isProcessing=true; clearHigh();
+        const p = piecesMap[m.from];
+        const dest = tilesMap[m.to].position.clone();
+        if(m.captured) scene.remove(piecesMap[m.to]);
+        
+        new TWEEN.Tween(p.position).to({x:dest.x, z:dest.z}, 300).easing(TWEEN.Easing.Quadratic.Out)
+            .onComplete(() => {
+                syncPieces(isOnline?{white:{skin:userSkin},black:{skin:userSkin}}:null); // Refresh visual state
+                updateHUD();
+                if(!isOnline && !isVsAI && game.turn()==='b') makeRandomAI(); else if(!isVsAI) isProcessing=false;
+            }).start();
+    }
+
+    function makeRandomAI() {
+        const m = game.moves(); if(m.length===0) return;
+        const move = m[Math.floor(Math.random()*m.length)];
+        game.move(move); animateMove(game.history({verbose:true}).pop());
+    }
+
+    function updateHUD() {
+        const t = game.turn()==='w'?"白方":"黑方";
+        document.getElementById('turn-txt').innerText = isVsAI ? (game.turn()==='w'?"你的回合":"AI 思考") : t+"回合";
+    }
+
+    function moveCam(x,y,z) { new TWEEN.Tween(camera.position).to({x,y,z}, 2000).easing(TWEEN.Easing.Cubic.Out).start(); }
+    function onResize() { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); }
+    function animate() { requestAnimationFrame(animate); TWEEN.update(); controls.update(); renderer.render(scene,camera); }
+
     init();
 </script>
 </body>
