@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：史詩完整版</title>
+    <title>霓虹西洋棋：DTZ 完美版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -10,7 +10,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/objects/Sky.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
     <script type="importmap">
     {
         "imports": {
@@ -22,11 +29,11 @@
     </script>
 
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Microsoft JhengHei', sans-serif; color: white; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Microsoft JhengHei', 'Segoe UI', sans-serif; touch-action: none; color: white; }
         
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-        .hud { pointer-events: auto; }
-
+        .hud { position: absolute; pointer-events: auto; }
+        
         /* 捲軸美化 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #111; }
@@ -42,32 +49,52 @@
         }
         .auth-box {
             background: rgba(20, 20, 30, 0.95); border: 1px solid #00e5ff;
-            padding: 25px; border-radius: 15px; width: 320px; text-align: center;
+            padding: 25px; border-radius: 15px; width: 300px; text-align: center;
             box-shadow: 0 0 30px rgba(0, 229, 255, 0.25); max-height: 90vh; overflow-y: auto;
         }
         .auth-box h2 { color: #00e5ff; margin-top: 0; margin-bottom: 10px; }
-        .auth-input { width: 100%; padding: 10px; margin: 5px 0; background: #111; border: 1px solid #444; color: #fff; border-radius: 5px; box-sizing: border-box; }
         
-        /* 按鈕 */
-        .btn-base { width: 100%; padding: 10px; margin-top: 5px; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.2s; font-size: 14px; }
+        .auth-input {
+            width: 100%; padding: 10px; margin: 5px 0;
+            background: #111; border: 1px solid #444; color: #fff;
+            border-radius: 5px; box-sizing: border-box;
+        }
+        
+        /* 按鈕樣式 */
+        .btn-base {
+            width: 100%; padding: 10px; margin-top: 5px;
+            border: none; font-weight: bold; cursor: pointer; 
+            border-radius: 5px; transition: 0.2s; font-size: 14px;
+        }
         .auth-btn { background: #00e5ff; color: #000; }
         .guest-btn { background: transparent; color: #aaa; border: 1px solid #444; }
         .game-btn { background: #00e5ff; color: #000; }
         .join-btn { background: #ff0055; color: #fff; }
-        .ai-btn { background: #9d00ff; color: #fff; }
+        .ai-btn { background: #9d00ff; color: #fff; } 
         .logout-btn { background: #333; color: #aaa; border: 1px solid #444; font-size: 12px; }
 
-        /* 左側介面 */
-        #left-container { position: absolute; top: 20px; left: 20px; width: 240px; display: flex; flex-direction: column; gap: 12px; pointer-events: none; }
-        .hud-box { background: rgba(0,0,0,0.85); border: 1px solid #333; border-radius: 10px; padding: 12px; pointer-events: auto; backdrop-filter: blur(5px); }
-        .hud-title { color: #aaa; font-size: 11px; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #444; padding-bottom: 4px; }
+        /* 左側分離式介面 */
+        #left-container {
+            position: absolute; top: 20px; left: 20px; width: 240px;
+            display: flex; flex-direction: column; gap: 12px; pointer-events: none;
+        }
+        .hud-box {
+            background: rgba(0,0,0,0.85); border: 1px solid #333; 
+            border-radius: 10px; padding: 12px; pointer-events: auto;
+            backdrop-filter: blur(5px); transition: 0.3s;
+        }
+        .hud-title { color: #aaa; font-size: 11px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 4px; }
 
-        /* 頭像 */
-        .avatar-container { width: 70px; height: 70px; margin: 5px auto 10px auto; border-radius: 50%; position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        /* 頭像與框 */
+        .avatar-container {
+            width: 70px; height: 70px; margin: 5px auto 10px auto;
+            border-radius: 50%; position: relative; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+        }
         .avatar-img { width: 100%; height: 100%; border-radius: 50%; background: #333; object-fit: cover; }
         .avatar-hint { position: absolute; bottom: -15px; width: 100%; text-align: center; font-size: 10px; color: #00e5ff; opacity: 0.7; }
 
-        /* 頭像框 */
+        /* 框特效 */
         .frame-basic-1 { border: 3px solid #555; }
         .frame-basic-2 { border: 3px solid #888; }
         .frame-basic-3 { border: 3px solid #fff; }
@@ -83,45 +110,72 @@
 
         /* 設定網格 */
         .frames-grid, .skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
-        .option-item { width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; position: relative; background: #222; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #444; }
+        .option-item { 
+            width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; position: relative; 
+            background: #222; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border: 1px solid #444;
+        }
         .option-item.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
         .option-item.selected { border: 2px solid #00e5ff; box-shadow: 0 0 8px #00e5ff; }
 
-        /* AI 氣泡 */
-        #ai-chat-bubble { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 300px; background: rgba(0, 0, 0, 0.9); border: 1px solid #9d00ff; border-radius: 20px; padding: 10px 20px; color: #fff; font-size: 14px; text-align: center; display: none; z-index: 2000; pointer-events: none; }
+        /* AI 氣泡 (正上方防擋) */
+        #ai-chat-bubble {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            width: 80%; max-width: 400px;
+            background: rgba(0, 0, 0, 0.9); border: 1px solid #9d00ff;
+            border-radius: 20px; padding: 12px 20px; color: #fff; font-size: 14px; text-align: center;
+            display: none; box-shadow: 0 0 20px rgba(157, 0, 255, 0.5); z-index: 2000;
+            pointer-events: none;
+        }
         .ai-name { color: #9d00ff; font-weight: bold; margin-bottom: 4px; display: block; font-size: 12px; }
 
-        #status-panel { top: 20px; right: 20px; text-align: right; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; border: 1px solid #333; }
-        
-        .ai-card { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 5px; cursor: pointer; display: flex; justify-content: space-between; }
-        .ai-card:hover { background: #333; border: 1px solid #00e5ff; }
+        /* 狀態列 */
+        #status-panel { 
+            top: 20px; right: 20px; text-align: right; 
+            background: linear-gradient(to left, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)); 
+            padding: 15px; border-right: 3px solid #00e5ff; 
+        }
+        h1 { margin: 0; font-size: 1.2rem; color: #00e5ff; margin-bottom: 5px; }
+        #turn-txt { font-size: 1.5rem; font-weight: 900; }
 
-        #tutorial-btn { position: absolute; bottom: 30px; right: 30px; width: 40px; height: 40px; border-radius: 50%; background: #333; border: 2px solid #ffaa00; color: #ffaa00; display: flex; justify-content: center; align-items: center; cursor: pointer; font-weight: bold; z-index: 2500; pointer-events: auto; }
-        #tutorial-content { position: absolute; bottom: 80px; right: 30px; width: 280px; background: rgba(0,0,0,0.95); border: 1px solid #ffaa00; padding: 15px; display: none; border-radius: 10px; z-index: 2500; pointer-events: auto; }
+        /* 教學按鈕 */
+        #tutorial-btn {
+            position: absolute; bottom: 30px; right: 30px; width: 40px; height: 40px;
+            border-radius: 50%; background: rgba(0,0,0,0.8); border: 2px solid #ffaa00;
+            color: #ffaa00; font-weight: bold; font-size: 20px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 2500; pointer-events: auto;
+        }
+        #tutorial-content {
+            position: absolute; bottom: 85px; right: 30px; width: 280px;
+            background: rgba(0,0,0,0.95); border: 1px solid #ffaa00; border-radius: 10px;
+            padding: 15px; display: none; z-index: 2500; max-height: 60vh; overflow-y: auto; pointer-events: auto;
+        }
 
-        #loading { position: absolute; top:0; left:0; width:100%; height:100%; background:#000; display:flex; justify-content:center; align-items:center; color:#ffaa00; font-size:18px; z-index:4000; }
+        #loading { position: absolute; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; color: #ffaa00; font-size: 18px; z-index: 4000; }
         #footer-watermark { position: absolute; bottom: 10px; width: 100%; text-align: center; color: rgba(255,255,255,0.3); font-size: 12px; pointer-events: none; }
-        
+
         @media (max-width: 600px) {
+            #status-panel { top: auto; bottom: 20px; right: 20px; left: 20px; text-align: center; border-right: none; border-top: 3px solid #00e5ff; background: rgba(0,0,0,0.8); }
             #left-container { top: 10px; left: 10px; width: calc(100% - 20px); }
-            #status-panel { top: auto; bottom: 80px; right: 20px; }
-            #tutorial-btn { bottom: 20px; right: 20px; }
-            #tutorial-content { bottom: 70px; right: 20px; }
+            #tutorial-btn { bottom: 100px; right: 20px; }
+            #tutorial-content { bottom: 150px; right: 20px; left: 20px; width: auto; }
+            #ai-chat-bubble { top: 100px; width: 90%; }
         }
     </style>
 </head>
 <body>
 
-<div id="loading">初始化 3D 引擎與 Firebase...</div>
+<div id="loading">正在連線伺服器...</div>
 
 <div id="auth-modal" class="modal-overlay" style="display: flex;">
     <div class="auth-box">
         <h2>DTZ CHESS</h2>
         <div id="auth-error" style="color:#ff0055; font-size:12px; margin-bottom:10px;"></div>
-        <input type="email" id="email" class="auth-input" placeholder="Email">
+        <input type="email" id="email" class="auth-input" placeholder="Email (例如 user@gmail.com)">
         <input type="password" id="password" class="auth-input" placeholder="密碼">
-        <div id="nickname-container" style="display:none; margin-top:5px;">
-            <input type="text" id="nickname" class="auth-input" placeholder="設定暱稱" style="border-color:#00ff00;">
+        <div id="nickname-container" style="display:none; animation: slideDown 0.3s;">
+            <input type="text" id="nickname" class="auth-input" placeholder="初次見面，請輸入暱稱" style="border-color:#00ff00;">
         </div>
         <button id="auth-action-btn" class="btn-base auth-btn">登入 / 註冊</button>
         <div id="forgot-pw" style="margin-top:10px; font-size:12px; color:#aaa; cursor:pointer; text-decoration:underline;">忘記密碼？</div>
@@ -131,32 +185,33 @@
 
 <div id="ai-modal" class="modal-overlay">
     <div class="auth-box">
-        <h2>選擇對手</h2>
-        <div id="ai-list-container" style="max-height:300px; overflow-y:auto; text-align:left;"></div>
+        <h2>選擇 AI 對手</h2>
+        <div id="ai-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
         <button onclick="document.getElementById('ai-modal').style.display='none'" class="btn-base guest-btn">取消</button>
     </div>
 </div>
 
 <div id="settings-modal" class="modal-overlay">
-    <div class="auth-box" style="width: 340px;">
-        <h2>設定</h2>
-        <div style="text-align:left; margin-bottom:10px;">
-            <label style="font-size:12px; color:#aaa;">暱稱:</label>
+    <div class="auth-box" style="width: 320px;">
+        <h2>個人設定</h2>
+        
+        <div style="margin-bottom:15px; text-align:left;">
+            <label style="color:#aaa; font-size:12px;">修改暱稱:</label>
             <div style="display:flex; gap:5px;">
                 <input type="text" id="setting-name" class="auth-input" style="margin:0;">
                 <button onclick="saveName()" class="btn-base auth-btn" style="width:60px; margin:0;">儲存</button>
             </div>
         </div>
-        
+
         <input type="file" id="file-input" accept="image/*" style="display:none;">
 
-        <div style="text-align:left; margin-bottom:5px;">
-            <label style="font-size:12px; color:#aaa;">頭像框 (排位解鎖):</label>
+        <div style="text-align:left; margin-bottom:10px;">
+            <label style="color:#aaa; font-size:12px;">頭像框 (排位解鎖):</label>
             <div class="frames-grid" id="frames-grid"></div>
         </div>
 
         <div style="text-align:left;">
-            <label style="font-size:12px; color:#aaa;">棋子造型 (排位解鎖):</label>
+            <label style="color:#aaa; font-size:12px;">棋子造型 (排位解鎖):</label>
             <div class="skin-grid" id="skins-grid"></div>
         </div>
         
@@ -165,6 +220,7 @@
 </div>
 
 <div id="ui" style="display:none;">
+    
     <div id="left-container">
         
         <div class="hud-box">
@@ -176,7 +232,7 @@
             </div>
             <div style="text-align:center;">
                 <div id="user-name" style="font-weight:bold;">Player</div>
-                <div style="font-size:12px; color:#aaa;">
+                <div style="font-size:12px; color:#aaa; margin-top:2px;">
                     <span id="user-rank" style="color:#cd7f32;">銅牌</span> | ELO: <span id="user-elo">0</span>
                 </div>
             </div>
@@ -185,7 +241,7 @@
 
         <div class="hud-box">
             <div class="hud-title">連線對戰 (PVP)</div>
-            <div id="room-display" style="font-size:12px; color:#0f0; margin-bottom:5px;">狀態: 閒置</div>
+            <div id="room-display" style="font-size:11px; color:#0f0; margin-bottom:5px;">狀態: 閒置</div>
             <div style="display:flex; gap:5px;">
                 <button id="btn-create" class="btn-base game-btn" style="margin:0;">創建</button>
                 <button id="btn-join" class="btn-base join-btn" style="margin:0;">加入</button>
@@ -193,9 +249,10 @@
         </div>
 
         <div class="hud-box">
-            <div class="hud-title">挑戰電腦 (PVE)</div>
-            <button id="btn-ai" class="btn-base ai-btn" style="margin:0;">選擇 AI 對手</button>
+            <div class="hud-title">單人挑戰 (PVE)</div>
+            <button id="btn-ai" class="btn-base ai-btn" style="margin:0;">挑戰 AI 對手</button>
         </div>
+
     </div>
 
     <div id="ai-chat-bubble">
@@ -204,22 +261,23 @@
     </div>
 
     <div id="status-panel" class="hud">
-        <h1 style="margin:0; font-size:1.2rem; color:#00e5ff;">NEON CHESS</h1>
-        <div id="turn-txt" style="font-size:1.5rem; font-weight:bold;">等待中</div>
+        <h1>NEON CHESS</h1>
+        <div id="turn-txt">等待對戰</div>
         <div id="opponent-info" style="font-size:12px; color:#aaa;">對手: ---</div>
     </div>
 
     <div id="tutorial-btn">?</div>
     <div id="tutorial-content">
         <h3 style="color:#ffaa00; margin-top:0;">排位與獎勵</h3>
-        <ul style="padding-left:20px; font-size:12px; color:#ccc;">
-            <li>新手 (0): 基礎造型</li>
-            <li>銅牌 (500): 銅框 + 青銅棋</li>
-            <li>銀牌 (1000): 銀框 + 科技棋</li>
-            <li>金牌 (1500): 金框 + 奢華棋</li>
-            <li>鑽石 (2000): 呼吸框 + 水晶棋</li>
-            <li>宗師 (2500): 烈焰框 + 宇宙棋</li>
-        </ul>
+        <table class="rank-table" style="width:100%; color:#ccc; font-size:12px; text-align:left;">
+            <tr><th>排位</th><th>積分</th><th>解鎖</th></tr>
+            <tr><td>新手</td><td>0</td><td>基礎</td></tr>
+            <tr><td style="color:#cd7f32">銅牌</td><td>500</td><td>銅框/棋</td></tr>
+            <tr><td style="color:#c0c0c0">銀牌</td><td>1000</td><td>銀框/棋</td></tr>
+            <tr><td style="color:#ffd700">金牌</td><td>1500</td><td>金框/棋</td></tr>
+            <tr><td style="color:#00e5ff">鑽石</td><td>2000</td><td>鑽石棋</td></tr>
+            <tr><td style="color:#ff0055">宗師</td><td>2500</td><td>宇宙棋</td></tr>
+        </table>
     </div>
 
     <div id="footer-watermark">Made by DTZ with Gemini Pro</div>
@@ -263,17 +321,22 @@
         { name:'奧米加 (Omega)', rank:'宗師', elo:2800, color:'#ff0055', desc:'神諭', prompt:'You are Omega, god-like AI. Speak in cryptic riddles.' }
     ];
     const FRAMES = [
-        {id:'frame-basic-1', req:0}, {id:'frame-basic-2', req:0}, {id:'frame-basic-3', req:0}, {id:'frame-basic-4', req:0}, {id:'frame-basic-5', req:0},
-        {id:'frame-bronze', req:500}, {id:'frame-silver', req:1000}, {id:'frame-gold', req:1500}, {id:'frame-diamond', req:2000}, {id:'frame-master', req:2500}
+        {id:'frame-basic-1', req:0}, {id:'frame-basic-2', req:0}, {id:'frame-basic-3', req:0},
+        {id:'frame-bronze', req:500}, {id:'frame-silver', req:1000}, {id:'frame-gold', req:1500},
+        {id:'frame-diamond', req:2000}, {id:'frame-master', req:2500}
     ];
     const SKINS = [
-        {id:'skin_classic', name:'經典', req:0}, {id:'skin_bronze', name:'青銅', req:500},
-        {id:'skin_silver', name:'白銀', req:1000}, {id:'skin_gold', name:'黃金', req:1500},
-        {id:'skin_crystal', name:'水晶', req:2000}, {id:'skin_glitch', name:'故障', req:2500}, {id:'skin_cosmic', name:'宇宙', req:2800}
+        {id:'skin_classic', name:'經典霓虹', req:0}, {id:'skin_bronze', name:'青銅時代', req:500},
+        {id:'skin_silver', name:'白銀科技', req:1000}, {id:'skin_gold', name:'黃金奢華', req:1500},
+        {id:'skin_crystal', name:'水晶稜鏡', req:2000}, {id:'skin_cosmic', name:'宇宙核心', req:2500}
     ];
 
-    // --- UI Events ---
-    document.getElementById('tutorial-btn').onclick = (e) => { e.stopPropagation(); const el=document.getElementById('tutorial-content'); el.style.display=el.style.display==='none'?'block':'none'; };
+    // --- UI Logic ---
+    document.getElementById('tutorial-btn').onclick = (e) => {
+        e.stopPropagation();
+        const el = document.getElementById('tutorial-content');
+        el.style.display = el.style.display==='none'?'block':'none';
+    };
 
     window.openSettings = function() {
         document.getElementById('settings-modal').style.display='flex';
@@ -310,6 +373,7 @@
         if(n) update(ref(db,'users/'+currentUser.uid), {name:n});
     };
 
+    // 檔案上傳
     document.getElementById('file-input').onchange = function(e) {
         const f = e.target.files[0];
         if(!f) return;
@@ -340,7 +404,7 @@
         const r = ref(db,'users/'+u.uid);
         get(r).then(s => {
             if(!s.exists()) {
-                const nick = document.getElementById('nickname').value.trim() || (u.isAnonymous?`Guest`:u.email.split('@')[0]);
+                const nick = document.getElementById('nickname').value.trim() || (u.isAnonymous?`Guest_${u.uid.substr(0,4)}`:u.email.split('@')[0]);
                 set(r, {name:nick, email:u.email||"guest", elo:0, selectedFrame:'frame-basic-1', selectedSkin:'skin_classic'}).then(loadUser);
             } else loadUser();
         });
@@ -469,7 +533,7 @@
         document.getElementById('ai-message').innerText = msg;
         document.getElementById('ai-name-label').innerText = currentAiPersona.name.split(' ')[0];
         document.getElementById('ai-name-label').style.color = currentAiPersona.color;
-        b.style.display='block'; setTimeout(()=>b.style.display='none', 6000);
+        b.style.display='block'; setTimeout(()=>b.style.display='none', 5000);
     }
 
     async function makeAiMove() {
@@ -498,58 +562,19 @@
         renderer.toneMapping=THREE.ACESFilmicToneMapping; document.body.appendChild(renderer.domElement);
         controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.target.set(0,15,0);
         
+        // Environment
         const amb = new THREE.AmbientLight(0xffffff, 0.6); scene.add(amb);
         const sun = new THREE.DirectionalLight(0xffaa00, 2); sun.position.set(-100,100,-100); sun.castShadow=true; scene.add(sun);
         const sky = new THREE.Sky(); sky.scale.setScalar(450000); scene.add(sky); sky.material.uniforms.sunPosition.value.copy(sun.position);
         
-        createProceduralTerrain(); createVegetation(); createHighAltitudeClouds(); createFloatingBoard();
+        createBoard();
         window.addEventListener('resize', onResize);
         window.addEventListener('touchstart', onTouch, {passive:false});
         window.addEventListener('click', onClick);
         animate();
     }
 
-    function createProceduralTerrain(){
-        const g=new THREE.PlaneGeometry(3500,3500,120,120); g.rotateX(-Math.PI/2);
-        const p=g.attributes.position; const c=[]; const c1=new THREE.Color(0x226622); const c2=new THREE.Color(0x665544);
-        for(let i=0;i<p.count;i++){
-            const h=getTerrainHeight(p.getX(i),p.getZ(i)); p.setY(i,h);
-            const b=smoothstep(-12,8,h); const f=c1.clone().lerp(c2,b); c.push(f.r,f.g,f.b);
-        }
-        g.setAttribute('color',new THREE.Float32BufferAttribute(c,3)); g.computeVertexNormals();
-        const m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.9}); 
-        const mesh=new THREE.Mesh(g,m); mesh.receiveShadow=true; scene.add(mesh);
-    }
-    
-    function createVegetation() {
-        const grp=new THREE.Group();
-        const tGeo=new THREE.CylinderGeometry(0.7,1,6,6); tGeo.translate(0,3,0);
-        const lGeo=new THREE.DodecahedronGeometry(4);
-        const tMat=new THREE.MeshStandardMaterial({color:0x3d2817});
-        const lMat=new THREE.MeshStandardMaterial({color:0x1a3d1a});
-        
-        for(let i=0;i<600;i++){
-            const a=Math.random()*Math.PI*2, r=70+Math.random()*400;
-            const x=Math.cos(a)*r, z=Math.sin(a)*r, h=getTerrainHeight(x,z);
-            const t=new THREE.Mesh(tGeo,tMat); const l=new THREE.Mesh(lGeo,lMat);
-            l.position.y=6; t.add(l); t.position.set(x,h,z); t.scale.setScalar(0.8+Math.random()*0.5);
-            grp.add(t);
-        }
-        scene.add(grp);
-    }
-
-    function createHighAltitudeClouds() {
-        const g=new THREE.Group();
-        const m=new THREE.MeshBasicMaterial({color:0xffaa88, transparent:true, opacity:0.3});
-        for(let i=0;i<20;i++){
-            const c=new THREE.Mesh(new THREE.BoxGeometry(400,20,200),m);
-            c.position.set((Math.random()-0.5)*3000, 300+Math.random()*100, (Math.random()-0.5)*3000);
-            g.add(c);
-        }
-        scene.add(g); cloudParticles=g.children;
-    }
-
-    function createFloatingBoard() {
+    function createBoard() {
         const boardBox = new THREE.Mesh(new THREE.BoxGeometry(9,0.5,9), new THREE.MeshStandardMaterial({color:0x111111, roughness:0.5}));
         boardBox.position.y = 14.75; boardBox.receiveShadow=true; scene.add(boardBox);
         for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
@@ -564,30 +589,26 @@
     function createPiece(type, color, skin) {
         const grp = new THREE.Group();
         let col = color==='w'?0xeeeeee:0x222222, emi = color==='w'?0x00e5ff:0xff0055;
-        
+        // Simple Skin Logic
         if(skin==='skin_gold') { col=0xffd700; emi=0xffaa00; }
-        else if(skin==='skin_silver') { col=0xcccccc; emi=0xffffff; }
-        else if(skin==='skin_bronze') { col=0xcd7f32; emi=0xff4400; }
-        else if(skin==='skin_crystal') { col=color==='w'?0xaaddff:0xaa00ff; emi=col; }
-        else if(skin==='skin_cosmic') { col=0x000000; emi=color==='w'?0x00ffff:0xff00ff; }
+        if(skin==='skin_silver') { col=0xcccccc; emi=0xffffff; }
+        if(skin==='skin_bronze') { col=0xcd7f32; emi=0xff4400; }
+        if(skin==='skin_crystal') { col=color==='w'?0xaaddff:0xaa00ff; emi=col; }
+        if(skin==='skin_cosmic') { col=0x000000; emi=color==='w'?0x00ffff:0xff00ff; }
 
-        const mat = new THREE.MeshStandardMaterial({color:col, roughness:0.3, metalness:0.8, emissive:emi, emissiveIntensity:0.3});
+        const mat = new THREE.MeshStandardMaterial({color:col, roughness:0.3, metalness:0.8, emissive:emi, emissiveIntensity:0.4});
         
-        let geo, head;
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.2, 32), mat);
-        base.position.y=0.1; grp.add(base);
+        // Simplified Geometry based on type
+        let geo;
+        if(type==='p') geo = new THREE.CylinderGeometry(0.2,0.3,0.6,16);
+        else if(type==='r') geo = new THREE.BoxGeometry(0.5,0.8,0.5);
+        else if(type==='n') geo = new THREE.ConeGeometry(0.3,0.8,16); // Knight substitute
+        else if(type==='b') geo = new THREE.CylinderGeometry(0.1,0.3,1.0,16);
+        else if(type==='q') geo = new THREE.CylinderGeometry(0.3,0.3,1.4,16);
+        else geo = new THREE.CylinderGeometry(0.3,0.4,1.6,16); // King
 
-        if(type==='p') {
-            geo = new THREE.CylinderGeometry(0.15, 0.35, 0.6, 16);
-            head = new THREE.Mesh(new THREE.SphereGeometry(0.25), mat); head.position.y=0.95; grp.add(head);
-        }
-        else if(type==='r') { geo = new THREE.BoxGeometry(0.5, 0.8, 0.5); }
-        else if(type==='n') { geo = new THREE.CylinderGeometry(0.25, 0.35, 0.6, 16); head=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.3),mat); head.position.set(0,0.9,0.1); grp.add(head); }
-        else if(type==='b') { geo = new THREE.CylinderGeometry(0.15, 0.3, 0.9, 16); head=new THREE.Mesh(new THREE.SphereGeometry(0.15),mat); head.position.y=1.2; grp.add(head); }
-        else if(type==='q') { geo = new THREE.CylinderGeometry(0.2, 0.35, 1.3, 16); head=new THREE.Mesh(new THREE.SphereGeometry(0.2),mat); head.position.y=1.6; grp.add(head); }
-        else { geo = new THREE.CylinderGeometry(0.25, 0.4, 1.5, 16); head=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.4,0.15),mat); head.position.y=1.8; grp.add(head); }
-
-        const body = new THREE.Mesh(geo, mat); body.position.y=0.5; grp.add(body);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = 0.5; mesh.castShadow=true; grp.add(mesh);
         return grp;
     }
 
@@ -595,13 +616,20 @@
         for(let k in piecesMap) scene.remove(piecesMap[k]); piecesMap={};
         const b = game.board();
         let wSkin = userSkin, bSkin = userSkin;
-        if(isOnline && d) { if(d.white) wSkin=d.white.skin; if(d.black) bSkin=d.black.skin; }
+        if(d && d.white) wSkin = d.white.skin;
+        if(d && d.black) bSkin = d.black.skin;
 
         for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
             const p = b[r][c];
             if(p) {
                 const s = createPiece(p.type, p.color, p.color==='w'?wSkin:bSkin);
-                s.position.set(c-3.5, 15, r-3.5); 
+                s.position.set(c-3.5, 15, r-3.5); // Chess.js board is 0,0 at top-left (a8). ThreeJS z is inverted logic relative to r. 
+                // Fix position: Chess.js row 0 is rank 8. ThreeJS z 3.5 is rank 1.
+                // Actual mapping: r=0 -> rank 8 -> z = -3.5. r=7 -> rank 1 -> z = 3.5.
+                // My createBoard loop: r=0 (rank 1 in my loop) z=3.5. Chess.js logic is inverted.
+                // Let's fix mapping:
+                // Three world: x: -3.5(a) to 3.5(h). z: -3.5(8) to 3.5(1).
+                // Chess.js: b[0][0] is a8.
                 s.position.set(c-3.5, 15, (r-3.5)); 
                 scene.add(s); piecesMap[String.fromCharCode(97+c)+(8-r)] = s;
             }
@@ -609,7 +637,7 @@
     }
 
     function onTouch(e) {
-        if(e.target.closest('.modal-overlay') || e.target.closest('.hud-box') || e.target.tagName==='BUTTON' || e.target.tagName==='INPUT') return;
+        if(e.target.closest('.modal-overlay') || e.target.closest('.hud') || e.target.tagName==='BUTTON' || e.target.tagName==='INPUT') return;
         if(e.touches.length>1) return;
         e.preventDefault();
         mouse.x = (e.touches[0].clientX/window.innerWidth)*2-1;
@@ -620,7 +648,7 @@
     
     function checkHit() {
         raycaster.setFromCamera(mouse, camera);
-        const i = raycaster.intersectObjects(Object.values(tilesMap));
+        const i = raycaster.intersectObjects(scene.children.filter(o=>o.geometry && o.userData.sq));
         if(i.length>0) handleSq(i[0].object.userData.sq);
     }
 
@@ -628,6 +656,7 @@
         if(isVsAI && game.turn()==='b') return;
         if(isOnline && game.turn()!==playerColor) return;
         
+        // Move Logic
         if(selectedSquare) {
             const m = game.move({from:selectedSquare, to:sq, promotion:'q'});
             if(m) {
@@ -659,13 +688,9 @@
         
         new TWEEN.Tween(p.position).to({x:dest.x, z:dest.z}, 300).easing(TWEEN.Easing.Quadratic.Out)
             .onComplete(() => {
-                // PVP 狀態下傳遞遊戲資料以保持 Skin
-                if(isOnline) get(ref(db,'games/'+gameId)).then(s=>syncPieces(s.val()));
-                else syncPieces();
-                
+                syncPieces(isOnline?{white:{skin:userSkin},black:{skin:userSkin}}:null); // Refresh visual state
                 updateHUD();
-                if(!isOnline && !isVsAI && game.turn()==='b') makeRandomAI(); 
-                else if(!isVsAI) isProcessing=false;
+                if(!isOnline && !isVsAI && game.turn()==='b') makeRandomAI(); else if(!isVsAI) isProcessing=false;
             }).start();
     }
 
@@ -682,13 +707,7 @@
 
     function moveCam(x,y,z) { new TWEEN.Tween(camera.position).to({x,y,z}, 2000).easing(TWEEN.Easing.Cubic.Out).start(); }
     function onResize() { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); }
-    function animate() { requestAnimationFrame(animate); TWEEN.update(); controls.update(); 
-        cloudParticles.forEach(c=>c.position.x+=0.1); 
-        renderer.render(scene,camera); 
-    }
-    
-    function getTerrainHeight(x,z){const d=Math.sqrt(x*x+z*z);if(d<400)return-12+Math.sin(x*0.004)*Math.cos(z*0.004)*2.0;const b=smoothstep(400,700,d);let h=b*140;h+=Math.sin(x*0.015)*Math.cos(z*0.015)*25;h+=Math.sin(x*0.03+z*0.02)*10;return h-12;}
-    function smoothstep(min,max,v){var x=Math.max(0,Math.min(1,(v-min)/(max-min)));return x*x*(3-2*x);}
+    function animate() { requestAnimationFrame(animate); TWEEN.update(); controls.update(); renderer.render(scene,camera); }
 
     init();
 </script>
