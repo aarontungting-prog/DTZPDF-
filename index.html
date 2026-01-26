@@ -34,10 +34,10 @@
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud { position: absolute; pointer-events: auto; }
         
-        /* 登入視窗 */
+        /* 登入視窗 - 層級調高至 2000 */
         #auth-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 200; display: flex;
+            background: rgba(0,0,0,0.85); z-index: 2000; display: flex;
             justify-content: center; align-items: center; pointer-events: auto;
             backdrop-filter: blur(10px);
         }
@@ -54,7 +54,6 @@
         }
         .auth-input:focus { border-color: #00e5ff; outline: none; }
         
-        /* 按鈕樣式 */
         .auth-btn {
             width: 100%; padding: 12px; margin-top: 15px;
             background: #00e5ff; color: #000; border: none; font-weight: bold;
@@ -71,7 +70,16 @@
 
         .toggle-auth { color: #00e5ff; font-size: 13px; margin-top: 20px; cursor: pointer; text-decoration: underline; }
 
-        /* 遊戲內介面 */
+        /* 載入畫面 - 層級設為 1500 (低於登入視窗) */
+        #loading { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: flex; justify-content: center; align-items: center;
+            color: #ffaa00; font-size: 18px; font-weight: bold; 
+            z-index: 1500; text-shadow: 0 0 10px #ffaa00; 
+            transition: opacity 0.5s;
+        }
+
+        /* 遊戲介面 */
         #status-panel { 
             top: 20px; right: 20px; text-align: right; 
             background: linear-gradient(to left, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)); 
@@ -104,7 +112,6 @@
         button.join-btn { background: #ff0055; color: #fff; }
         button.join-btn:hover { background: #ffaaaa; box-shadow: 0 0 10px #ff0055; }
 
-        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffaa00; font-size: 18px; font-weight: bold; z-index: 999; text-align: center; width: 100%; text-shadow: 0 0 10px #ffaa00; }
         #footer-watermark { position: absolute; bottom: 10px; width: 100%; text-align: center; color: rgba(255,255,255,0.3); font-size: 12px; pointer-events: none; }
         
         @media (max-width: 600px) {
@@ -141,7 +148,7 @@
                 <span id="user-rank" class="rank-badge rank-bronze">銅牌</span>
             </div>
             <div style="font-size:12px; color:#aaa; margin-top:5px;">
-                戰力積分 (ELO): <span id="user-elo" style="color:#00e5ff; font-weight:bold;">1200</span>
+                戰力積分 (ELO): <span id="user-elo" style="color:#00e5ff; font-weight:bold;">0</span>
             </div>
         </div>
 
@@ -175,18 +182,15 @@
         pixelRatio: isMobile ? Math.min(window.devicePixelRatio, 2) : window.devicePixelRatio
     };
 
-    // ==========================================
-    // ⭐⭐ 已填入你的 PROJECT: chess-1885a ⭐⭐
-    // ==========================================
     const firebaseConfig = {
-      apiKey: "AIzaSyCxPppnUG864v3E2j1OzykzFmhLpsEJCSE",
-      authDomain: "chess-1885a.firebaseapp.com",
-      databaseURL: "https://chess-1885a-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "chess-1885a",
-      storageBucket: "chess-1885a.firebasestorage.app",
-      messagingSenderId: "824383572856",
-      appId: "1:824383572856:web:7c663d6bf0f970f6acd68d",
-      measurementId: "G-0EMJ4W2KLS"
+        apiKey: "AIzaSyCxPppnUG864v3E2j1OzykzFmhLpsEJCSE",
+        authDomain: "chess-1885a.firebaseapp.com",
+        databaseURL: "https://chess-1885a-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "chess-1885a",
+        storageBucket: "chess-1885a.firebasestorage.app",
+        messagingSenderId: "824383572856",
+        appId: "1:824383572856:web:7c663d6bf0f970f6acd68d",
+        measurementId: "G-0EMJ4W2KLS"
     };
 
     let app, db, auth;
@@ -196,14 +200,12 @@
         auth = getAuth(app);
     } catch(e) { console.error("Firebase Config Error:", e); }
 
-    // --- 全域變數 ---
     let currentUser = null;
     let gameId = null;
     let playerColor = 'w';
     let isOnline = false;
-    let isAuthModeLogin = true; // true=Login, false=Signup
+    let isAuthModeLogin = true; 
 
-    // --- 3D 變數 ---
     let scene, camera, renderer, controls, raycaster, mouse, clock;
     let game = new Chess();
     let tilesMap = {}, piecesMap = {};
@@ -212,7 +214,7 @@
     const BOARD_HEIGHT = 15;
 
     // ==========================================
-    // 🔐 認證系統 (Auth System)
+    // 🔐 認證系統
     // ==========================================
     
     const authModal = document.getElementById('auth-modal');
@@ -222,36 +224,36 @@
     const emailInput = document.getElementById('email');
     const passInput = document.getElementById('password');
     const errorMsg = document.getElementById('auth-error');
+    const loadingScreen = document.getElementById('loading');
 
     // 監聽登入狀態
     onAuthStateChanged(auth, (user) => {
+        // 無論是否有登入，都先關閉載入畫面，避免擋住
+        loadingScreen.style.display = 'none';
+
         if (user) {
             currentUser = user;
             console.log("已登入:", user.uid);
             authModal.style.display = 'none';
             document.getElementById('ui').style.display = 'block';
-            document.getElementById('loading').style.display = 'none';
-            
-            // 檢查並創建用戶數據 (如果是第一次登入/訪客)
             checkAndCreateUserProfile(user);
         } else {
             currentUser = null;
-            authModal.style.display = 'flex';
+            authModal.style.display = 'flex'; // 顯示登入框
             document.getElementById('ui').style.display = 'none';
         }
     });
 
-    // 檢查用戶資料庫
+    // 檢查用戶資料庫 (設定初始分數為 0)
     function checkAndCreateUserProfile(user) {
         const userRef = ref(db, 'users/' + user.uid);
         get(userRef).then((snapshot) => {
             if (!snapshot.exists()) {
-                // 創建新資料
                 const name = user.isAnonymous ? `訪客_${user.uid.substring(0,4)}` : user.email.split('@')[0];
                 set(userRef, {
                     name: name,
                     email: user.email || "guest",
-                    elo: 1200,
+                    elo: 0, // ⭐ 更新：初始分數從 0 開始
                     wins: 0,
                     losses: 0
                 }).then(loadUserProfile);
@@ -261,7 +263,6 @@
         });
     }
 
-    // 載入用戶資料顯示於 UI
     function loadUserProfile() {
         if (!currentUser) return;
         onValue(ref(db, 'users/' + currentUser.uid), (snapshot) => {
@@ -274,18 +275,17 @@
         });
     }
 
-    // 更新排位徽章
     function updateRankBadge(elo) {
         const badge = document.getElementById('user-rank');
         badge.className = 'rank-badge';
-        if (elo < 1200) { badge.innerText = "銅牌 BRONZE"; badge.classList.add('rank-bronze'); }
-        else if (elo < 1500) { badge.innerText = "銀牌 SILVER"; badge.classList.add('rank-silver'); }
-        else if (elo < 1800) { badge.innerText = "金牌 GOLD"; badge.classList.add('rank-gold'); }
+        if (elo < 200) { badge.innerText = "新手 NOVICE"; badge.classList.add('rank-bronze'); }
+        else if (elo < 500) { badge.innerText = "銅牌 BRONZE"; badge.classList.add('rank-bronze'); }
+        else if (elo < 1000) { badge.innerText = "銀牌 SILVER"; badge.classList.add('rank-silver'); }
+        else if (elo < 1500) { badge.innerText = "金牌 GOLD"; badge.classList.add('rank-gold'); }
         else if (elo < 2000) { badge.innerText = "鑽石 DIAMOND"; badge.classList.add('rank-diamond'); }
         else { badge.innerText = "霓虹宗師"; badge.classList.add('rank-master'); }
     }
 
-    // 介面按鈕事件
     toggleAuthBtn.addEventListener('click', () => {
         isAuthModeLogin = !isAuthModeLogin;
         if(isAuthModeLogin) {
@@ -298,7 +298,6 @@
         errorMsg.innerText = "";
     });
 
-    // 執行 Email 登入/註冊
     authActionBtn.addEventListener('click', async () => {
         const email = emailInput.value;
         const password = passInput.value;
@@ -321,7 +320,6 @@
         }
     });
 
-    // 執行 訪客登入
     guestBtn.addEventListener('click', async () => {
         errorMsg.innerText = "訪客登入中...";
         try {
@@ -334,12 +332,11 @@
     document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
     // ==========================================
-    // ⚔️ PVP 與 ELO 系統
+    // ⚔️ PVP 邏輯
     // ==========================================
 
     window.createGameRoom = function() {
         gameId = Math.floor(1000 + Math.random() * 9000).toString();
-        
         get(ref(db, 'users/' + currentUser.uid)).then(snap => {
             const userData = snap.val();
             set(ref(db, 'games/' + gameId), {
@@ -354,11 +351,9 @@
                 document.getElementById('room-display').style.color = "#00ff00";
                 document.getElementById('opponent-info').innerText = "等待對手...";
                 
-                // 鏡頭歸位 (房主)
                 new TWEEN.Tween(camera.position).to({x: 0, y: 60, z: 100}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
                 controls.target.set(0, BOARD_HEIGHT, 0);
 
-                // 監聽房間
                 onValue(ref(db, 'games/' + gameId), (snapshot) => {
                     const data = snapshot.val();
                     if (!data) return;
@@ -371,13 +366,11 @@
                             updateStatusHUD();
                         }
                     }
-                    
                     if (data.fen !== game.fen()) {
                         game.load(data.fen);
                         syncPieces();
                         updateStatusHUD();
                     }
-
                     if (data.winner) handleGameOver(data.winner);
                 });
                 alert(`房間已建立！號碼：${gameId}`);
@@ -389,7 +382,6 @@
         const id = prompt('請輸入房間號碼:');
         if(!id) return;
         gameId = id;
-        
         get(ref(db, 'games/' + gameId)).then((snapshot) => {
             if (snapshot.exists()) {
                 const gameData = snapshot.val();
@@ -397,7 +389,6 @@
 
                 get(ref(db, 'users/' + currentUser.uid)).then(snap => {
                     const userData = snap.val();
-                    
                     update(ref(db, 'games/' + gameId), {
                         black: { uid: currentUser.uid, elo: userData.elo, name: userData.name },
                         status: 'playing'
@@ -407,7 +398,6 @@
                     document.getElementById('room-display').innerText = `房間號：${gameId} (對戰中)`;
                     document.getElementById('opponent-info').innerText = `VS: ${gameData.white.name} (${gameData.white.elo})`;
                     
-                    // 鏡頭歸位 (加入者)
                     new TWEEN.Tween(camera.position).to({x: 0, y: 60, z: -100}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
                     controls.target.set(0, BOARD_HEIGHT, 0);
 
@@ -433,7 +423,6 @@
         if (!isOnline) return;
         const nextFen = game.fen();
         let updateData = { fen: nextFen, turn: game.turn(), lastMove: move };
-
         if (game.in_checkmate()) {
             const winnerColor = game.turn() === 'w' ? 'b' : 'w'; 
             updateData.winner = winnerColor;
@@ -447,20 +436,16 @@
         get(ref(db, 'games/' + gameId)).then(snap => {
             const data = snap.val();
             if(data.calculated) return; 
-            
             if(playerColor === 'w') {
                 const K = 32; 
                 let wElo = data.white.elo;
                 let bElo = data.black.elo;
                 const expectW = 1 / (1 + Math.pow(10, (bElo - wElo) / 400));
                 const expectB = 1 / (1 + Math.pow(10, (wElo - bElo) / 400));
-                
                 let wScore = winnerColor === 'w' ? 1 : 0;
                 let bScore = winnerColor === 'b' ? 1 : 0;
-                
                 const newWElo = Math.round(wElo + K * (wScore - expectW));
                 const newBElo = Math.round(bElo + K * (bScore - expectB));
-                
                 update(ref(db, 'users/' + data.white.uid), { elo: newWElo });
                 update(ref(db, 'users/' + data.black.uid), { elo: newBElo });
                 update(ref(db, 'games/' + gameId), { calculated: true });
@@ -473,7 +458,6 @@
         let msg = "";
         if (winnerColor === playerColor) msg = "勝利！積分提升！";
         else msg = "戰敗... 積分下降";
-        
         alert(msg);
         document.getElementById('turn-txt').innerText = winnerColor === 'w' ? "白方勝利" : "黑方勝利";
         document.getElementById('turn-txt').style.color = "#ffff00";
@@ -482,10 +466,7 @@
     document.getElementById('btn-create').addEventListener('click', window.createGameRoom);
     document.getElementById('btn-join').addEventListener('click', window.joinGameRoom);
 
-    // ==========================================
-    // 🌍 3D 場景邏輯
-    // ==========================================
-    
+    // --- 3D 邏輯 ---
     function getTerrainHeight(x, z) {
         const dist = Math.sqrt(x*x + z*z);
         if (dist < 400) return -12 + Math.sin(x*0.004)*Math.cos(z*0.004)*2.0;
@@ -544,14 +525,13 @@
         animate();
     }
 
-    // 簡化重複函數
     function setupSunsetLighting(){const ambient=new THREE.AmbientLight(0xffccaa,0.75);scene.add(ambient);const sunLight=new THREE.DirectionalLight(0xff8800,3.2);sunLight.position.set(-300,100,-300);sunLight.castShadow=true;sunLight.shadow.mapSize.set(CONFIG.shadowSize,CONFIG.shadowSize);const d=700;sunLight.shadow.camera.left=-d;sunLight.shadow.camera.right=d;sunLight.shadow.camera.top=d;sunLight.shadow.camera.bottom=-d;scene.add(sunLight);const sky=new THREE.Sky();sky.scale.setScalar(450000);scene.add(sky);const uniforms=sky.material.uniforms;uniforms['turbidity'].value=10;uniforms['rayleigh'].value=3;uniforms['mieCoefficient'].value=0.005;uniforms['mieDirectionalG'].value=0.8;uniforms['sunPosition'].value.copy(sunLight.position);const sunGeo=new THREE.SphereGeometry(80,32,32);const sunMat=new THREE.MeshBasicMaterial({color:0xff5500,fog:false});const sunSphere=new THREE.Mesh(sunGeo,sunMat);sunSphere.position.copy(sunLight.position).normalize().multiplyScalar(3000);scene.add(sunSphere);}
     function createProceduralTerrain(){const geo=new THREE.PlaneGeometry(3500,3500,isMobile?100:180,isMobile?100:180);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position;const colors=[];const c1=new THREE.Color(0x226622);const c2=new THREE.Color(0x665544);for(let i=0;i<pos.count;i++){const h=getTerrainHeight(pos.getX(i),pos.getZ(i));pos.setY(i,h);const b=smoothstep(-12,8,h);const c=c1.clone().lerp(c2,b);colors.push(c.r,c.g,c.b);}geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.9,metalness:0.1,flatShading:true});const mesh=new THREE.Mesh(geo,mat);mesh.receiveShadow=true;scene.add(mesh);}
     function createVegetation(){const grp=new THREE.Group();const lMat=new THREE.MeshStandardMaterial({color:0x1a3d1a,roughness:0.9,flatShading:true});const tMat=new THREE.MeshStandardMaterial({color:0x3d2817,roughness:1.0});const lGeo=new THREE.DodecahedronGeometry(4,0);const tGeo=new THREE.CylinderGeometry(0.7,1.0,6,6);tGeo.translate(0,3,0);for(let i=0;i<CONFIG.treeCount;i++){const a=Math.random()*Math.PI*2;const r=70+Math.random()*380;const x=Math.cos(a)*r;const z=Math.sin(a)*r;const h=getTerrainHeight(x,z);const tr=new THREE.Group();const t=new THREE.Mesh(tGeo,tMat);t.castShadow=true;tr.add(t);for(let j=0;j<3;j++){const l=new THREE.Mesh(lGeo,lMat);l.position.set((Math.random()-0.5)*5,5.5+Math.random()*3.5,(Math.random()-0.5)*5);l.scale.setScalar(0.8+Math.random()*0.4);l.castShadow=true;tr.add(l);}tr.position.set(x,h,z);tr.scale.setScalar(0.9+Math.random()*0.6);grp.add(tr);}scene.add(grp);const bGeo=new THREE.PlaneGeometry(0.3,1.5);bGeo.translate(0,0.75,0);grassMat=new THREE.MeshStandardMaterial({color:0x226622,side:THREE.DoubleSide});grassMat.onBeforeCompile=s=>{s.uniforms.time={value:0};s.vertexShader=`uniform float time;\n`+s.vertexShader;s.vertexShader=s.vertexShader.replace(`#include <begin_vertex>`,`vec3 transformed=vec3(position);float w=sin(time*1.5+position.x*0.5)*0.2*position.y;transformed.x+=w;#include <begin_vertex>`);grassMat.userData.shader=s;};const iG=new THREE.InstancedMesh(bGeo,grassMat,CONFIG.grassCount);const d=new THREE.Object3D();let c=0;for(let i=0;i<100000;i++){if(c>=CONFIG.grassCount)break;const r=Math.random()*420;const a=Math.random()*Math.PI*2;const x=Math.cos(a)*r;const z=Math.sin(a)*r;const h=getTerrainHeight(x,z);if(h<-8){d.position.set(x,h,z);d.rotation.y=Math.random()*Math.PI;d.scale.setScalar(0.7+Math.random()*0.6);d.updateMatrix();iG.setMatrixAt(c++,d.matrix);}}iG.receiveShadow=true;scene.add(iG);}
     function createHighAltitudeClouds(){const cv=document.createElement('canvas');cv.width=128;cv.height=128;const cx=cv.getContext('2d'),g=cx.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,180,120,0.5)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,128,128);const mat=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});const gp=new THREE.Group();const cc=isMobile?25:45;for(let i=0;i<cc;i++){const cl=new THREE.Group();for(let j=0;j<15;j++){const p=new THREE.Sprite(mat);p.position.set((Math.random()-0.5)*50,(Math.random()-0.5)*20,(Math.random()-0.5)*50);p.scale.setScalar(40+Math.random()*40);cl.add(p);}cl.position.set((Math.random()-0.5)*3200,250+Math.random()*150,(Math.random()-0.5)*3200);gp.add(cl);cloudParticles.push(cl);}scene.add(gp);}
     function createFloatingBoard(){const g=new THREE.TorusGeometry(8,0.3,16,32);const m=new THREE.MeshBasicMaterial({color:0xffaa00});const r=new THREE.Mesh(g,m);r.rotation.x=Math.PI/2;r.position.y=BOARD_HEIGHT-3;scene.add(r);const b=new THREE.Mesh(new THREE.BoxGeometry(9,0.5,9),new THREE.MeshStandardMaterial({color:0x221111,roughness:0.5}));b.position.y=BOARD_HEIGHT-0.25;b.receiveShadow=true;scene.add(b);for(let r=0;r<8;r++)for(let c=0;c<8;c++){const n=String.fromCharCode(97+c)+(r+1),w=(r+c)%2!==0;const t=new THREE.Mesh(new THREE.BoxGeometry(1,0.2,1),new THREE.MeshStandardMaterial({color:w?0xffddbb:0x443333,roughness:0.2,metalness:0.3}));t.position.set(c-3.5,BOARD_HEIGHT,3.5-r);t.userData={square:n,isTile:true};t.receiveShadow=true;t.castShadow=true;scene.add(t);tilesMap[n]=t;}}
     function createSolidPiece(t,c){const g=new THREE.Group(),mat=c==='w'?new THREE.MeshStandardMaterial({color:0xeeeeff,roughness:0.2,metalness:0.5}):new THREE.MeshStandardMaterial({color:0x222222,roughness:0.3,metalness:0.8}),glow=c==='w'?new THREE.MeshStandardMaterial({color:0x00e5ff,emissive:0x00e5ff,emissiveIntensity:2}):new THREE.MeshStandardMaterial({color:0xff0055,emissive:0xff0055,emissiveIntensity:2});const b=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.45,0.2,32),mat);b.position.y=0.1;b.castShadow=true;g.add(b);if(t==='p'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,0.6,16),mat);by.position.y=0.5;by.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32),mat);h.position.y=0.95;h.castShadow=true;g.add(by,h);}else if(t==='r'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.8,32),mat);by.position.y=0.6;by.castShadow=true;const tp=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.3,32),mat);tp.position.y=1.1;tp.castShadow=true;const rg=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.05,16,32),glow);rg.position.y=1.25;rg.rotation.x=Math.PI/2;g.add(by,tp,rg);}else if(t==='b'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,1.0,16),mat);by.position.y=0.7;by.castShadow=true;const h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.25,0.5,16),mat);h.position.y=1.4;h.castShadow=true;const tp=new THREE.Mesh(new THREE.SphereGeometry(0.08),glow);tp.position.y=1.7;g.add(by,h,tp);}else if(t==='n'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,0.6,16),mat);by.position.y=0.5;by.castShadow=true;const h=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.6,0.2),mat);h.position.set(0,1.0,0.1);h.rotation.x=-Math.PI/6;h.castShadow=true;const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.05),glow);m.position.set(0,1.1,-0.15);m.rotation.x=-Math.PI/6;g.add(by,h,m);if(c==='b')g.rotation.y=Math.PI;}else if(t==='q'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.4,1.4,32),mat);by.position.y=0.9;by.castShadow=true;const t=new THREE.Mesh(new THREE.SphereGeometry(0.15),glow);t.position.y=1.7;g.add(by,t);}else if(t==='k'){const by=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.45,1.6,32),mat);by.position.y=1.0;by.castShadow=true;const c=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.4,0.1),glow);c.position.y=1.95;g.add(by,c);}return g;}
-    function syncPieces(){for(let sq in piecesMap)scene.remove(piecesMap[sq]);piecesMap={};const b=game.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const sq=String.fromCharCode(97+c)+(8-r),s=createSolidPiece(p.type,p.color);s.position.set(c-3.5, BOARD_HEIGHT, r-3.5);scene.add(s);piecesMap[sq]=s;}}}
+    function syncPieces(){for(let sq in piecesMap)scene.remove(piecesMap[sq]);piecesMap={};const b=game.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const s=createSolidPiece(p.type,p.color);s.position.set(c-3.5, BOARD_HEIGHT, r-3.5);scene.add(s);piecesMap[String.fromCharCode(97+c)+(8-r)]=s;}}}
     
     function onTouchStart(e){if(e.touches.length>1)return;e.preventDefault();mouse.x=(e.touches[0].clientX/window.innerWidth)*2-1;mouse.y=-(e.touches[0].clientY/window.innerHeight)*2+1;chk();}
     function onMouseClick(e){if(isProcessing)return;mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;chk();}
