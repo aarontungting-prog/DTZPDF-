@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>霓虹西洋棋：防彈安全版</title>
+    <title>霓虹西洋棋：浮空花園・絕對修復版</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -19,178 +19,203 @@
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud { position: absolute; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.8); pointer-events: auto; }
-        #status-panel { top: 30px; right: 30px; text-align: right; background: rgba(0,0,0,0.5); padding: 20px; border-right: 3px solid #00ffaa; border-radius: 8px; }
-        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; color: #00ffaa; margin-bottom: 5px; text-transform: uppercase; font-weight: 300; }
+        #status-panel { top: 30px; right: 30px; text-align: right; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; color: #ffdd55; margin-bottom: 5px; }
         #turn-txt { font-size: 2.2rem; font-weight: 900; color: #fff; }
-        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: #00ffaa; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; transition: opacity 0.5s; }
-        .loader-text { font-size: 24px; font-weight: bold; letter-spacing: 3px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: #ffaa00; display: flex; justify-content: center; align-items: center; z-index: 999; font-size: 24px; font-weight: bold; transition: opacity 0.5s; }
     </style>
 </head>
 <body>
 
-<div id="loading">
-    <div class="loader-text">SYSTEM REBOOTING...</div>
-    <div style="margin-top: 10px; font-size: 12px; color: #888;">Safe Mode Enabled</div>
-</div>
+<div id="loading">載入浮空花園與實體棋子...</div>
 
 <div id="ui" style="display:none;">
     <div id="status-panel" class="hud">
-        <h1>NEON CHESS</h1>
+        <h1>FLOATING GARDEN</h1>
         <div id="turn-txt">BLUE TURN</div>
     </div>
 </div>
 
 <script>
-// --- 變數 ---
 let scene, camera, renderer, controls, raycaster, mouse, clock, composer;
 let game = new Chess();
 let piecesMap = {}; 
 let selectedSquare = null, isProcessing = false;
-let grassMat = null, treeLeafMat = null; // 初始為 null 避免報錯
-let cloudParticles = [];
-const BOARD_HEIGHT = 15; 
+let grassMat, treeLeafMat, cloudParticles = [];
+const BOARD_HEIGHT = 12; // 棋盤懸浮高度
 
 const CHESS_NAMES = { k: 'KING', q: 'QUEEN', r: 'ROOK', b: 'BISHOP', n: 'KNIGHT', p: 'PAWN' };
 
-function getTerrainHeight(x, z) {
-    const dist = Math.sqrt(x*x + z*z);
-    if (dist < 40) return -500; 
-    let h = Math.sin(x*0.02)*Math.cos(z*0.02)*20; 
-    const cliff = smoothstep(40, 60, dist);
-    h = h * cliff + (1-cliff) * -150; 
-    return h - 30;
-}
-function smoothstep(min, max, value) {
-  var x = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  return x * x * (3 - 2 * x);
-}
-
 function init() {
-    try {
-        clock = new THREE.Clock();
-        scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0xffccaa, 0.001); 
-        scene.background = new THREE.Color(0x221100);
+    clock = new THREE.Clock();
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xffddaa, 0.0015); // 溫暖日落霧
+    scene.background = new THREE.Color(0x442211);
 
-        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 3000);
-        camera.position.set(0, 40, 50);
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 3000);
+    camera.position.set(0, 35, 45);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "default" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.1;
-        document.body.appendChild(renderer.domElement);
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    document.body.appendChild(renderer.domElement);
 
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.maxPolarAngle = Math.PI / 1.95;
-        controls.minDistance = 10; controls.maxDistance = 250;
-        controls.target.set(0, BOARD_HEIGHT, 0);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.maxPolarAngle = Math.PI / 1.9; // 視角限制
+    controls.minDistance = 10; controls.maxDistance = 200;
+    controls.target.set(0, BOARD_HEIGHT, 0);
 
-        // 先執行基礎設置
-        setupLighting();
-        setupPostProcessing();
-        createFloatingBoardShader();
-        createRingTerrain();
+    setupLighting();
+    setupPostProcessing();
 
-        // 延遲載入重型資產，防止卡死
-        setTimeout(() => {
-            try {
-                createOptimizedVegetation();
-                createSunsetClouds();
-                syncPieces();
-            } catch(e) { console.error("Asset generation error:", e); }
-            
-            // 強制關閉 Loading，無論是否成功
-            const loader = document.getElementById('loading');
-            loader.style.opacity = 0;
-            setTimeout(() => { 
-                loader.style.display = 'none'; 
-                document.getElementById('ui').style.display = 'block'; 
-            }, 500);
-        }, 100);
+    // 直接生成，不延遲太久
+    createFloatingGarden(); // 新：生成綠地與樹
+    createFloatingBoard();  // 新：生成懸浮棋盤 (無土塊)
+    createClouds();
+    syncPieces();           // 新：生成實體棋子
 
-        raycaster = new THREE.Raycaster();
-        mouse = new THREE.Vector2();
-        window.addEventListener('click', onMouseClick);
-        window.addEventListener('resize', onResize);
+    // 關閉 Loading
+    setTimeout(() => {
+        document.getElementById('loading').style.opacity = 0;
+        setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+        document.getElementById('ui').style.display = 'block';
+    }, 500);
 
-        animate();
-    } catch (e) {
-        console.error("Critical Init Error:", e);
-        alert("瀏覽器不支援 WebGL 或發生錯誤，請重新整理試試。");
-    }
-}
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+    window.addEventListener('click', onMouseClick);
+    window.addEventListener('resize', onResize);
 
-function setupPostProcessing() {
-    try {
-        const renderScene = new THREE.RenderPass(scene, camera);
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.strength = 0.4; bloomPass.radius = 0.4; bloomPass.threshold = 0.85;
-        composer = new THREE.EffectComposer(renderer);
-        composer.addPass(renderScene); composer.addPass(bloomPass);
-    } catch(e) {
-        console.warn("Post-processing failed, fallback to basic renderer");
-        composer = null;
-    }
+    animate();
 }
 
 function setupLighting() {
-    const ambient = new THREE.AmbientLight(0xffddcc, 0.8);
+    const ambient = new THREE.AmbientLight(0xffeedd, 0.8); // 很亮的環境光，確保東西看得到
     scene.add(ambient);
 
-    const sunLight = new THREE.DirectionalLight(0xffaa55, 2.5);
-    sunLight.position.set(-150, 60, -150);
+    const sunLight = new THREE.DirectionalLight(0xffaa33, 2.5);
+    sunLight.position.set(-100, 80, -100);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.set(2048, 2048); // 安全解析度
-    const d = 300;
+    sunLight.shadow.mapSize.set(2048, 2048);
+    const d = 200;
     sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
     sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
     scene.add(sunLight);
 
-    // 安全的天空設置
-    try {
-        const sky = new THREE.Sky(); 
-        sky.scale.setScalar(450000); 
-        scene.add(sky);
-        
-        // 關鍵修復：檢查 material 是否存在再設定 uniforms
-        if (sky.material && sky.material.uniforms) {
-            const uniforms = sky.material.uniforms;
-            uniforms['turbidity'].value = 8; 
-            uniforms['rayleigh'].value = 2.5;
-            uniforms['mieCoefficient'].value = 0.005; 
-            uniforms['mieDirectionalG'].value = 0.8;
-            uniforms['sunPosition'].value.copy(sunLight.position);
-        }
-    } catch(e) {
-        console.warn("Sky shader failed to load, skipping atmosphere.");
-    }
-
-    const sunGeo = new THREE.SphereGeometry(60, 16, 16);
-    const sunMat = new THREE.MeshBasicMaterial({ color: 0xff9900, fog: false });
-    const sunSphere = new THREE.Mesh(sunGeo, sunMat);
-    sunSphere.position.copy(sunLight.position).normalize().multiplyScalar(2000);
-    scene.add(sunSphere);
+    const sky = new THREE.Sky(); sky.scale.setScalar(450000); scene.add(sky);
+    const uniforms = sky.material.uniforms;
+    uniforms['turbidity'].value = 8; uniforms['rayleigh'].value = 2;
+    uniforms['mieCoefficient'].value = 0.005; uniforms['mieDirectionalG'].value = 0.8;
+    uniforms['sunPosition'].value.copy(sunLight.position);
 }
 
-// --- 棋盤 (Shader Board) ---
-function createFloatingBoardShader() {
-    const baseGeo = new THREE.CylinderGeometry(2, 12, 6, 16);
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x181010, roughness: 0.7 });
-    const base = new THREE.Mesh(baseGeo, baseMat);
-    base.position.y = BOARD_HEIGHT - 3.5; base.castShadow = true; scene.add(base);
+function setupPostProcessing() {
+    const renderScene = new THREE.RenderPass(scene, camera);
+    const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.strength = 0.4; bloomPass.radius = 0.5; bloomPass.threshold = 0.8;
+    composer = new THREE.EffectComposer(renderer);
+    composer.addPass(renderScene); composer.addPass(bloomPass);
+}
 
-    const ringGeo = new THREE.TorusGeometry(8, 0.2, 16, 32);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0xff7700 });
+// --- 1. 浮空花園 (綠色地面 + 樹木) ---
+function createFloatingGarden() {
+    // A. 綠色大草原 (實體地面)
+    // 直接放在 y=0，棋盤在 y=12，這樣就是「棋盤浮在草原上」
+    const groundGeo = new THREE.CylinderGeometry(180, 180, 5, 64);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x2d4c1e, roughness: 1.0 }); // 深綠色泥土
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.position.y = -2.5; // 讓頂面剛好在 y=0
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // B. 茂密的草 (Shader Grass)
+    const bladeGeo = new THREE.PlaneGeometry(0.3, 1.2); bladeGeo.translate(0, 0.6, 0);
+    grassMat = new THREE.MeshStandardMaterial({ color: 0x66aa33, side: THREE.DoubleSide });
+    grassMat.onBeforeCompile = s => {
+        s.uniforms.time={value:0}; s.vertexShader=`uniform float time;\n`+s.vertexShader;
+        s.vertexShader=s.vertexShader.replace(`#include <begin_vertex>`, `vec3 transformed=vec3(position); float w=sin(time*2.0+position.x*0.5)*0.2*position.y; transformed.x+=w; #include <begin_vertex>`);
+        grassMat.userData.shader=s;
+    };
+    const iGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 20000);
+    const dum = new THREE.Object3D();
+    for(let i=0; i<20000; i++){
+        const r = Math.random() * 170; // 鋪滿整個圓
+        const a = Math.random() * Math.PI * 2;
+        dum.position.set(Math.cos(a)*r, 0, Math.sin(a)*r);
+        dum.rotation.y = Math.random() * Math.PI;
+        dum.scale.setScalar(0.8 + Math.random());
+        dum.updateMatrix();
+        iGrass.setMatrixAt(i, dum.matrix);
+    }
+    iGrass.receiveShadow = true;
+    scene.add(iGrass);
+
+    // C. 樹木 (強制有樹幹)
+    const treeGroup = new THREE.Group();
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 }); // 棕色樹幹
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x228b22, flatShading: true }); // 森林綠葉
+
+    // 樹幹幾何體
+    const trunkGeo = new THREE.CylinderGeometry(0.6, 0.9, 4, 8);
+    // 樹葉幾何體
+    const leafGeo = new THREE.DodecahedronGeometry(3);
+
+    for(let i=0; i<200; i++) {
+        const r = 25 + Math.random() * 150; // 避開正中心，分佈在周圍
+        const a = Math.random() * Math.PI * 2;
+        const x = Math.cos(a)*r; 
+        const z = Math.sin(a)*r;
+
+        const tree = new THREE.Group();
+        
+        // 1. 樹幹 (明確加入)
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.y = 2; // 高度 4 的一半，確保立在地上
+        trunk.castShadow = true; trunk.receiveShadow = true;
+        tree.add(trunk);
+
+        // 2. 樹葉 (明確加入)
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        leaf.position.y = 5; // 樹幹頂端
+        leaf.castShadow = true; 
+        tree.add(leaf);
+
+        tree.position.set(x, 0, z);
+        treeGroup.add(tree);
+    }
+    scene.add(treeGroup);
+}
+
+// --- 2. 懸浮棋盤 (無土塊) ---
+function createFloatingBoard() {
+    // 只有一個發光環，沒有圓柱土塊
+    const ringGeo = new THREE.TorusGeometry(8, 0.2, 16, 64);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
     const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = Math.PI / 2; ring.position.y = BOARD_HEIGHT - 5;
+    ring.rotation.x = Math.PI / 2; 
+    ring.position.y = BOARD_HEIGHT - 2; // 懸浮在下方
     scene.add(ring);
-    new TWEEN.Tween(ring.rotation).to({z: Math.PI*2}, 20000).repeat(Infinity).start();
+    
+    // 能量粒子 (連接環與棋盤)
+    const pGeo = new THREE.BufferGeometry();
+    const pCount = 50;
+    const pPos = new Float32Array(pCount * 3);
+    for(let i=0; i<pCount; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 7 + Math.random();
+        pPos[i*3] = Math.cos(a)*r;
+        pPos[i*3+1] = BOARD_HEIGHT - 2 + Math.random()*2;
+        pPos[i*3+2] = Math.sin(a)*r;
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    const pMat = new THREE.PointsMaterial({ color: 0xffaa00, size: 0.1 });
+    scene.add(new THREE.Points(pGeo, pMat));
 
+    // Shader 棋盤 (無縫)
     const boardGeo = new THREE.BoxGeometry(8, 0.5, 8);
     const boardShaderMat = new THREE.ShaderMaterial({
         uniforms: { uColorWhite: { value: new THREE.Color(0xffeebb) }, uColorBlack: { value: new THREE.Color(0x553333) } },
@@ -206,108 +231,121 @@ function createFloatingBoardShader() {
         `
     });
     const board = new THREE.Mesh(boardGeo, boardShaderMat);
-    board.position.y = BOARD_HEIGHT - 0.25; board.receiveShadow = true; board.userData = { isBoard: true };
+    board.position.y = BOARD_HEIGHT; 
+    board.receiveShadow = true; 
+    board.userData = { isBoard: true }; // 點擊判定用
     scene.add(board);
     
-    const border = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.45, 8.4), new THREE.MeshStandardMaterial({ color: 0x221111 }));
-    border.position.y = BOARD_HEIGHT - 0.27; border.receiveShadow=true; scene.add(border);
+    // 金屬邊框
+    const border = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.4, 8.4), new THREE.MeshStandardMaterial({ color: 0x332211, roughness:0.4 }));
+    border.position.y = BOARD_HEIGHT - 0.05; border.receiveShadow=true; scene.add(border);
 }
 
-function createRingTerrain() {
-    const geo = new THREE.PlaneGeometry(2000, 2000, 64, 64);
-    geo.rotateX(-Math.PI / 2);
-    const pos = geo.attributes.position;
-    for(let i=0; i<pos.count; i++){ pos.setY(i, getTerrainHeight(pos.getX(i), pos.getZ(i))); }
-    geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x4a3b2a, roughness: 1.0 });
-    const terrain = new THREE.Mesh(geo, mat);
-    terrain.receiveShadow = true;
-    scene.add(terrain);
-}
-
-function createOptimizedVegetation() {
+// --- 3. 實體棋子 (確保可見) ---
+function createSolidPiece(type, color) {
     const group = new THREE.Group();
-    treeLeafMat = new THREE.MeshStandardMaterial({ color: 0x334422, flatShading: true });
     
-    // 安全的 Shader 注入
-    treeLeafMat.onBeforeCompile = s => {
-        s.uniforms.time={value:0}; s.vertexShader=`uniform float time;\n`+s.vertexShader;
-        s.vertexShader=s.vertexShader.replace(`#include <begin_vertex>`, `vec3 transformed=vec3(position); float sway=sin(time+position.x)*0.2; transformed.x+=sway; #include <begin_vertex>`);
-        treeLeafMat.userData.shader=s;
-    };
+    // 使用 MeshPhongMaterial，對光照反應更好，確保可見
+    const mat = new THREE.MeshPhongMaterial({ 
+        color: color === 'w' ? 0xffffff : 0x111111,
+        shininess: 100, // 高光
+        specular: 0x555555
+    });
     
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817 });
-    const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 5, 5); trunkGeo.translate(0, 2.5, 0);
-    const leafGeo = new THREE.DodecahedronGeometry(2.5, 0);
+    const glowMat = new THREE.MeshBasicMaterial({ 
+        color: color === 'w' ? 0x00ffff : 0xff0055 
+    });
 
-    for(let i=0; i<100; i++) { // 減少樹木到 100 棵 (安全)
-        const theta = Math.random()*Math.PI*2;
-        const r = 50 + Math.random()*250;
-        const x=Math.cos(theta)*r, z=Math.sin(theta)*r;
-        const h = getTerrainHeight(x, z);
-        if(h < -100) continue;
+    // 底座
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.2, 32), mat);
+    base.position.y = 0.1; base.castShadow = true; group.add(base);
 
-        const tree = new THREE.Group();
-        const trunk = new THREE.Mesh(trunkGeo, trunkMat); trunk.castShadow=true; tree.add(trunk);
-        for(let j=0; j<3; j++) {
-            const leaf = new THREE.Mesh(leafGeo, treeLeafMat);
-            leaf.position.set((Math.random()-0.5)*3, 5+Math.random()*2, (Math.random()-0.5)*3);
-            leaf.scale.setScalar(0.8+Math.random()*0.4); leaf.castShadow=true; tree.add(leaf);
-        }
-        tree.position.set(x, h, z); group.add(tree);
+    // 簡單幾何體構建
+    if(type === 'p') { // Pawn
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.3, 0.6, 16), mat);
+        body.position.y = 0.5; body.castShadow = true;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.25), mat);
+        head.position.y = 0.9; head.castShadow = true;
+        group.add(body, head);
+    } else if(type === 'r') { // Rook
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.8, 16), mat);
+        body.position.y = 0.6; body.castShadow = true;
+        const top = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.2, 16), mat);
+        top.position.y = 1.1;
+        group.add(body, top);
+    } else if(type === 'n') { // Knight
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.5, 16), mat);
+        body.position.y = 0.45;
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.2), mat);
+        head.position.set(0, 0.9, 0.1); head.rotation.x = -0.5;
+        group.add(body, head);
+    } else if(type === 'b') { // Bishop
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.3, 1.0, 16), mat);
+        body.position.y = 0.7;
+        const top = new THREE.Mesh(new THREE.SphereGeometry(0.1), glowMat);
+        top.position.y = 1.3;
+        group.add(body, top);
+    } else if(type === 'q') { // Queen
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.35, 1.4, 16), mat);
+        body.position.y = 0.9;
+        const crown = new THREE.Mesh(new THREE.SphereGeometry(0.2), glowMat);
+        crown.position.y = 1.7;
+        group.add(body, crown);
+    } else if(type === 'k') { // King
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 1.6, 16), mat);
+        body.position.y = 1.0;
+        const cross = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.15), glowMat);
+        cross.position.y = 1.95;
+        group.add(body, cross);
     }
-    scene.add(group);
-    
-    // 草地：安全數量 5000
-    const bladeGeo = new THREE.PlaneGeometry(0.3, 1.5); bladeGeo.translate(0, 0.75, 0);
-    grassMat = new THREE.MeshStandardMaterial({ color: 0x667722, side: THREE.DoubleSide });
-    grassMat.onBeforeCompile = s => {
-        s.uniforms.time={value:0}; s.vertexShader=`uniform float time;\n`+s.vertexShader;
-        s.vertexShader=s.vertexShader.replace(`#include <begin_vertex>`, `vec3 transformed=vec3(position); float w=sin(time*1.2+position.x*0.5+position.z*0.5)*0.3*position.y; transformed.x+=w; #include <begin_vertex>`);
-        grassMat.userData.shader=s;
-    };
-    const iGrass = new THREE.InstancedMesh(bladeGeo, grassMat, 5000);
-    const dum = new THREE.Object3D();
-    let count = 0;
-    for(let i=0; i<10000; i++){
-        if(count >= 5000) break;
-        const a=Math.random()*Math.PI*2, r=Math.random()*150;
-        const x=Math.cos(a)*r, z=Math.sin(a)*r;
-        const h = getTerrainHeight(x, z);
-        if(h > -10 && h < 20) {
-            dum.position.set(x, h, z);
-            dum.rotation.y=Math.random()*Math.PI; dum.scale.setScalar(0.7+Math.random()); dum.updateMatrix();
-            iGrass.setMatrixAt(count++, dum.matrix);
-        }
-    }
-    iGrass.receiveShadow=true; scene.add(iGrass);
+
+    return group;
 }
 
-function createSunsetClouds() {
-    const cv=document.createElement('canvas'); cv.width=64; cv.height=64;
-    const cx=cv.getContext('2d'), g=cx.createRadialGradient(32,32,0,32,32,32);
-    g.addColorStop(0, 'rgba(255, 180, 100, 0.4)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-    cx.fillStyle=g; cx.fillRect(0,0,64,64);
+function syncPieces() {
+    // 先清空
+    for(let key in piecesMap) {
+        scene.remove(piecesMap[key]);
+    }
+    piecesMap = {};
+
+    const board = game.board();
+    for(let r=0; r<8; r++) {
+        for(let c=0; c<8; c++) {
+            const p = board[r][c];
+            if(p) {
+                const sq = String.fromCharCode(97+c) + (8-r);
+                const mesh = createSolidPiece(p.type, p.color);
+                // 修正座標: 棋盤中心是 (0, BOARD_HEIGHT, 0)
+                mesh.position.set(c - 3.5, BOARD_HEIGHT + 0.25, (r - 3.5)); // 注意：Three.js Z軸向下增加
+                scene.add(mesh);
+                piecesMap[sq] = mesh;
+            }
+        }
+    }
+}
+
+// --- 雲 ---
+function createClouds() {
+    const cv = document.createElement('canvas'); cv.width=64; cv.height=64;
+    const cx = cv.getContext('2d'), g = cx.createRadialGradient(32,32,0,32,32,32);
+    g.addColorStop(0, 'rgba(255, 200, 150, 0.4)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    cx.fillStyle = g; cx.fillRect(0,0,64,64);
     const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     
-    for(let i=0; i<20; i++) {
+    for(let i=0; i<30; i++) {
         const cl = new THREE.Group();
-        for(let j=0; j<15; j++) {
+        for(let j=0; j<20; j++) {
             const p = new THREE.Sprite(mat); 
             p.position.set((Math.random()-0.5)*40, (Math.random()-0.5)*15, (Math.random()-0.5)*40); 
             p.scale.setScalar(20+Math.random()*30); cl.add(p);
         }
-        cl.position.set((Math.random()-0.5)*600, 150+Math.random()*80, (Math.random()-0.5)*600);
+        cl.position.set((Math.random()-0.5)*800, 150+Math.random()*50, (Math.random()-0.5)*800);
         scene.add(cl); cloudParticles.push(cl);
     }
 }
 
-// --- 棋子 ---
-function createSolidPiece(t,c){const g=new THREE.Group(),mat=c==='w'?new THREE.MeshStandardMaterial({color:0xeeeeff,roughness:0.2,metalness:0.5}):new THREE.MeshStandardMaterial({color:0x222222,roughness:0.3,metalness:0.8}),glow=c==='w'?new THREE.MeshStandardMaterial({color:0x00e5ff,emissive:0x00e5ff,emissiveIntensity:2}):new THREE.MeshStandardMaterial({color:0xff0055,emissive:0xff0055,emissiveIntensity:2});const base=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.45,0.2,32),mat);base.position.y=0.1;base.castShadow=true;base.receiveShadow=true;g.add(base);
-if(t==='p'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,0.6,16),mat);b.position.y=0.5;b.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32),mat);h.position.y=0.95;h.castShadow=true;g.add(b,h);}else if(t==='r'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.8,32),mat);b.position.y=0.6;b.castShadow=true;const tp=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.3,32),mat);tp.position.y=1.1;tp.castShadow=true;const rg=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.05,16,32),glow);rg.position.y=1.25;rg.rotation.x=Math.PI/2;g.add(b,tp,rg);}else if(t==='b'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.35,1.0,16),mat);b.position.y=0.7;b.castShadow=true;const h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.25,0.5,16),mat);h.position.y=1.4;h.castShadow=true;const tp=new THREE.Mesh(new THREE.SphereGeometry(0.08),glow);tp.position.y=1.7;g.add(b,h,tp);}else if(t==='n'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,0.6,16),mat);b.position.y=0.5;b.castShadow=true;const h=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.6,0.2),mat);h.position.set(0,1.0,0.1);h.rotation.x=-Math.PI/6;h.castShadow=true;const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.05),glow);m.position.set(0,1.1,-0.15);m.rotation.x=-Math.PI/6;g.add(b,h,m);if(c==='b')g.rotation.y=Math.PI;}else if(t==='q'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.4,1.4,32),mat);b.position.y=0.9;b.castShadow=true;const t=new THREE.Mesh(new THREE.SphereGeometry(0.15),glow);t.position.y=1.7;group.add(b,t);}else if(t==='k'){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.45,1.6,32),mat);b.position.y=1.0;b.castShadow=true;const c=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.4,0.1),glow);c.position.y=1.95;group.add(b,c);}
-return group;}
-function syncPieces(){for(let sq in piecesMap)scene.remove(piecesMap[sq]);piecesMap={};const b=game.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p){const sq=String.fromCharCode(97+c)+(8-r),s=createSolidPiece(p.type,p.color);s.position.set(c-3.5, BOARD_HEIGHT, r-3.5);scene.add(s);piecesMap[sq]=s;}}}
-
+// --- 交互 ---
 function onMouseClick(e){
     if(isProcessing)return;
     mouse.x=(e.clientX/window.innerWidth)*2-1; mouse.y=-(e.clientY/window.innerHeight)*2+1;
@@ -315,10 +353,22 @@ function onMouseClick(e){
     const intersects = raycaster.intersectObjects(scene.children);
     for(let i=0; i<intersects.length; i++) {
         if(intersects[i].object.userData.isBoard) {
-            const point = intersects[i].point;
-            const x = Math.floor(point.x + 4); const z = Math.floor(point.z + 4);
+            const pt = intersects[i].point;
+            // 轉換世界座標 -> 棋盤格子 (8x8)
+            // 棋盤範圍 x: -4 ~ 4, z: -4 ~ 4
+            const x = Math.floor(pt.x + 4); 
+            const z = Math.floor(pt.z + 4);
             if(x>=0 && x<8 && z>=0 && z<8) {
-                handleInteraction(String.fromCharCode(97+x) + (8-z));
+                // z=0 是 rank 1? 不，Three.js Z軸正向是螢幕外。
+                // 棋盤繪製時：row 0 (top) -> z = -3.5 (far)
+                // row 7 (bottom) -> z = 3.5 (near)
+                // 所以 z=0 對應 row=3 or 4.
+                // 修正對應：row = z index.
+                const c = x;
+                const r = z; // r=0 -> rank 8 (top), r=7 -> rank 1 (bottom)
+                // chess.js: a1 is c=0, r=7. a8 is c=0, r=0.
+                const square = String.fromCharCode(97+c) + (8-r);
+                handleInteraction(square);
                 return;
             }
         }
@@ -326,34 +376,31 @@ function onMouseClick(e){
 }
 function handleInteraction(sq){const p=game.get(sq);if(!selectedSquare){if(p&&p.color==='w'&&game.turn()==='w')selectedSquare=sq;}else{if(p&&p.color==='w'){selectedSquare=sq;return;}const m=game.move({from:selectedSquare,to:sq,promotion:'q'});if(m)animateMove(m);else{selectedSquare=null;}}}
 function animateMove(m){
-    isProcessing=true; const s=piecesMap[m.from]; const c=m.to.charCodeAt(0)-97; const r=parseInt(m.to[1])-1; const tx=c-3.5; const tz=3.5-r;
+    isProcessing=true; 
+    const s=piecesMap[m.from]; 
+    // 重新計算目標座標
+    const col = m.to.charCodeAt(0) - 97;
+    const row = 8 - parseInt(m.to[1]); // chess rank to array index
+    const tx = col - 3.5;
+    const tz = row - 3.5;
+
     if(m.captured&&piecesMap[m.to])scene.remove(piecesMap[m.to]);
+    
     new TWEEN.Tween(s.position).to({x:tx, z:tz}, 500).easing(TWEEN.Easing.Quadratic.Out).start();
     new TWEEN.Tween(s.position).to({y: BOARD_HEIGHT + 2}, 250).easing(TWEEN.Easing.Cubic.Out).chain(
-        new TWEEN.Tween(s.position).to({y: BOARD_HEIGHT}, 500).easing(TWEEN.Easing.Bounce.Out).onComplete(()=>{
+        new TWEEN.Tween(s.position).to({y: BOARD_HEIGHT + 0.25}, 500).easing(TWEEN.Easing.Bounce.Out).onComplete(()=>{
             syncPieces(); updateStatus(); if(game.game_over())return; if(game.turn()==='b')setTimeout(makeRandomAI,500);else isProcessing=false;
         })).start();
-    s.rotation.z = -0.2; new TWEEN.Tween(s.rotation).to({z: 0}, 600).delay(200).easing(TWEEN.Easing.Elastic.Out).start();
 }
 function makeRandomAI(){const ms=game.moves();if(ms.length===0)return;game.move(ms[Math.floor(Math.random()*ms.length)]);syncPieces();updateStatus();isProcessing=false;}
 function updateStatus(){const t=document.getElementById('turn-txt');t.innerText=game.turn()==='w'?"BLUE TURN":"AI TURN";t.style.color=game.turn()==='w'?"#00e5ff":"#ff0055";}
-function onResize(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);if(composer)composer.setSize(window.innerWidth,window.innerHeight);}
+function onResize(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);composer.setSize(window.innerWidth,window.innerHeight);}
 
 function animate(){
     requestAnimationFrame(animate); const t=clock.getElapsedTime(); TWEEN.update(); controls.update();
-    
-    // 安全更新 Uniforms
-    if(grassMat && grassMat.userData && grassMat.userData.shader && grassMat.userData.shader.uniforms) {
-        grassMat.userData.shader.uniforms.time.value = t;
-    }
-    if(treeLeafMat && treeLeafMat.userData && treeLeafMat.userData.shader && treeLeafMat.userData.shader.uniforms) {
-        treeLeafMat.userData.shader.uniforms.time.value = t;
-    }
-
+    if(grassMat&&grassMat.userData.shader)grassMat.userData.shader.uniforms.time.value=t;
     cloudParticles.forEach(c => { c.rotation.y += 0.0002; });
-    
-    if(composer) composer.render();
-    else renderer.render(scene,camera);
+    composer.render();
 }
 init();
 </script>
