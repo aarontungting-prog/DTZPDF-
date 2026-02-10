@@ -2,113 +2,181 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Gemini Pro 全能數學實驗室</title>
+    <title>數學實驗室 Pro Plus (積分與等比例視圖)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
-        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f8; overflow: hidden; }
         
         /* 左側控制面板 */
-        .sidebar { width: 360px; background: white; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; z-index: 10; box-shadow: 2px 0 15px rgba(0,0,0,0.05); }
+        .sidebar { width: 380px; background: white; border-right: 1px solid #dcdcdc; display: flex; flex-direction: column; z-index: 20; box-shadow: 4px 0 20px rgba(0,0,0,0.05); }
         .header { padding: 20px; background: #2c3e50; color: white; }
-        .header h2 { margin: 0; font-size: 1.2rem; }
-        .header p { margin: 5px 0 0; font-size: 0.8rem; color: #bdc3c7; }
+        .header h2 { margin: 0; font-size: 1.3rem; letter-spacing: 1px; }
+        .header p { margin: 5px 0 0; font-size: 0.85rem; color: #bdc3c7; }
         
-        .controls-area { padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa; }
-        .toggle-switch { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; color: #555; cursor: pointer; }
-        
+        .controls-area { padding: 15px; background: #ecf0f1; border-bottom: 1px solid #ddd; font-size: 0.9rem; }
+        .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .toggle-label { cursor: pointer; display: flex; align-items: center; gap: 8px; color: #2c3e50; font-weight: 600; }
+
+        /* 積分計算區 */
+        .integral-panel { background: #fff3cd; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ffeeba; display: none; }
+        .integral-inputs { display: flex; gap: 5px; align-items: center; margin-top: 5px; }
+        .integral-result { font-weight: bold; color: #856404; margin-left: 10px; }
+
         .scroll-area { flex-grow: 1; overflow-y: auto; padding: 15px; }
         
-        /* 方程式卡片設計 */
-        .input-card { background: white; border: 1px solid #dfe6e9; padding: 15px; margin-bottom: 12px; border-radius: 8px; border-left: 5px solid #3498db; transition: transform 0.2s; }
-        .input-card:hover { transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .func-type { padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px; background: #f1f2f6; }
+        /* 方程式卡片 */
+        .input-card { background: white; border: 1px solid #e0e0e0; padding: 15px; margin-bottom: 12px; border-radius: 8px; border-left: 5px solid #3498db; position: relative; transition: all 0.2s; }
+        .input-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
         
-        .inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; }
-        input[type="number"] { width: 50px; padding: 6px; border: 1px solid #ced6e0; border-radius: 4px; text-align: center; }
-        select { padding: 6px; border: 1px solid #ced6e0; border-radius: 4px; }
+        /* 當前選中計算積分的卡片 */
+        .input-card.active-integral { border-left-color: #f1c40f; background: #fffdf9; border: 2px solid #f1c40f; }
 
-        /* 按鈕區 */
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
+        .func-tag { font-size: 12px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #666; }
+        
+        .inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 14px; }
+        input[type="number"] { width: 55px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-family: monospace; }
+        select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; }
+
+        /* 按鈕優化 */
         .footer { padding: 15px; background: white; border-top: 1px solid #eee; }
-        button { width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 8px; transition: 0.2s; }
-        .btn-add { background: #e3f2fd; color: #1976d2; }
-        .btn-draw { background: #2980b9; color: white; }
-        .btn-reset { background: #ecf0f1; color: #7f8c8d; }
-        button:hover { filter: brightness(0.95); }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 8px; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        .btn-add { background: #ebf5fb; color: #2980b9; }
+        .btn-add:hover { background: #d6eaf8; }
+        .btn-draw { background: #2980b9; color: white; font-size: 1.1em; }
+        .btn-draw:hover { background: #2471a3; }
+        .btn-reset { background: #f8f9fa; color: #7f8c8d; border: 1px solid #ddd; }
 
-        /* 圖表區 */
-        .main-view { flex-grow: 1; padding: 20px; position: relative; display: flex; justify-content: center; align-items: center; }
-        .chart-wrapper { width: 98%; height: 98%; background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); padding: 10px; position: relative; }
+        /* 圖表區：核心修正 - 強制正方形比例 */
+        .main-view { flex-grow: 1; padding: 20px; background: #dcdcdc; display: flex; justify-content: center; align-items: center; position: relative; }
+        
+        /* 關鍵：使用 aspect-ratio: 1 / 1 強制正方形 
+           配合 max-height/width 確保不超出螢幕
+        */
+        .chart-container { 
+            background: white; 
+            border-radius: 4px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+            padding: 10px; 
+            position: relative;
+            width: auto;
+            height: auto;
+            aspect-ratio: 1 / 1; 
+            max-height: 95vh;
+            max-width: 95vh;
+            display: flex; /* Fix for chartjs resize */
+        }
+        canvas { width: 100% !important; height: 100% !important; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
     <div class="header">
-        <h2>全能數學實驗室 Pro</h2>
-        <p>指數 • 對數 • 截距 • 不等式</p>
+        <h2>數學實驗室 V2.0</h2>
+        <p>微積分預備 • 面積計算 • 等比座標</p>
     </div>
 
     <div class="controls-area">
-        <label class="toggle-switch">
-            <input type="checkbox" id="showIntercepts" checked onchange="draw()"> 
-            顯示 X / Y 軸焦點 (Intercepts)
-        </label>
+        <div class="control-row">
+            <label class="toggle-label">
+                <input type="checkbox" id="showIntercepts" onchange="draw()"> 
+                顯示軸焦點 (Intercepts)
+            </label>
+        </div>
+        <div class="control-row">
+            <label class="toggle-label">
+                <input type="checkbox" id="showGrid" checked onchange="draw()"> 
+                顯示網格 (Grid)
+            </label>
+        </div>
+        
+        <div class="control-row" style="margin-top:10px; border-top:1px solid #ccc; padding-top:10px;">
+            <label class="toggle-label" style="color:#d35400;">
+                <input type="checkbox" id="enableIntegral" onchange="toggleIntegralMode()"> 
+                開啟定積分模式 (Area)
+            </label>
+        </div>
+        
+        <div id="integralPanel" class="integral-panel">
+            <div style="font-size:12px; margin-bottom:5px;">計算 L<span id="targetLineNum">1</span> 在 X 軸範圍的面積:</div>
+            <div class="integral-inputs">
+                ∫ 從 <input type="number" id="intStart" value="0" step="0.5"> 
+                到 <input type="number" id="intEnd" value="2" step="0.5">
+                <button onclick="calculateArea()" style="width:auto; padding:5px 10px; margin:0; background:#f1c40f; color:black;">計算</button>
+            </div>
+            <div id="integralResult" class="integral-result"></div>
+        </div>
     </div>
     
     <div class="scroll-area" id="equation-list">
-        <div class="input-card" data-type="linear">
+        <div class="input-card" data-type="quadratic" onclick="selectForIntegral(this, 1)">
             <div class="card-header">
                 <strong>L1</strong>
-                <select class="func-type" onchange="changeType(this)">
-                    <option value="linear" selected>直線 (Linear)</option>
-                    <option value="quadratic">拋物線 (Quad)</option>
-                    <option value="exp">指數 (Exp)</option>
-                    <option value="log">對數 (Log)</option>
+                <span class="func-tag">拋物線</span>
+                <select class="func-type" onchange="changeType(this)" style="display:none;"> <option value="quadratic" selected>Quad</option>
                 </select>
             </div>
-            <div class="inputs" id="inputs-1">
-                <input type="number" class="p1" value="1">x + <input type="number" class="p2" value="-1">y + <input type="number" class="p3" value="0">
-                <select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0
+            <div class="inputs">
+                y = <input type="number" class="p1" value="1">x² + <input type="number" class="p2" value="0">x + <input type="number" class="p3" value="-4">
+                <select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option></select> y
+            </div>
+            <div style="margin-top:5px; text-align:right;">
+                <button onclick="changeTypeUI(this)" style="width:auto; font-size:10px; padding:3px; display:inline-block; background:#eee; color:#333;">切換類型</button>
             </div>
         </div>
     </div>
 
     <div class="footer">
         <button class="btn-add" onclick="addNewLine()">＋ 新增函數</button>
-        <button class="btn-draw" onclick="draw()">更新圖表 (Enter)</button>
-        <button class="btn-reset" onclick="resetZoom()">重置視角 (0,0)</button>
+        <button class="btn-draw" onclick="draw()">🚀 更新圖表</button>
+        <button class="btn-reset" onclick="resetZoom()">⟲ 重置視角 (Zoom Reset)</button>
     </div>
 </div>
 
 <div class="main-view">
-    <div class="chart-wrapper">
+    <div class="chart-container">
         <canvas id="mathChart"></canvas>
     </div>
 </div>
 
 <script>
     let myChart = null;
+    let integralTargetIndex = 0; // 預設計算 L1
 
-    // 定義輸入框模板
+    // 模板定義
     const templates = {
         linear: `a: <input type="number" class="p1" value="1"> b: <input type="number" class="p2" value="-1"> c: <input type="number" class="p3" value="0"> (ax+by+c)`,
-        quadratic: `a: <input type="number" class="p1" value="1"> b: <input type="number" class="p2" value="0"> c: <input type="number" class="p3" value="0"> (y=ax²+bx+c)`,
-        exp: `a: <input type="number" class="p1" value="1"> base: <input type="number" class="p2" value="2"> (y = a • base^x)`,
-        log: `a: <input type="number" class="p1" value="1"> b: <input type="number" class="p2" value="1"> (y = a • ln(bx))`
+        quadratic: `y = <input type="number" class="p1" value="1">x² + <input type="number" class="p2" value="0">x + <input type="number" class="p3" value="0">`,
+        exp: `y = <input type="number" class="p1" value="1"> • <input type="number" class="p2" value="2">^x`,
+        log: `y = <input type="number" class="p1" value="1"> • ln(<input type="number" class="p2" value="1">x)`
     };
 
-    function changeType(selectElem) {
-        const card = selectElem.closest('.input-card');
-        const inputsDiv = card.querySelector('.inputs');
-        const type = selectElem.value;
-        const opHtml = `<select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0`; // 0 是不等式右邊
+    // 切換函數類型 UI
+    function changeTypeUI(btn) {
+        const card = btn.closest('.input-card');
+        const currentType = card.getAttribute('data-type');
+        const types = ['linear', 'quadratic', 'exp', 'log'];
+        const nextType = types[(types.indexOf(currentType) + 1) % types.length];
         
-        // 更新輸入框 HTML
-        inputsDiv.innerHTML = templates[type] + opHtml;
-        card.setAttribute('data-type', type);
+        // 更新 Data Attribute
+        card.setAttribute('data-type', nextType);
+        
+        // 更新標籤
+        const tag = card.querySelector('.func-tag');
+        const map = {linear:'直線', quadratic:'拋物線', exp:'指數', log:'對數'};
+        tag.innerText = map[nextType];
+
+        // 更新輸入框
+        const inputsDiv = card.querySelector('.inputs');
+        const opHtml = `<select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option></select> 0`;
+        // 注意：除了 linear 是隱函數 ax+by+c=0，其他都是 y = f(x)
+        const suffix = nextType === 'linear' ? opHtml : `<select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option></select> y`;
+        
+        inputsDiv.innerHTML = templates[nextType] + suffix.replace('0', nextType === 'linear' ? '0' : '');
     }
 
     function addNewLine() {
@@ -117,161 +185,242 @@
         const div = document.createElement('div');
         div.className = 'input-card';
         div.setAttribute('data-type', 'linear');
+        div.setAttribute('onclick', `selectForIntegral(this, ${n})`);
         div.style.borderLeftColor = `hsl(${n * 137.5}, 70%, 50%)`;
         div.innerHTML = `
             <div class="card-header">
                 <strong>L${n}</strong>
-                <select class="func-type" onchange="changeType(this)">
-                    <option value="linear">直線 (Linear)</option>
-                    <option value="quadratic">拋物線 (Quad)</option>
-                    <option value="exp">指數 (Exp)</option>
-                    <option value="log">對數 (Log)</option>
-                </select>
+                <span class="func-tag">直線</span>
             </div>
             <div class="inputs">
                 ${templates.linear}
-                <select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0
+                <select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option></select> 0
+            </div>
+            <div style="margin-top:5px; text-align:right;">
+                <button onclick="changeTypeUI(this)" style="width:auto; font-size:10px; padding:3px; display:inline-block; background:#eee; color:#333;">切換類型</button>
             </div>`;
         list.appendChild(div);
     }
 
+    // --- 積分邏輯 ---
+    function toggleIntegralMode() {
+        const panel = document.getElementById('integralPanel');
+        const isOn = document.getElementById('enableIntegral').checked;
+        panel.style.display = isOn ? 'block' : 'none';
+        if(isOn) calculateArea(); // 立即計算一次
+        draw(); // 重繪以顯示/隱藏積分解區塊
+    }
+
+    function selectForIntegral(card, index) {
+        if (!document.getElementById('enableIntegral').checked) return;
+        
+        // UI 更新
+        document.querySelectorAll('.input-card').forEach(c => c.classList.remove('active-integral'));
+        card.classList.add('active-integral');
+        document.getElementById('targetLineNum').innerText = index;
+        integralTargetIndex = index - 1;
+        
+        calculateArea();
+    }
+
+    // 計算不定積分 F(x)
+    function getAntiderivative(type, x, p1, p2, p3) {
+        if (type === 'linear') {
+            // ax + by + c = 0 => y = (-a/b)x - (c/b)
+            // F(x) = (-a/2b)x^2 - (c/b)x
+            if (p2 === 0) return 0; // 垂直線無面積定義
+            return (-p1 / (2 * p2)) * x * x - (p3 / p2) * x;
+        }
+        if (type === 'quadratic') {
+            // y = ax^2 + bx + c => F(x) = (a/3)x^3 + (b/2)x^2 + cx
+            return (p1 / 3) * Math.pow(x, 3) + (p2 / 2) * Math.pow(x, 2) + p3 * x;
+        }
+        if (type === 'exp') {
+            // y = a * b^x => F(x) = a * b^x / ln(b)
+            return (p1 * Math.pow(p2, x)) / Math.log(p2);
+        }
+        if (type === 'log') {
+            // y = a * ln(bx) => F(x) = a * (x * ln(bx) - x)
+            // Note: Integral of ln(bx) dx = x*ln(bx) - x
+            if (x <= 0) return 0;
+            return p1 * (x * Math.log(p2 * x) - x);
+        }
+        return 0;
+    }
+
+    function calculateArea() {
+        const cards = document.querySelectorAll('.input-card');
+        if (integralTargetIndex >= cards.length) return;
+
+        const card = cards[integralTargetIndex];
+        const type = card.getAttribute('data-type');
+        const p1 = parseFloat(card.querySelector('.p1').value) || 0;
+        const p2 = parseFloat(card.querySelector('.p2').value) || 0;
+        const p3 = parseFloat(card.querySelector('.p3')?.value) || 0;
+
+        const start = parseFloat(document.getElementById('intStart').value);
+        const end = parseFloat(document.getElementById('intEnd').value);
+
+        if (isNaN(start) || isNaN(end)) return;
+
+        // 微積分基本定理: Area = F(b) - F(a)
+        const F_b = getAntiderivative(type, end, p1, p2, p3);
+        const F_a = getAntiderivative(type, start, p1, p2, p3);
+        const area = F_b - F_a;
+
+        document.getElementById('integralResult').innerText = `Area ≈ ${area.toFixed(4)}`;
+        draw(); // 重繪以顯示面積區域
+    }
+
+    // --- 繪圖核心 ---
     function resetZoom() { if (myChart) myChart.resetZoom(); }
 
     function getDerivative(type, x, p1, p2, p3) {
-        // 微積分：計算切線斜率 m
-        if (type === 'linear') return -p1 / p2; // -a/b
-        if (type === 'quadratic') return 2 * p1 * x + p2; // 2ax + b
-        if (type === 'exp') return p1 * Math.log(p2) * Math.pow(p2, x); // a * ln(base) * base^x
-        if (type === 'log') return p1 / x; // a / x (chain rule simplified for ln(bx) -> a * (1/bx)*b = a/x)
+        if (type === 'linear') return p2 !== 0 ? -p1 / p2 : Infinity;
+        if (type === 'quadratic') return 2 * p1 * x + p2;
+        if (type === 'exp') return p1 * Math.log(p2) * Math.pow(p2, x);
+        if (type === 'log') return (Math.abs(x) < 1e-9) ? NaN : p1 / x; // Fix log(0) crash
         return 0;
     }
 
     function draw() {
         const cards = document.querySelectorAll('.input-card');
         const showIntercepts = document.getElementById('showIntercepts').checked;
+        const showGrid = document.getElementById('showGrid').checked;
+        const enableIntegral = document.getElementById('enableIntegral').checked;
+        const intStart = parseFloat(document.getElementById('intStart').value);
+        const intEnd = parseFloat(document.getElementById('intEnd').value);
+
         const datasets = [];
         const interceptsData = [];
 
         cards.forEach((card, i) => {
             const type = card.getAttribute('data-type');
             const p1 = parseFloat(card.querySelector('.p1').value) || 0;
-            const p2 = parseFloat(card.querySelector('.p2').value) || 0; // quadratic/exp/log 時 p2 意義不同
+            const p2 = parseFloat(card.querySelector('.p2').value) || 0;
             const p3 = parseFloat(card.querySelector('.p3')?.value) || 0;
             const op = card.querySelector('.op').value;
             const hue = (i * 137.5) % 360;
             const color = `hsl(${hue}, 70%, 50%)`;
 
-            let points = [];
-            let fillType = false;
-
-            // --- 繪圖邏輯 ---
-            // 範圍加大到 -500 ~ 500 以支援縮放
-            const range = 500;
-            const step = (type === 'log') ? 0.1 : 0.5; // log 需要更細緻
-            
-            for (let x = -range; x <= range; x += step) {
+            // 1. 生成函數曲線點
+            const points = [];
+            const step = (type === 'log' || type === 'exp') ? 0.05 : 0.2; 
+            // 範圍稍微大一點，保證縮放體驗
+            for (let x = -20; x <= 20; x += step) {
                 let y = null;
-                
                 if (type === 'linear') {
-                    if (p2 !== 0) y = (-p1 * x - p3) / p2; // ax+by+c=0 -> y=(-ax-c)/b
+                    if (p2 !== 0) y = (-p1 * x - p3) / p2;
                 } else if (type === 'quadratic') {
-                    y = p1 * x * x + p2 * x + p3; // y=ax^2+bx+c
+                    y = p1 * x * x + p2 * x + p3;
                 } else if (type === 'exp') {
-                    y = p1 * Math.pow(p2, x); // y = a * base^x
+                    y = p1 * Math.pow(p2, x);
                 } else if (type === 'log') {
-                    if (p2 * x > 0) y = p1 * Math.log(p2 * x); // y = a * ln(bx), domain restriction
+                    if (p2 * x > 0) y = p1 * Math.log(p2 * x);
                 }
 
-                if (y !== null && !isNaN(y) && Math.abs(y) < range) {
+                if (y !== null && !isNaN(y) && Math.abs(y) < 100) {
                     points.push({ x: x, y: y });
                 }
             }
-
-            // 直線垂直線處理 (b=0)
+            
+            // Linear Vertical Line Fix (p2=0)
             if (type === 'linear' && p2 === 0 && p1 !== 0) {
                 const px = -p3 / p1;
-                points = [{ x: px, y: -range }, { x: px, y: range }];
+                points.push({ x: px, y: -100 }, { x: px, y: 100 });
             }
 
-            // --- 修復的著色邏輯 (The Fix) ---
+            // 2. 不等式填色邏輯修正 (Universal Fix)
+            let fillType = false;
             if (op !== '=') {
-                const isGreater = op.includes('>');
-                // 對於 y > f(x)，如果是直線，要考慮 b 的正負號是否導致不等號變向
-                // 對於其他函數形式皆為 y = ...，所以 y > ... 就是往上
-                let fillDir = isGreater ? 'end' : 'start'; // end=top, start=bottom
-                
-                if (type === 'linear' && p2 < 0) {
-                     // ax + by + c > 0, if b < 0, divide by b flips sign -> y < ...
-                    fillDir = isGreater ? 'start' : 'end';
+                let isGreater = op.includes('>');
+                // 如果是 y < f(x)，那就是 fill: 'start' (bottom)，反之 'end' (top)
+                // 唯一例外是 linear 的隱函數形式 ax+by+c > 0
+                if (type === 'linear') {
+                    // if b < 0, dividing by b flips the sign
+                    if (p2 < 0) isGreater = !isGreater;
                 }
-                fillType = fillDir;
+                fillType = isGreater ? 'end' : 'start';
             }
 
             datasets.push({
-                label: `L${i+1} (${type})`,
+                label: `L${i+1}`,
                 data: points,
                 borderColor: color,
                 backgroundColor: op !== '=' ? `hsla(${hue}, 70%, 50%, 0.15)` : 'transparent',
                 fill: fillType,
                 showLine: true,
                 pointRadius: 0,
-                pointHitRadius: 10, // 增加滑鼠感應範圍
+                pointHitRadius: 15,
                 borderDash: (op === '>' || op === '<') ? [5, 5] : [],
                 borderWidth: 2,
-                // 自定義數據以供 Tooltip 使用
-                customInfo: { type, p1, p2, p3 } 
+                customInfo: { type, p1, p2, p3 }
             });
 
-            // --- 焦點計算 (Intercepts) ---
+            // 3. 積分區域繪製 (Shaded Area for Integral)
+            if (enableIntegral && i === integralTargetIndex) {
+                const areaPoints = [];
+                // 加上起點 (x_start, 0)
+                areaPoints.push({ x: intStart, y: 0 });
+                
+                // 加上曲線上的點
+                for (let x = intStart; x <= intEnd; x += 0.1) {
+                    let y = 0;
+                    if (type === 'linear' && p2 !== 0) y = (-p1 * x - p3) / p2;
+                    else if (type === 'quadratic') y = p1 * x * x + p2 * x + p3;
+                    else if (type === 'exp') y = p1 * Math.pow(p2, x);
+                    else if (type === 'log' && p2 * x > 0) y = p1 * Math.log(p2 * x);
+                    
+                    if (!isNaN(y)) areaPoints.push({ x: x, y: y });
+                }
+                
+                // 加上終點 (x_end, 0)
+                areaPoints.push({ x: intEnd, y: 0 });
+
+                datasets.push({
+                    label: '積分區域 (Area)',
+                    data: areaPoints,
+                    backgroundColor: 'rgba(255, 215, 0, 0.4)', // 金色半透明
+                    borderColor: 'rgba(255, 215, 0, 1)',
+                    borderWidth: 1,
+                    fill: 'shape', // 自定義形狀填充
+                    showLine: true,
+                    pointRadius: 0
+                });
+            }
+
+            // 4. Intercepts Calculation
             if (showIntercepts) {
-                // Y-intercept (x=0)
-                let yInt = null;
-                if (type === 'linear' && p2 !== 0) yInt = -p3 / p2;
-                if (type === 'quadratic') yInt = p3;
-                if (type === 'exp') yInt = p1;
-                // Log x=0 undefined, no y-intercept typically
-
-                if (yInt !== null) interceptsData.push({ x: 0, y: yInt, label: `L${i+1} Y-int` });
-
-                // X-intercept (y=0)
-                let xInts = [];
-                if (type === 'linear' && p1 !== 0) xInts.push(-p3 / p1);
+                // X-int (y=0)
+                if (type === 'linear' && p1 !== 0) interceptsData.push({x: -p3/p1, y:0});
                 if (type === 'quadratic') {
-                    // Quadratic formula
-                    const delta = p2*p2 - 4*p1*p3;
-                    if (delta >= 0) {
-                        xInts.push((-p2 + Math.sqrt(delta))/(2*p1));
-                        if (delta > 0) xInts.push((-p2 - Math.sqrt(delta))/(2*p1));
+                    const D = p2*p2 - 4*p1*p3;
+                    if (D >= 0) {
+                        interceptsData.push({x: (-p2 + Math.sqrt(D))/(2*p1), y:0});
+                        if (D>0) interceptsData.push({x: (-p2 - Math.sqrt(D))/(2*p1), y:0});
                     }
                 }
-                if (type === 'log') {
-                    // 0 = a * ln(bx) -> ln(bx)=0 -> bx=1 -> x=1/b
-                    if (p2 !== 0) xInts.push(1/p2);
-                }
-                // Exp y=0 only asymptotic, no intercept usually
+                if (type === 'log' && p2 !== 0) interceptsData.push({x: 1/p2, y:0});
 
-                xInts.forEach(x => {
-                    interceptsData.push({ x: x, y: 0, label: `L${i+1} X-int` });
-                });
+                // Y-int (x=0)
+                if (type === 'linear' && p2 !== 0) interceptsData.push({x: 0, y: -p3/p2});
+                if (type === 'quadratic') interceptsData.push({x: 0, y: p3});
+                if (type === 'exp') interceptsData.push({x: 0, y: p1});
             }
         });
 
-        // 加入焦點 dataset
         if (interceptsData.length > 0) {
             datasets.push({
-                label: '軸焦點 (Intercepts)',
+                label: '焦點',
                 data: interceptsData,
-                backgroundColor: 'black',
-                borderColor: 'white',
+                backgroundColor: 'white',
+                borderColor: '#333',
                 borderWidth: 2,
-                pointRadius: 6,
-                pointHoverRadius: 8,
-                showLine: false,
-                type: 'scatter' // 強制為散佈點
+                pointRadius: 5,
+                showLine: false
             });
         }
 
-        // 繪圖與更新
         const ctx = document.getElementById('mathChart').getContext('2d');
         if (myChart) myChart.destroy();
 
@@ -280,28 +429,45 @@
             data: { datasets },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // 我們自己用 CSS 控制了比例
+                layout: { padding: 0 },
                 scales: {
-                    x: { type: 'linear', position: 'center', min: -10, max: 10, grid: { color: '#ddd' } },
-                    y: { type: 'linear', position: 'center', min: -10, max: 10, grid: { color: '#ddd' } }
+                    x: {
+                        type: 'linear',
+                        position: 'center',
+                        min: -10, max: 10,
+                        grid: { display: showGrid, color: '#e0e0e0' },
+                        ticks: {
+                            callback: function(val) { return val === 0 ? '' : val; } // 隱藏 X 軸的 0，避免重疊
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        position: 'center',
+                        min: -10, max: 10,
+                        grid: { display: showGrid, color: '#e0e0e0' },
+                        ticks: {
+                            callback: function(val) { return val === 0 ? '' : val; } // 隱藏 Y 軸的 0
+                        }
+                    }
                 },
                 plugins: {
                     zoom: {
                         zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' },
-                        pan: { enabled: false } // 禁止平移，鎖定中心
+                        pan: { enabled: true } // 開啟平移，方便看積分區域
                     },
-                    legend: { position: 'top' },
+                    legend: { display: false },
                     tooltip: {
                         callbacks: {
                             label: (ctx) => {
                                 const raw = ctx.raw;
-                                if (ctx.dataset.label.includes('Intercepts')) {
-                                    return `${raw.label}: (${raw.x.toFixed(2)}, ${raw.y.toFixed(2)})`;
-                                }
-                                // 顯示座標與斜率
+                                if (ctx.dataset.label === '積分區域 (Area)') return `Area Region`;
+                                if (ctx.dataset.label === '焦點') return `Intercept: (${raw.x.toFixed(2)}, ${raw.y.toFixed(2)})`;
+                                
                                 const info = ctx.dataset.customInfo;
+                                if(!info) return '';
                                 const m = getDerivative(info.type, raw.x, info.p1, info.p2, info.p3);
-                                return `(${raw.x.toFixed(1)}, ${raw.y.toFixed(1)}) 斜率 m ≈ ${m.toFixed(2)}`;
+                                return `(${raw.x.toFixed(2)}, ${raw.y.toFixed(2)}) m ≈ ${isNaN(m) ? 'undef' : m.toFixed(2)}`;
                             }
                         }
                     }
@@ -310,8 +476,10 @@
         });
     }
 
-    // 初始化
-    window.onload = addNewLine;
+    window.onload = () => {
+        addNewLine();
+        draw();
+    };
     document.addEventListener('keydown', (e) => { if(e.key === 'Enter') draw(); });
 </script>
 </body>
