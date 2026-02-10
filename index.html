@@ -2,76 +2,84 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>線性聯立方程與交點觀察器</title>
+    <title>Gemini Pro 全能數學實驗室</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
     <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; height: 100vh; background: #f8f9fa; overflow: hidden; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
         
         /* 左側控制面板 */
-        .sidebar { width: 380px; background: white; border-right: 1px solid #dee2e6; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.05); z-index: 10; }
-        .header { padding: 20px; border-bottom: 1px solid #eee; background: #2c3e50; color: white; }
-        .scroll-area { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .sidebar { width: 360px; background: white; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; z-index: 10; box-shadow: 2px 0 15px rgba(0,0,0,0.05); }
+        .header { padding: 20px; background: #2c3e50; color: white; }
+        .header h2 { margin: 0; font-size: 1.2rem; }
+        .header p { margin: 5px 0 0; font-size: 0.8rem; color: #bdc3c7; }
         
-        .input-card { background: #fdfdfd; border: 1px solid #e0e0e0; padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 6px solid #4a90e2; }
-        .inputs { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-        input { width: 50px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-size: 14px; }
-        select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; }
+        .controls-area { padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa; }
+        .toggle-switch { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; color: #555; cursor: pointer; }
         
-        .footer { padding: 20px; border-top: 1px solid #eee; background: #fff; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.2s; font-size: 15px; }
+        .scroll-area { flex-grow: 1; overflow-y: auto; padding: 15px; }
+        
+        /* 方程式卡片設計 */
+        .input-card { background: white; border: 1px solid #dfe6e9; padding: 15px; margin-bottom: 12px; border-radius: 8px; border-left: 5px solid #3498db; transition: transform 0.2s; }
+        .input-card:hover { transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .func-type { padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px; background: #f1f2f6; }
+        
+        .inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; }
+        input[type="number"] { width: 50px; padding: 6px; border: 1px solid #ced6e0; border-radius: 4px; text-align: center; }
+        select { padding: 6px; border: 1px solid #ced6e0; border-radius: 4px; }
+
+        /* 按鈕區 */
+        .footer { padding: 15px; background: white; border-top: 1px solid #eee; }
+        button { width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 8px; transition: 0.2s; }
         .btn-add { background: #e3f2fd; color: #1976d2; }
-        .btn-draw { background: #1976d2; color: white; }
-        .btn-reset { background: #f1f3f4; color: #5f6368; }
+        .btn-draw { background: #2980b9; color: white; }
+        .btn-reset { background: #ecf0f1; color: #7f8c8d; }
+        button:hover { filter: brightness(0.95); }
 
-        /* 右側圖表區 */
-        .main-view { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; position: relative; }
-        .chart-wrapper { background: white; flex-grow: 1; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 15px; position: relative; touch-action: none; }
-        canvas { width: 100% !important; height: 100% !important; }
-
-        /* 手機版適配 */
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; max-height: 45%; border-right: none; border-bottom: 1px solid #dee2e6; }
-            .main-view { padding: 10px; }
-        }
+        /* 圖表區 */
+        .main-view { flex-grow: 1; padding: 20px; position: relative; display: flex; justify-content: center; align-items: center; }
+        .chart-wrapper { width: 98%; height: 98%; background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); padding: 10px; position: relative; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
     <div class="header">
-        <h2 style="margin:0; font-size: 18px;">聯立方程運算引擎</h2>
-        <p style="margin:5px 0 0 0; opacity:0.8; font-size: 12px;">已開啟中心點鎖定縮放與自動交點</p>
+        <h2>全能數學實驗室 Pro</h2>
+        <p>指數 • 對數 • 截距 • 不等式</p>
+    </div>
+
+    <div class="controls-area">
+        <label class="toggle-switch">
+            <input type="checkbox" id="showIntercepts" checked onchange="draw()"> 
+            顯示 X / Y 軸焦點 (Intercepts)
+        </label>
     </div>
     
     <div class="scroll-area" id="equation-list">
-        <div class="input-card" style="border-left-color: hsl(0, 70%, 50%);">
-            <strong>L1</strong>
-            <div class="inputs">
-                <input type="number" class="a-val" value="2"> x + 
-                <input type="number" class="b-val" value="1"> y + 
-                <input type="number" class="c-val" value="-6">
-                <select class="op-val"><option value="=">=</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0
+        <div class="input-card" data-type="linear">
+            <div class="card-header">
+                <strong>L1</strong>
+                <select class="func-type" onchange="changeType(this)">
+                    <option value="linear" selected>直線 (Linear)</option>
+                    <option value="quadratic">拋物線 (Quad)</option>
+                    <option value="exp">指數 (Exp)</option>
+                    <option value="log">對數 (Log)</option>
+                </select>
             </div>
-        </div>
-        <div class="input-card" style="border-left-color: hsl(137.5, 70%, 50%);">
-            <strong>L2</strong>
-            <div class="inputs">
-                <input type="number" class="a-val" value="1"> x + 
-                <input type="number" class="b-val" value="-1"> y + 
-                <input type="number" class="c-val" value="0">
-                <select class="op-val"><option value="=">=</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0
+            <div class="inputs" id="inputs-1">
+                <input type="number" class="p1" value="1">x + <input type="number" class="p2" value="-1">y + <input type="number" class="p3" value="0">
+                <select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0
             </div>
         </div>
     </div>
 
     <div class="footer">
-        <button class="btn-add" onclick="addNewLine()">＋ 新增方程式</button>
-        <button class="btn-draw" onclick="draw()">更新並解聯立 (Enter)</button>
-        <button class="btn-reset" onclick="resetZoom()">回歸初始比例</button>
+        <button class="btn-add" onclick="addNewLine()">＋ 新增函數</button>
+        <button class="btn-draw" onclick="draw()">更新圖表 (Enter)</button>
+        <button class="btn-reset" onclick="resetZoom()">重置視角 (0,0)</button>
     </div>
 </div>
 
@@ -84,158 +92,226 @@
 <script>
     let myChart = null;
 
+    // 定義輸入框模板
+    const templates = {
+        linear: `a: <input type="number" class="p1" value="1"> b: <input type="number" class="p2" value="-1"> c: <input type="number" class="p3" value="0"> (ax+by+c)`,
+        quadratic: `a: <input type="number" class="p1" value="1"> b: <input type="number" class="p2" value="0"> c: <input type="number" class="p3" value="0"> (y=ax²+bx+c)`,
+        exp: `a: <input type="number" class="p1" value="1"> base: <input type="number" class="p2" value="2"> (y = a • base^x)`,
+        log: `a: <input type="number" class="p1" value="1"> b: <input type="number" class="p2" value="1"> (y = a • ln(bx))`
+    };
+
+    function changeType(selectElem) {
+        const card = selectElem.closest('.input-card');
+        const inputsDiv = card.querySelector('.inputs');
+        const type = selectElem.value;
+        const opHtml = `<select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0`; // 0 是不等式右邊
+        
+        // 更新輸入框 HTML
+        inputsDiv.innerHTML = templates[type] + opHtml;
+        card.setAttribute('data-type', type);
+    }
+
     function addNewLine() {
         const list = document.getElementById('equation-list');
         const n = list.children.length + 1;
         const div = document.createElement('div');
         div.className = 'input-card';
+        div.setAttribute('data-type', 'linear');
         div.style.borderLeftColor = `hsl(${n * 137.5}, 70%, 50%)`;
-        div.innerHTML = `<strong>L${n}</strong>
+        div.innerHTML = `
+            <div class="card-header">
+                <strong>L${n}</strong>
+                <select class="func-type" onchange="changeType(this)">
+                    <option value="linear">直線 (Linear)</option>
+                    <option value="quadratic">拋物線 (Quad)</option>
+                    <option value="exp">指數 (Exp)</option>
+                    <option value="log">對數 (Log)</option>
+                </select>
+            </div>
             <div class="inputs">
-                <input type="number" class="a-val" value="1"> x + 
-                <input type="number" class="b-val" value="1"> y + 
-                <input type="number" class="c-val" value="${-n * 2}">
-                <select class="op-val"><option value="=">=</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0
+                ${templates.linear}
+                <select class="op"><option value="=">=</option><option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&ge;</option><option value="<=">&le;</option></select> 0
             </div>`;
         list.appendChild(div);
     }
 
     function resetZoom() { if (myChart) myChart.resetZoom(); }
 
-    // 克拉瑪公式解二元一次聯立方程式
-    function findIntersection(l1, l2) {
-        const det = l1.a * l2.b - l2.a * l1.b;
-        if (Math.abs(det) < 1e-10) return null; // 行列式為 0 代表平行或重合
-        
-        const dx = (-l1.c) * l2.b - (-l2.c) * l1.b;
-        const dy = l1.a * (-l2.c) - l2.a * (-l1.c);
-        
-        return { 
-            x: Math.round((dx / det) * 100) / 100, // 四捨五入到小數點第二位
-            y: Math.round((dy / det) * 100) / 100 
-        };
+    function getDerivative(type, x, p1, p2, p3) {
+        // 微積分：計算切線斜率 m
+        if (type === 'linear') return -p1 / p2; // -a/b
+        if (type === 'quadratic') return 2 * p1 * x + p2; // 2ax + b
+        if (type === 'exp') return p1 * Math.log(p2) * Math.pow(p2, x); // a * ln(base) * base^x
+        if (type === 'log') return p1 / x; // a / x (chain rule simplified for ln(bx) -> a * (1/bx)*b = a/x)
+        return 0;
     }
 
     function draw() {
-        const as = document.querySelectorAll('.a-val'), bs = document.querySelectorAll('.b-val');
-        const cs = document.querySelectorAll('.c-val'), ops = document.querySelectorAll('.op-val');
+        const cards = document.querySelectorAll('.input-card');
+        const showIntercepts = document.getElementById('showIntercepts').checked;
         const datasets = [];
-        const lines = [];
+        const interceptsData = [];
 
-        // 收集所有方程式並繪製線條
-        as.forEach((_, i) => {
-            const a = parseFloat(as[i].value) || 0, b = parseFloat(bs[i].value) || 0, c = parseFloat(cs[i].value) || 0;
-            const op = ops[i].value;
-            
-            if (a === 0 && b === 0) return; // 無效方程式
-            if (op === '=') lines.push({ a, b, c, name: `L${i+1}` }); // 只計算等式的交點
-
-            let points = [], fillType = false;
+        cards.forEach((card, i) => {
+            const type = card.getAttribute('data-type');
+            const p1 = parseFloat(card.querySelector('.p1').value) || 0;
+            const p2 = parseFloat(card.querySelector('.p2').value) || 0; // quadratic/exp/log 時 p2 意義不同
+            const p3 = parseFloat(card.querySelector('.p3')?.value) || 0;
+            const op = card.querySelector('.op').value;
             const hue = (i * 137.5) % 360;
+            const color = `hsl(${hue}, 70%, 50%)`;
 
-            if (b !== 0) {
-                // 擴大繪圖範圍以適應縮放
-                for (let x = -500; x <= 500; x += 10) points.push({ x: x, y: (-a * x - c) / b });
-                if (op !== '=') {
-                    const isGreater = op.includes('>');
-                    fillType = (b > 0) ? (isGreater ? 'end' : 'origin') : (isGreater ? 'origin' : 'end');
+            let points = [];
+            let fillType = false;
+
+            // --- 繪圖邏輯 ---
+            // 範圍加大到 -500 ~ 500 以支援縮放
+            const range = 500;
+            const step = (type === 'log') ? 0.1 : 0.5; // log 需要更細緻
+            
+            for (let x = -range; x <= range; x += step) {
+                let y = null;
+                
+                if (type === 'linear') {
+                    if (p2 !== 0) y = (-p1 * x - p3) / p2; // ax+by+c=0 -> y=(-ax-c)/b
+                } else if (type === 'quadratic') {
+                    y = p1 * x * x + p2 * x + p3; // y=ax^2+bx+c
+                } else if (type === 'exp') {
+                    y = p1 * Math.pow(p2, x); // y = a * base^x
+                } else if (type === 'log') {
+                    if (p2 * x > 0) y = p1 * Math.log(p2 * x); // y = a * ln(bx), domain restriction
                 }
-            } else if (a !== 0) {
-                const posX = -c / a;
-                points.push({ x: posX, y: -500 }, { x: posX, y: 500 });
+
+                if (y !== null && !isNaN(y) && Math.abs(y) < range) {
+                    points.push({ x: x, y: y });
+                }
+            }
+
+            // 直線垂直線處理 (b=0)
+            if (type === 'linear' && p2 === 0 && p1 !== 0) {
+                const px = -p3 / p1;
+                points = [{ x: px, y: -range }, { x: px, y: range }];
+            }
+
+            // --- 修復的著色邏輯 (The Fix) ---
+            if (op !== '=') {
+                const isGreater = op.includes('>');
+                // 對於 y > f(x)，如果是直線，要考慮 b 的正負號是否導致不等號變向
+                // 對於其他函數形式皆為 y = ...，所以 y > ... 就是往上
+                let fillDir = isGreater ? 'end' : 'start'; // end=top, start=bottom
+                
+                if (type === 'linear' && p2 < 0) {
+                     // ax + by + c > 0, if b < 0, divide by b flips sign -> y < ...
+                    fillDir = isGreater ? 'start' : 'end';
+                }
+                fillType = fillDir;
             }
 
             datasets.push({
-                label: `L${i+1}`,
+                label: `L${i+1} (${type})`,
                 data: points,
-                borderColor: `hsl(${hue}, 70%, 50%)`,
-                backgroundColor: `hsla(${hue}, 70%, 50%, 0.15)`,
+                borderColor: color,
+                backgroundColor: op !== '=' ? `hsla(${hue}, 70%, 50%, 0.15)` : 'transparent',
                 fill: fillType,
                 showLine: true,
                 pointRadius: 0,
+                pointHitRadius: 10, // 增加滑鼠感應範圍
+                borderDash: (op === '>' || op === '<') ? [5, 5] : [],
                 borderWidth: 2,
-                borderDash: (op === '>' || op === '<') ? [5, 5] : []
+                // 自定義數據以供 Tooltip 使用
+                customInfo: { type, p1, p2, p3 } 
             });
+
+            // --- 焦點計算 (Intercepts) ---
+            if (showIntercepts) {
+                // Y-intercept (x=0)
+                let yInt = null;
+                if (type === 'linear' && p2 !== 0) yInt = -p3 / p2;
+                if (type === 'quadratic') yInt = p3;
+                if (type === 'exp') yInt = p1;
+                // Log x=0 undefined, no y-intercept typically
+
+                if (yInt !== null) interceptsData.push({ x: 0, y: yInt, label: `L${i+1} Y-int` });
+
+                // X-intercept (y=0)
+                let xInts = [];
+                if (type === 'linear' && p1 !== 0) xInts.push(-p3 / p1);
+                if (type === 'quadratic') {
+                    // Quadratic formula
+                    const delta = p2*p2 - 4*p1*p3;
+                    if (delta >= 0) {
+                        xInts.push((-p2 + Math.sqrt(delta))/(2*p1));
+                        if (delta > 0) xInts.push((-p2 - Math.sqrt(delta))/(2*p1));
+                    }
+                }
+                if (type === 'log') {
+                    // 0 = a * ln(bx) -> ln(bx)=0 -> bx=1 -> x=1/b
+                    if (p2 !== 0) xInts.push(1/p2);
+                }
+                // Exp y=0 only asymptotic, no intercept usually
+
+                xInts.forEach(x => {
+                    interceptsData.push({ x: x, y: 0, label: `L${i+1} X-int` });
+                });
+            }
         });
 
-        // 兩兩計算交點
-        const intersections = [];
-        for (let i = 0; i < lines.length; i++) {
-            for (let j = i + 1; j < lines.length; j++) {
-                const point = findIntersection(lines[i], lines[j]);
-                if (point) {
-                    intersections.push({
-                        x: point.x,
-                        y: point.y,
-                        info: `${lines[i].name} 與 ${lines[j].name} 交點`
-                    });
-                }
-            }
-        }
-
-        // 將交點作為獨立的資料集繪製
-        if (intersections.length > 0) {
+        // 加入焦點 dataset
+        if (interceptsData.length > 0) {
             datasets.push({
-                label: '交點 (Intersection)',
-                data: intersections,
-                backgroundColor: '#e74c3c',
-                borderColor: '#fff',
+                label: '軸焦點 (Intercepts)',
+                data: interceptsData,
+                backgroundColor: 'black',
+                borderColor: 'white',
                 borderWidth: 2,
                 pointRadius: 6,
-                pointHoverRadius: 9,
-                showLine: false
+                pointHoverRadius: 8,
+                showLine: false,
+                type: 'scatter' // 強制為散佈點
             });
         }
 
+        // 繪圖與更新
         const ctx = document.getElementById('mathChart').getContext('2d');
         if (myChart) myChart.destroy();
-        
+
         myChart = new Chart(ctx, {
             type: 'scatter',
-            data: { datasets: datasets },
+            data: { datasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { type: 'linear', position: 'center', min: -15, max: 15, grid: { color: '#e0e0e0', lineWidth: 1 } },
-                    y: { type: 'linear', position: 'center', min: -15, max: 15, grid: { color: '#e0e0e0', lineWidth: 1 } }
+                    x: { type: 'linear', position: 'center', min: -10, max: 10, grid: { color: '#ddd' } },
+                    y: { type: 'linear', position: 'center', min: -10, max: 10, grid: { color: '#ddd' } }
                 },
                 plugins: {
                     zoom: {
-                        // 完全關閉平移功能
-                        pan: { enabled: false },
-                        zoom: { 
-                            wheel: { enabled: true }, 
-                            pinch: { enabled: true }, 
-                            mode: 'xy',
-                            // 強制縮放時保持 x, y 軸的上下限對稱，確保 (0,0) 永遠在正中間
-                            onZoom: function({chart}) {
-                                const maxScale = Math.max(Math.abs(chart.scales.x.min), Math.abs(chart.scales.x.max), Math.abs(chart.scales.y.min), Math.abs(chart.scales.y.max));
-                                chart.options.scales.x.min = -maxScale;
-                                chart.options.scales.x.max = maxScale;
-                                chart.options.scales.y.min = -maxScale;
-                                chart.options.scales.y.max = maxScale;
-                                chart.update('none');
-                            }
-                        }
+                        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' },
+                        pan: { enabled: false } // 禁止平移，鎖定中心
                     },
+                    legend: { position: 'top' },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
-                                if (context.dataset.label === '交點 (Intersection)') {
-                                    return `${context.raw.info}: (${context.raw.x}, ${context.raw.y})`;
+                            label: (ctx) => {
+                                const raw = ctx.raw;
+                                if (ctx.dataset.label.includes('Intercepts')) {
+                                    return `${raw.label}: (${raw.x.toFixed(2)}, ${raw.y.toFixed(2)})`;
                                 }
-                                return `(${context.raw.x.toFixed(1)}, ${context.raw.y.toFixed(1)})`;
+                                // 顯示座標與斜率
+                                const info = ctx.dataset.customInfo;
+                                const m = getDerivative(info.type, raw.x, info.p1, info.p2, info.p3);
+                                return `(${raw.x.toFixed(1)}, ${raw.y.toFixed(1)}) 斜率 m ≈ ${m.toFixed(2)}`;
                             }
                         }
-                    },
-                    legend: { position: 'top', labels: { filter: function(item) { return item.text !== '交點 (Intersection)'; } } }
+                    }
                 }
             }
         });
     }
 
-    window.onload = draw;
+    // 初始化
+    window.onload = addNewLine;
     document.addEventListener('keydown', (e) => { if(e.key === 'Enter') draw(); });
 </script>
 </body>
